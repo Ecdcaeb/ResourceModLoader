@@ -1,4 +1,3 @@
-
 buildscript {
     repositories {
         if (use_mirror_url == "true") {
@@ -17,21 +16,21 @@ buildscript {
             mavenCentral()
             maven { url "https://maven.minecraftforge.net" }
         }
+
     }
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
+        classpath "net.minecraftforge.gradle:ForgeGradle:2.3.4"
     }
 }
 
 boolean useMirror = use_mirror_url == "true"
 if (useMirror) apply from: "mirror.gradle"
 apply plugin: "net.minecraftforge.gradle.forge"
-apply from: "runmanager.gradle"
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-version = "1.0"
-group = "com.ideallandframework.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "modid"
+version = "0.0.0.1"
+group = "com.ideallandframework.moremomostories" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "rml"
 
 sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
 compileJava {
@@ -52,10 +51,27 @@ minecraft {
 }
 
 repositories {
-
+    maven { url = "https://repo.spongepowered.org/maven" }
+    if (useMirror) {
+        // remove minecraft and forge maven repositories to avoid interference
+        removeIf {
+            it instanceof MavenArtifactRepository &&
+                (it.url.toString() == "https://repo.maven.apache.org/maven2/" ||
+                it.url.toString() == "https://maven.minecraftforge.net" ||
+                it.url.toString() == "https://libraries.minecraft.net/")
+        }
+        // add mirror repositories
+        maven { url "https://maven.aliyun.com/nexus/content/groups/public" }
+        maven { url "file://${projectDir}/.gradle/local-repo" }
+        maven { url "https://${mirror_maven_url}" }
+    }
 }
 
 dependencies {
+
+
+    compile files('libs/KubeJS-forge-1.12.2-1.0.0.24.jar')
+    //Magic_Circle-1.0.1.jar
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
     //compile "some.group:artifact:version:classifier"
@@ -78,6 +94,27 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
 }
+
+sourceSets {
+    main {
+        output.resourcesDir = file('build/combined')
+        java.outputDir = file('build/combined')
+    }
+}
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes([
+                "FMLCorePlugin": "mods.Hileb.rml.core.RMLFMLPlugin",
+                "FMLCorePluginContainsFMLMod": true,
+                "FMLAT":"moremomostories_at.cfg",
+                "Building-Time":new java.text.SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new java.util.Date()),
+                "Author":"Hileb"
+        ])
+    }
+}
+
 
 processResources {
     // this will ensure that this task is redone when the versions change.

@@ -5,7 +5,7 @@ buildscript {
         maven { url "https://${mirror_maven_url}" }
     }
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
+        classpath "net.minecraftforge.gradle:ForgeGradle:2.3.4"
     }
 }
 
