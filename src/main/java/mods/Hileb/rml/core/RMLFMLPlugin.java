@@ -4,7 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import dev.latvian.kubejs.KubeJS;
 import mods.Hileb.rml.ResourceModLoader;
-import mods.Hileb.rml.compat.RMKKubeJs;
+import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.DummyModContainer;
@@ -70,7 +70,7 @@ public class RMLFMLPlugin implements IFMLLoadingPlugin {
             metadata.credits="\n" +
                     "       Idealland - they provided this framework for enviroment.\n";
             metadata.description="a modloader which load mods from resource packs.(in mods/)";
-
+            metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
             INSTANCE=this;
         }
 
