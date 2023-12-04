@@ -8,9 +8,12 @@ import dev.latvian.kubejs.script.ScriptPack;
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.core.RMLFMLPlugin;
+import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -43,54 +46,39 @@ public class RMKKubeJs {
                     continue;
                 }
             }
-            File source = modContainer.getSource();
-            FileSystem fs;
-            Path root = null;
-            String base="assets/" + modContainer.getModId() + "/kubejs";
-            if (source.isFile()){
-                try
-                {
-                    fs = FileSystems.newFileSystem(source.toPath(), null);
-                    root = fs.getPath("/" + base);
-                }
-                catch (IOException e)
-                {
-                    RMLFMLPlugin.Container.LOGGER.error("Error loading FileSystem from jar: ", e);
-                    continue;
-                }
-            }else if (source.isDirectory())
-            {
-                root = source.toPath().resolve(base);
-            }
-            Iterator<Path> itr;
-            try
-            {
-                itr = Files.walk(root).iterator();
-            }
-            catch (IOException e)
-            {
-                RMLFMLPlugin.Container.LOGGER.error("Error iterating filesystem for: {}",modContainer.getModId(), e);
-                continue;
-            }
-            while (itr.hasNext())
-            {
-                Path path= itr.next();
-                if (path.toUri().toString().endsWith(".js")){
-                    load(ScriptManager.instance,path,modContainer.getModId());
-                }
-            }
+            CraftingHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
+                    (root, file) ->
+                    {
+                        String relative = root.relativize(file).toString();
+                        if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                            return true;
+                        BufferedReader bufferedReader=null;
+                        try {
+                            char[] fileBytes;
+                            bufferedReader=Files.newBufferedReader(file);
+                            fileBytes=IOUtils.toCharArray(bufferedReader);
+                            load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
+
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }finally {
+                            IOUtils.closeQuietly(bufferedReader);
+                        }
+
+                        return true;
+                    },true, true);
+            
             Loader.instance().setActiveModContainer(RMLFMLPlugin.Container.INSTANCE);
         }
     }
-    private static void load(ScriptManager manager, Path zipPath, String modid) {
-        String name = zipPath.toUri().toString();
+    private static void load(ScriptManager manager, String name,char[] file, String modid) {
         KubeJS.LOGGER.info("Found script at " + name);
         int weight;
         weight = 0;
         if (name.endsWith("/init.js")) {
             weight = -100;
         }
-        ScriptFile scriptFile = new ScriptFile(packs.get(modid), name, weight, () -> new BufferedReader(Files.newBufferedReader(zipPath)));
+        ScriptFile scriptFile = new BuffedJSFile(packs.get(modid), name, weight, file);
         manager.scripts.put(scriptFile.path, scriptFile);
         KubeJS.LOGGER.info("Load script at " + scriptFile.path);
     }
