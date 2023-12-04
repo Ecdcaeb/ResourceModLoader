@@ -1,0 +1,7 @@
+{
+  "recipes": {
+    "rml:smelt": "mods.Hileb.rml.json.craft.recipe.SmeltRecipe$Factory",
+    "rml:brew": "mods.Hileb.rml.json.craft.recipe.SimpleBrewRecipe$Factory",
+    "rml:anvil": "mods.Hileb.rml.json.craft.recipe.SimpleAnvilRecipe$Factory"
+  }
+}

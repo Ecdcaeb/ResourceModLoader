@@ -5,6 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import dev.latvian.kubejs.KubeJS;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
+import mods.Hileb.rml.json.craft.recipe.SimpleAnvilRecipe;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.DummyModContainer;
@@ -85,6 +86,20 @@ public class RMLFMLPlugin implements IFMLLoadingPlugin {
         public void preInit(FMLPreInitializationEvent event){
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
+            }
+            MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
+        }
+
+        @Override
+        public Class<?> getCustomResourcePackClass()
+        {
+            try
+            {
+                return getSource().isDirectory() ? Class.forName("net.minecraftforge.fml.client.FMLFolderResourcePack", true, getClass().getClassLoader()) : Class.forName("net.minecraftforge.fml.client.FMLFileResourcePack", true, getClass().getClassLoader());
+            }
+            catch (ClassNotFoundException e)
+            {
+                return null;
             }
         }
     }
