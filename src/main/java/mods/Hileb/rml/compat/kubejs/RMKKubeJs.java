@@ -7,7 +7,7 @@ import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
-import mods.Hileb.rml.core.RMLFMLPlugin;
+import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -16,15 +16,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -35,7 +30,7 @@ import java.util.Map;
 public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
-        RMLFMLPlugin.Container.LOGGER.info("Inject KubeJS");
+        RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
         for(RMLModContainer modContainer: ResourceModLoader.containers){
             Loader.instance().setActiveModContainer(modContainer);
             if (!packs.containsKey(modContainer.getModId())) {
@@ -68,7 +63,7 @@ public class RMKKubeJs {
                         return true;
                     },true, true);
             
-            Loader.instance().setActiveModContainer(RMLFMLPlugin.Container.INSTANCE);
+            Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
     }
     private static void load(ScriptManager manager, String name,char[] file, String modid) {

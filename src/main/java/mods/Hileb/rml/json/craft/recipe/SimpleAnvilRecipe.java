@@ -1,6 +1,7 @@
 package mods.Hileb.rml.json.craft.recipe;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
@@ -44,11 +45,15 @@ public class SimpleAnvilRecipe extends NamedEmptyRecipeImpl {
     public static class Factory implements IRecipeFactory {
         @Override
         public IRecipe parse(JsonContext context, JsonObject json) {
-            Ingredient a1= CraftingHelper.getIngredient(json.getAsJsonObject("right"),context);
-            Ingredient a2= CraftingHelper.getIngredient(json.getAsJsonObject("left"),context);
-            ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
-            int level=json.get("level").getAsInt();
-            return new SimpleAnvilRecipe(a2,a1,output,level);
+            try{
+                Ingredient a1= CraftingHelper.getIngredient(json.getAsJsonObject("right"),context);
+                Ingredient a2= CraftingHelper.getIngredient(json.getAsJsonObject("left"),context);
+                ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
+                int level=json.get("level").getAsInt();
+                return new SimpleAnvilRecipe(a2,a1,output,level);
+            }catch (Exception e){
+                throw new JsonSyntaxException(e);
+            }
         }
     }
 }

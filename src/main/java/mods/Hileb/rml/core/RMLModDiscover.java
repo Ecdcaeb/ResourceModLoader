@@ -27,13 +27,12 @@ import java.util.zip.ZipFile;
 public class RMLModDiscover {
 
     public static void inject(List<ModContainer> modContainers){
-        RMLFMLPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
+        RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
 
         File modRoots=new File((File)ReflectionHelper.getPrivateValue(Loader.class,null,"minecraftDir"),"mods");
 
         for (File modFile : modRoots.listFiles()) {
             if (modFile.getName().endsWith(".jar") || modFile.getName().endsWith(".zip")) {
-                RMLFMLPlugin.Container.LOGGER.error("mod! " + modFile.getName());
                 try {
                     ZipFile zipFile = new ZipFile(modFile);
                     ZipEntry info = zipFile.getEntry("rml.info");

@@ -1,6 +1,7 @@
 package mods.Hileb.rml.json.craft.recipe;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
@@ -49,10 +50,14 @@ public class SimpleBrewRecipe extends NamedEmptyRecipeImpl implements IBrewingRe
 
         @Override
         public IRecipe parse(JsonContext context, JsonObject json) {
-            ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
-            Ingredient input= CraftingHelper.getIngredient(json.getAsJsonObject("input"),context);
-            Ingredient ingredient= CraftingHelper.getIngredient(json.getAsJsonObject("ingredient"),context);
-            return new SimpleBrewRecipe(output,input,ingredient);
+            try{
+                ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
+                Ingredient input= CraftingHelper.getIngredient(json.getAsJsonObject("input"),context);
+                Ingredient ingredient= CraftingHelper.getIngredient(json.getAsJsonObject("ingredient"),context);
+                return new SimpleBrewRecipe(output,input,ingredient);
+            }catch (Exception e){
+                throw new JsonSyntaxException(e);
+            }
         }
     }
 }

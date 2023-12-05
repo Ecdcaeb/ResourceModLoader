@@ -1,6 +1,7 @@
 package mods.Hileb.rml.json.craft.recipe;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraftforge.common.crafting.CraftingHelper;
@@ -24,10 +25,14 @@ public class SmeltRecipe extends NamedEmptyRecipeImpl {
     public static class Factory implements IRecipeFactory {
         @Override
         public IRecipe parse(JsonContext context, JsonObject json) {
-            ItemStack outPut= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
-            float xp=json.get("xp").getAsFloat();
-            ItemStack input=CraftingHelper.getItemStack(json.getAsJsonObject("input"),context);
-            return new SmeltRecipe(input,outPut,xp);
+            try{
+                ItemStack outPut= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
+                float xp=json.get("xp").getAsFloat();
+                ItemStack input=CraftingHelper.getItemStack(json.getAsJsonObject("input"),context);
+                return new SmeltRecipe(input,outPut,xp);
+            }catch (Exception e){
+                throw new JsonSyntaxException(e);
+            }
         }
     }
 }
