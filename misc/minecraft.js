@@ -1,5 +1,5 @@
 onEvent('recipes.crafting_table', event => {
-      event.addShaped(
+      event:addShaped(
         'test:one',
         'minecraft:diamond',
         [
