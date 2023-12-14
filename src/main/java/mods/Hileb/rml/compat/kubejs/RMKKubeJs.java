@@ -5,11 +5,10 @@ import dev.latvian.kubejs.script.BindingsEvent;
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
-import mods.Hileb.rml.RMLModContainer;
-import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.commons.io.FilenameUtils;
@@ -31,7 +30,7 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        for(RMLModContainer modContainer: ResourceModLoader.containers){
+        for(ModContainer modContainer: Loader.instance().getActiveModList()){
             Loader.instance().setActiveModContainer(modContainer);
             if (!packs.containsKey(modContainer.getModId())) {
                 try {
@@ -41,7 +40,7 @@ public class RMKKubeJs {
                     continue;
                 }
             }
-            CraftingHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
+            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
                     (root, file) ->
                     {
                         String relative = root.relativize(file).toString();

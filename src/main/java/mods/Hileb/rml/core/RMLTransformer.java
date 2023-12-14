@@ -1,5 +1,6 @@
 package mods.Hileb.rml.core;
 
+import mods.Hileb.rml.api.asm.MethodName;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -37,6 +38,19 @@ public class RMLTransformer implements IClassTransformer {
                             injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
                             injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/core/RMLModDiscover","inject","(Ljava/util/List;)V"));
                             mn.instructions.insertBefore(mn.instructions.get(0),injectList);
+                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                        }
+                    }
+                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                });
+        transformers.put("net.minecraft.advancements.FunctionManager",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if (MethodName.m_193061.is(mn)){
+                            InsnList hook=new InsnList();
+                            hook.add(new IntInsnNode(Opcodes.ALOAD,0));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
+                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
