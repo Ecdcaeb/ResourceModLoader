@@ -9,19 +9,17 @@ import mods.Hileb.rml.json.RMLForgeEventHandler;
 import mods.Hileb.rml.json.craft.recipe.SimpleAnvilRecipe;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.fml.common.*;
-import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.common.DummyModContainer;
+import net.minecraftforge.fml.common.LoadController;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
@@ -38,8 +36,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @Override
     public String[] getASMTransformerClass() {
         return new String[]{
-                "mods.Hileb.rml.core.RMLLoaderTransformer",
-                "mods.Hileb.rml.core.CraftingHelperTransformer"
+                "mods.Hileb.rml.core.RMLTransformer"
         };
     }
     @Override
@@ -54,6 +51,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @Override
     public void injectData(Map<String, Object> data) {
         source=(File) data.get("coremodLocation");
+        ASMUtil.gameDir=(File)data.get("mcLocation");
     }
     @Override
     public String getAccessTransformerClass() {
