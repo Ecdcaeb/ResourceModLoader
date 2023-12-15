@@ -2,6 +2,7 @@ package mods.Hileb.rml.core;
 
 import mods.Hileb.rml.api.asm.MethodName;
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraftforge.fml.common.ModContainer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -52,6 +53,17 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                        }
+                    }
+                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                });
+        transformers.put("net.minecraft.world.storage.loot.LootTableManager",
+                (cn)->{
+                    for(MethodNode mn: cn.methods){
+                        if ("<clinit>".equals(mn.name)){
+                            InsnList hook=new InsnList();
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
+                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
                         }
                     }
                     return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;

@@ -87,6 +87,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
             }
+            RMLForgeEventHandler.preInit(event);
         }
         @Override
         public File getSource() {

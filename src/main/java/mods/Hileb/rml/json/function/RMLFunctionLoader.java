@@ -8,7 +8,6 @@ import net.minecraft.command.FunctionObject;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -24,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 public class RMLFunctionLoader {
 
 
-    public static void onLoad(FunctionLoadEvent event){
+    public static void load(FunctionLoadEvent event){
         for(ModContainer modContainer: Loader.instance().getActiveModList()){
             Loader.instance().setActiveModContainer(modContainer);
 
