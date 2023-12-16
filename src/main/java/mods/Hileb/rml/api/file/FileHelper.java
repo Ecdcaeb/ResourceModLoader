@@ -1,5 +1,7 @@
 package mods.Hileb.rml.api.file;
 
+import com.google.common.io.ByteSource;
+import com.google.common.io.CharSource;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -114,5 +116,8 @@ public class FileHelper {
     }
     public static CharArrayReader getCachedFile(Path path) throws IOException {
         return new CharArrayReader(IOUtils.toCharArray(Files.newBufferedReader(path)));
+    }
+    public static ByteSource getByteSource(Path path) throws IOException {
+        return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path)));
     }
 }

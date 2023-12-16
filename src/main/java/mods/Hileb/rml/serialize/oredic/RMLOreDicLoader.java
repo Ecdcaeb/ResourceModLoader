@@ -1,4 +1,4 @@
-package mods.Hileb.rml.json.oredic;
+package mods.Hileb.rml.serialize.oredic;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -33,7 +33,7 @@ public class RMLOreDicLoader {
         for(ModContainer modContainer: Loader.instance().getActiveModList()){
             Loader.instance().setActiveModContainer(modContainer);
 
-            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/tags",null,
+            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",null,
                     (root, file) -> {
 
                         String relative = root.relativize(file).toString();

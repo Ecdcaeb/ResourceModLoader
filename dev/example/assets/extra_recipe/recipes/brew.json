@@ -1,0 +1,14 @@
+{
+  "type": "rml:brew",
+  "output": {
+    "item": "minecraft:apple"
+  },
+  "input": {
+    "type": "minecraft:item",
+    "item": "minecraft:apple"
+  },
+  "ingredient": {
+    "type": "minecraft:item",
+    "item": "minecraft:apple"
+  }
+}

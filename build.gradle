@@ -26,9 +26,10 @@ buildscript {
 boolean useMirror = use_mirror_url == "true"
 if (useMirror) apply from: "mirror.gradle"
 apply plugin: "net.minecraftforge.gradle.forge"
+apply plugin: 'java'
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
-version = "1.0.1"
+version = "1.0.2"
 group = "com.ideallandframework.moremomostories" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "ResourceModLoader"
 
@@ -71,6 +72,7 @@ dependencies {
 
 
     compile files('libs/KubeJS-forge-1.12.2-1.0.0.24.jar')
+    compile files('libs/CraftTweaker2-1.12-4.1.17.jar')
     //Magic_Circle-1.0.1.jar
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
@@ -131,4 +133,11 @@ processResources {
     from(sourceSets.main.resources.srcDirs) {
         exclude "mcmod.info"
     }
+}
+
+tasks.register('buildExample', Zip) {
+    archiveName = "example.zip"
+    destinationDir = file("run/mods")
+
+    from "dev/example"
 }

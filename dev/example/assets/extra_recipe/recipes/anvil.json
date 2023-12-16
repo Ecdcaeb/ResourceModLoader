@@ -1,0 +1,15 @@
+{
+  "type": "rml:anvil",
+  "left": {
+    "type": "minecraft:item",
+    "item": "minecraft:apple"
+  },
+  "right": {
+    "type": "minecraft:item",
+    "item": "minecraft:apple"
+  },
+  "output": {
+    "item": "minecraft:apple"
+  },
+  "level": 14
+}

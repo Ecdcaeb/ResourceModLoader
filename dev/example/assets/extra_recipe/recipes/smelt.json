@@ -1,0 +1,10 @@
+{
+  "type": "rml:smelt",
+  "output": {
+    "item": "minecraft:apple"
+  },
+  "input": {
+    "item": "minecraft:apple"
+  },
+  "xp": 100
+}

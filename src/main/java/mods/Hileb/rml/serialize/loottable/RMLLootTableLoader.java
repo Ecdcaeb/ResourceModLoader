@@ -1,4 +1,4 @@
-package mods.Hileb.rml.json.loottable;
+package mods.Hileb.rml.serialize.loottable;
 
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.api.file.FileHelper;

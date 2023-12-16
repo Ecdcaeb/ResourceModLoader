@@ -1,0 +1,35 @@
+{
+    "display": {
+        "icon": {
+            "item": "minecraft:end_stone"
+        },
+        "title": {
+            "translate": "advancements.end.root.title"
+        },
+        "description": {
+            "translate": "advancements.end.root.description"
+        },
+        "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+
+        "show_toast": true,
+        "announce_to_chat": true
+    },
+    "criteria": {
+        "has_dirt": {
+            "trigger": "minecraft:inventory_changed",
+            "conditions": {
+                "items": [
+                    {
+                        "item": "minecraft:dirt"
+                    }
+                ]
+            }
+        }
+    },
+    "rewards": {
+        "function": "extra_recipe:test",
+        "loot": [
+            "extra_recipe:end_city_treasure"
+        ]
+    }
+}

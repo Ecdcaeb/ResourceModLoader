@@ -24,7 +24,7 @@ public class RMLTransformer implements IClassTransformer {
                     for(MethodNode mn:cn.methods){
                         if ("init".equals(mn.name)){
                             InsnList hook=new InsnList();
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V"));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
@@ -37,7 +37,7 @@ public class RMLTransformer implements IClassTransformer {
                         if ("identifyDuplicates".equals(mn.name)){
                             InsnList injectList=new InsnList();
                             injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
-                            injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/core/RMLModDiscover","inject","(Ljava/util/List;)V"));
+                            injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/core/RMLModDiscover","inject","(Ljava/util/List;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),injectList);
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
@@ -68,6 +68,20 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                 });
+        //TODO:support CrT
+//        transformers.put("crafttweaker.runtime.providers.ScriptProviderDirectory",
+//                (cn)->{
+//                    for(MethodNode mn:cn.methods){
+//                        if ("iterate".equals(mn.name) && "(Ljava/io/File;Ljava/util/List;)V".equals(mn.desc)){
+//                            InsnList hook=new InsnList();
+//                            hook.add(new IntInsnNode(Opcodes.ALOAD,2));
+//                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/BuffedZSFile","buildInLoader","(Ljava/util/List;)V",false));
+//                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
+//                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+//                        }
+//                    }
+//                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+//                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
