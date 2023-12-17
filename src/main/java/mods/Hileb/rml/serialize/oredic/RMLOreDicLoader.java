@@ -32,6 +32,7 @@ public class RMLOreDicLoader {
     public static void load(){//pre-init
         for(ModContainer modContainer: Loader.instance().getActiveModList()){
             Loader.instance().setActiveModContainer(modContainer);
+            RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
             FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",null,
                     (root, file) -> {
@@ -73,6 +74,7 @@ public class RMLOreDicLoader {
             TagOre tagOre=GSON.fromJson(json,TagOre.class);
             ItemStack stack= CraftingHelper.getItemStack(tagOre.item,new JsonContext(name.getResourceDomain()));
             OreDictionary.registerOre(tagOre.ore,stack);
+            RMLFMLLoadingPlugin.Container.LOGGER.debug("ore: "+tagOre.ore+" ; "+ stack);
         }catch (Exception ignored){
             RMLFMLLoadingPlugin.Container.LOGGER.error(ignored);
         }

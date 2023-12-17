@@ -13,6 +13,7 @@ import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModMetadata;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.LogManager;
@@ -88,6 +89,11 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
             }
             RMLForgeEventHandler.preInit(event);
+        }
+        @Subscribe
+        @SuppressWarnings("unused")
+        public void postInit(FMLPostInitializationEvent event){
+            RMLForgeEventHandler.postInit(event);
         }
         @Override
         public File getSource() {

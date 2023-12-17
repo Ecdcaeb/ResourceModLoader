@@ -10,6 +10,7 @@ import mods.Hileb.rml.serialize.function.RMLFunctionLoader;
 import mods.Hileb.rml.serialize.loottable.RMLLootTableLoader;
 import mods.Hileb.rml.serialize.oredic.RMLOreDicLoader;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
@@ -34,6 +35,9 @@ public class RMLForgeEventHandler {
         RMLLootTableLoader.load(event);
     }
     public static void preInit(FMLPreInitializationEvent event){
+        //RMLOreDicLoader.load();
+    }
+    public static void postInit(FMLPostInitializationEvent event){
         RMLOreDicLoader.load();
     }
 }

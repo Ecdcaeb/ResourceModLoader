@@ -68,20 +68,20 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                 });
-        //TODO:support CrT
-//        transformers.put("crafttweaker.runtime.providers.ScriptProviderDirectory",
-//                (cn)->{
-//                    for(MethodNode mn:cn.methods){
-//                        if ("iterate".equals(mn.name) && "(Ljava/io/File;Ljava/util/List;)V".equals(mn.desc)){
-//                            InsnList hook=new InsnList();
-//                            hook.add(new IntInsnNode(Opcodes.ALOAD,2));
-//                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/BuffedZSFile","buildInLoader","(Ljava/util/List;)V",false));
-//                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-//                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
-//                        }
-//                    }
-//                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
-//                });
+        transformers.put("crafttweaker.runtime.CrTTweaker",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("collectScriptFiles".equals(mn.name) && "(Z)Ljava/util/List;".equals(mn.desc)){
+                            InsnList hook=new InsnList();
+                            hook.add(new IntInsnNode(Opcodes.ALOAD,0));
+                            hook.add(new IntInsnNode(Opcodes.ILOAD,1));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLZSFile","buildInLoad","(Ljava/util/List;Lcrafttweaker/runtime/CrTTweaker;Z)Ljava/util/List;",false));
+                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.ARETURN);
+                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                        }
+                    }
+                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
