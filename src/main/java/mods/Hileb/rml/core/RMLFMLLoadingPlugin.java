@@ -2,8 +2,10 @@ package mods.Hileb.rml.core;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.serialize.RMLForgeEventHandler;
 import mods.Hileb.rml.serialize.craft.recipe.SimpleAnvilRecipe;
@@ -87,6 +89,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
+            }
+            if (Loader.isModLoaded(CraftTweaker.MODID)){
+                MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
             }
             RMLForgeEventHandler.preInit(event);
         }

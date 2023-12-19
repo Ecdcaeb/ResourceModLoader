@@ -6,9 +6,6 @@ import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.serialize.craft.recipe.SimpleAnvilRecipe;
 import mods.Hileb.rml.serialize.craft.recipe.SimpleBrewRecipe;
 import mods.Hileb.rml.serialize.craft.recipe.SmeltRecipe;
-import mods.Hileb.rml.serialize.function.RMLFunctionLoader;
-import mods.Hileb.rml.serialize.loottable.RMLLootTableLoader;
-import mods.Hileb.rml.serialize.oredic.RMLOreDicLoader;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -28,16 +25,16 @@ public class RMLForgeEventHandler {
     }
     @SubscribeEvent
     public static void onLoad(FunctionLoadEvent event){
-        RMLFunctionLoader.load(event);
+        RMLSerializeLoader.Function.load(event);
     }
     @SubscribeEvent
     public static void onRegisterLootTable(LootTableRegistryEvent event){
-        RMLLootTableLoader.load(event);
+        RMLSerializeLoader.LootTable.load(event);
     }
     public static void preInit(FMLPreInitializationEvent event){
         //RMLOreDicLoader.load();
     }
     public static void postInit(FMLPostInitializationEvent event){
-        RMLOreDicLoader.load();
+        RMLSerializeLoader.OreDic.load();
     }
 }
