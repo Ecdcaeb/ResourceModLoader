@@ -4,6 +4,7 @@ import crafttweaker.CraftTweakerAPI;
 import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
 import crafttweaker.runtime.providers.ScriptProviderCustom;
+import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
@@ -48,7 +49,8 @@ public class RMLCrTLoader {
     }
     @SubscribeEvent
     public static void inject(CrTFindingIScriptIteratorEvent event){
-        for(ModContainer modContainer: Loader.instance().getActiveModList()){
+        ResourceModLoader.updateRMLContainerState();
+        for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
             Loader.instance().setActiveModContainer(modContainer);
 
 

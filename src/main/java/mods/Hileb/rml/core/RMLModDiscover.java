@@ -2,6 +2,7 @@ package mods.Hileb.rml.core;
 
 import com.google.gson.*;
 import mods.Hileb.rml.RMLModContainer;
+import mods.Hileb.rml.ResourceModLoader;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
@@ -44,7 +45,7 @@ public class RMLModDiscover {
                         JsonArray jsonList = rootElement.getAsJsonArray();
                         for (JsonElement mod : jsonList) {
                             ModMetadata metadata = gson.fromJson(mod, ModMetadata.class);
-                            modContainers.add(new RMLModContainer(metadata, modFile));
+                            modContainers.add(ResourceModLoader.enableRML(new RMLModContainer(metadata, modFile)));
                         }
                     }
                 } catch (IOException e) {

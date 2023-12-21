@@ -16,7 +16,7 @@ import java.io.File;
 public class RMLModContainer extends InjectedModContainer {
     public RMLModContainer(ModMetadata metadata,File source) {
         super(new DummyModContainer(metadata), source);
-        ResourceModLoader.containers.add(this);
+        //ResourceModLoader.containers.add(this);
     }
 
     @Override

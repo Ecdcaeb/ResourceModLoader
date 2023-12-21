@@ -5,6 +5,7 @@ import dev.latvian.kubejs.script.BindingsEvent;
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
+import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
@@ -30,7 +31,8 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        for(ModContainer modContainer: Loader.instance().getActiveModList()){
+        ResourceModLoader.updateRMLContainerState();
+        for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
             Loader.instance().setActiveModContainer(modContainer);
             if (!packs.containsKey(modContainer.getModId())) {
                 try {

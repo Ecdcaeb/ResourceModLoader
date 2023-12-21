@@ -6,13 +6,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.DamageSource;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.crafting.CraftingHelper;
@@ -44,7 +44,8 @@ public class RMLSerializeLoader {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){//pre-init
-            for(ModContainer modContainer: Loader.instance().getActiveModList()){
+            ResourceModLoader.updateRMLContainerState();
+            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
                 Loader.instance().setActiveModContainer(modContainer);
                 RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
@@ -107,7 +108,8 @@ public class RMLSerializeLoader {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event){
-            for(ModContainer modContainer: Loader.instance().getActiveModList()){
+            ResourceModLoader.updateRMLContainerState();
+            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
                 Loader.instance().setActiveModContainer(modContainer);
 
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables",null,
@@ -135,7 +137,8 @@ public class RMLSerializeLoader {
 
 
         public static void load(FunctionLoadEvent event){
-            for(ModContainer modContainer: Loader.instance().getActiveModList()){
+            ResourceModLoader.updateRMLContainerState();
+            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
                 Loader.instance().setActiveModContainer(modContainer);
 
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions",null,
@@ -174,16 +177,6 @@ public class RMLSerializeLoader {
                         },true, true);
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
-        }
-    }
-    public static class Damage{
-        public static void load(){
-        }
-        public static class DamageType{
-            public String message_id;
-            public float exhaustion;
-            public String death_message_type;
-
         }
     }
 }
