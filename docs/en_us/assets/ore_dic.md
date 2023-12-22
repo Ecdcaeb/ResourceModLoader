@@ -1,3 +1,7 @@
+---
+sort: 5
+---
+
 ### Ore Dic
 
 at `/ore_dic/`

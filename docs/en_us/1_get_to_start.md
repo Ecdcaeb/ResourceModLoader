@@ -1,3 +1,7 @@
+---
+sort: 2
+---
+
 ### Get to start
 
 Create a `rml.info` for your resource-pack.
