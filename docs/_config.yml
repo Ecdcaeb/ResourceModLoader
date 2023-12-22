@@ -12,5 +12,3 @@ exclude:
   - CNAME
   - Gemfile
   - Gemfile.lock
-  - en_us/
-  - README.md
