@@ -6,6 +6,6 @@ sort: 2
 
 Create a `rml.info` for your resource-pack.
 
-`rml.info` has the same format of mcmod.info (See forge Doc: https://docs.minecraftforge.net/en/1.12.x/gettingstarted/structuring/#the-mcmodinfo-file) .
+`rml.info` has the same format of `mcmod.info` (See forge Doc: https://docs.minecraftforge.net/en/1.12.x/gettingstarted/structuring/#the-mcmodinfo-file) .
 
-the modid is your domain.
+the `modid` is your `domain`.

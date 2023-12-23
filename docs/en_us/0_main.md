@@ -12,4 +12,4 @@ see `mods/` for the documents of the API for `Java Minecraft Mod`.
 
 
 
-In the documents, we define `/` as the `assets/doMain` for simple.
+In the documents, we define `/` as the `assets/doMain/` for simple.
