@@ -1,12 +1,9 @@
 package mods.Hileb.rml;
 
-import net.minecraftforge.fml.common.Loader;
+import mods.Hileb.rml.api.mods.BuffedModIDContainer;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @Project ResourceModLoader
@@ -15,32 +12,20 @@ import java.util.List;
  **/
 public class ResourceModLoader {
     public static final String MODID="rml";
-    public static final String VERSION="1.0.3";
-    private static final HashSet<String> buffedModContainerModid=new HashSet<>();
-    public static final LinkedList<ModContainer> enabledModContainers=new LinkedList<>();
+    public static final String VERSION="1.0.4";
+    private static final BuffedModIDContainer buffedModIDContainer=new BuffedModIDContainer();
+    public static final HashSet<ModContainer> enabledModContainers=new HashSet<>();
     public static ModContainer enableRML(ModContainer mod){
         enabledModContainers.add(mod);
         return mod;
     }
     public static void enableRML(String modid){
-        buffedModContainerModid.add(modid);
+        buffedModIDContainer.add(modid);
     }
     public static void updateRMLContainerState(){
-        Iterator<String> iterator=buffedModContainerModid.iterator();
-        String modid;
-        while (iterator.hasNext()){
-            modid=iterator.next();
-            if (Loader.isModLoaded(modid)){
-                for(ModContainer container:Loader.instance().getActiveModList()){
-                    if (modid.equals(container.getModId())){
-                        enableRML(container);
-                    }
-                }
-                iterator.remove();
-            }
-        }
+        enabledModContainers.addAll(buffedModIDContainer.get());
     }
-    public static List<ModContainer> getCurrentRMLContainers(){
+    public static HashSet<ModContainer> getCurrentRMLContainers(){
         updateRMLContainerState();
         return enabledModContainers;
     }
