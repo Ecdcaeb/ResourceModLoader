@@ -49,8 +49,7 @@ public class RMLCrTLoader {
     }
     @SubscribeEvent
     public static void inject(CrTFindingIScriptIteratorEvent event){
-        ResourceModLoader.updateRMLContainerState();
-        for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
+        for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
 
 

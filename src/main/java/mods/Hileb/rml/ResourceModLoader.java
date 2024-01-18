@@ -1,8 +1,10 @@
 package mods.Hileb.rml;
 
 import mods.Hileb.rml.api.mods.BuffedModIDContainer;
+import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 /**
@@ -24,6 +26,7 @@ public class ResourceModLoader {
     }
     public static void updateRMLContainerState(){
         enabledModContainers.addAll(buffedModIDContainer.get());
+        RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods=new ArrayList<>(enabledModContainers);
     }
     public static HashSet<ModContainer> getCurrentRMLContainers(){
         updateRMLContainerState();

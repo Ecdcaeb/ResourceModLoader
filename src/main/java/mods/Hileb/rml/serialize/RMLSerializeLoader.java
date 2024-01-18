@@ -44,8 +44,7 @@ public class RMLSerializeLoader {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){//pre-init
-            ResourceModLoader.updateRMLContainerState();
-            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
+            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
                 Loader.instance().setActiveModContainer(modContainer);
                 RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
@@ -108,8 +107,7 @@ public class RMLSerializeLoader {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event){
-            ResourceModLoader.updateRMLContainerState();
-            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
+            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
                 Loader.instance().setActiveModContainer(modContainer);
 
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables",null,
@@ -137,8 +135,7 @@ public class RMLSerializeLoader {
 
 
         public static void load(FunctionLoadEvent event){
-            ResourceModLoader.updateRMLContainerState();
-            for(ModContainer modContainer:ResourceModLoader.enabledModContainers){
+            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
                 Loader.instance().setActiveModContainer(modContainer);
 
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions",null,
