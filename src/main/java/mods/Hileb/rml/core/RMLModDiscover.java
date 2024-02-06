@@ -31,7 +31,7 @@ public class RMLModDiscover {
         for (File modFile : modRoots.listFiles()) {
             try(ZipFile zipFile = new ZipFile(modFile)) {
                 ZipEntry info = zipFile.getEntry("rml.info");
-                if (info!=null){
+                if (info!=null){//fix: https://mclo.gs/4yyaEH5
                     InputStream inputStream = zipFile.getInputStream(info);
                     MetadataCollection metadataCollection=MetadataCollection.from(inputStream,modFile.getName());
                     for(ModMetadata metadata:(ModMetadata[])ReflectionHelper.getPrivateValue(MetadataCollection.class,metadataCollection,"modList")){

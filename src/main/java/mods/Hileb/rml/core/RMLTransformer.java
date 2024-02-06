@@ -9,6 +9,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import java.util.HashMap;
+import java.util.ListIterator;
 import java.util.function.Function;
 
 /**
@@ -108,6 +109,29 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                 });
+        transformers.put("net.minecraftforge.common.config.ConfigManager",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        // public static sync(Ljava/lang/String;Lnet/minecraftforge/common/config/Config$Type;)V
+                        if ("sync".equals(mn.name) && "(Ljava/lang/String;Lnet/minecraftforge/common/config/Config$Type;)V".equals(mn.desc)){
+                            ListIterator<AbstractInsnNode> iterator=mn.instructions.iterator();
+                            AbstractInsnNode node;
+                            while (iterator.hasNext()){
+                                node=iterator.next();
+                                // INVOKESTATIC net/minecraftforge/common/config/ConfigManager.sync (Lnet/minecraftforge/common/config/Configuration;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Object;)V
+                                if (node.getOpcode()==Opcodes.INVOKESTATIC && node instanceof MethodInsnNode){
+                                    MethodInsnNode methodInsnNode=(MethodInsnNode) node;
+                                    if ("net/minecraftforge/common/config/ConfigManager".equals(methodInsnNode.owner) && "sync".equals(methodInsnNode.name) && "(Lnet/minecraftforge/common/config/Configuration;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Object;)V".equals(methodInsnNode.desc)){
+                                        methodInsnNode.owner="mods/Hileb/rml/api/config/ConfigTransformer";
+                                        return ClassWriter.COMPUTE_MAXS;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return ClassWriter.COMPUTE_MAXS;
+                }
+        );
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {

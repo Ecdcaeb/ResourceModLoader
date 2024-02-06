@@ -1,1 +1,1 @@
-call gradlew.bat buildExample
+call gradlew.bat buildExample --debug --stacktrace --info

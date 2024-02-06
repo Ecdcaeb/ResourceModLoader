@@ -2,6 +2,8 @@ package mods.Hileb.rml.api.file;
 
 import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -23,6 +25,7 @@ import java.util.function.Function;
  * @Date 2023/12/14 23:23
  **/
 public class FileHelper {
+    public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
     @Deprecated
     public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor)
     {
