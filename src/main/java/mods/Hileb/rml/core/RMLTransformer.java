@@ -1,5 +1,7 @@
 package mods.Hileb.rml.core;
 
+import mods.Hileb.rml.api.EarlyClass;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.asm.MethodName;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.ModContainer;
@@ -17,7 +19,15 @@ import java.util.function.Function;
  * @Author Hileb
  * @Date 2023/12/14 22:59
  **/
+@EarlyClass
+@PrivateAPI
 public class RMLTransformer implements IClassTransformer {
+    public static final MethodName m_193061=MethodName.of()
+            .mcp("loadFunctions","()V")
+            .srg("func_193061_h","()V")
+            .notch("h","()V")
+            .build();
+
     public static final HashMap<String, Function<ClassNode,Integer>> transformers=new HashMap<>();
     static {
         transformers.put("net.minecraftforge.common.crafting.CraftingHelper",
@@ -64,7 +74,7 @@ public class RMLTransformer implements IClassTransformer {
                                 FunctionLoadEvent.post(this);
                             }
                          * **/
-                        if (MethodName.m_193061.is(mn)){
+                        if (m_193061.is(mn)){
                             InsnList hook=new InsnList();
                             hook.add(new IntInsnNode(Opcodes.ALOAD,0));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));

@@ -5,6 +5,9 @@ import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.EarlyClass;
+import mods.Hileb.rml.api.PrivateAPI;
+import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.serialize.RMLForgeEventHandler;
@@ -30,6 +33,8 @@ import java.util.Map;
  * @Author Hileb
  * @Date 2023/12/3 9:37
  **/
+@EarlyClass
+@PrivateAPI
 @IFMLLoadingPlugin.Name(ResourceModLoader.MODID)
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
@@ -60,10 +65,11 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public String getAccessTransformerClass() {
         return null;
     }
+    @PublicAPI
     public static class Container extends DummyModContainer{
-        public static Container INSTANCE;
-        public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
-        public Container(){
+        @PublicAPI public static Container INSTANCE;
+        @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
+        @PrivateAPI public Container(){
             super(new ModMetadata());
             ModMetadata metadata=this.getMetadata();
             metadata.modId=ResourceModLoader.MODID;
@@ -78,13 +84,13 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             INSTANCE=this;
         }
         @Override
-        public boolean registerBus(EventBus bus, LoadController controller) {
+        @PrivateAPI public boolean registerBus(EventBus bus, LoadController controller) {
             bus.register(this);
             return true;
         }
         @Subscribe
         @SuppressWarnings("unused")
-        public void preInit(FMLPreInitializationEvent event){
+        @PrivateAPI public void preInit(FMLPreInitializationEvent event){
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
@@ -97,7 +103,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @SuppressWarnings("unused")
-        public void postInit(FMLPostInitializationEvent event){
+        @PrivateAPI public void postInit(FMLPostInitializationEvent event){
             RMLForgeEventHandler.postInit(event);
         }
         @Override
@@ -106,7 +112,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
 
         @Override
-        public Class<?> getCustomResourcePackClass()
+        @PrivateAPI public Class<?> getCustomResourcePackClass()
         {
             try
             {

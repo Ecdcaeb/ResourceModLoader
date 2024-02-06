@@ -2,6 +2,7 @@ package mods.Hileb.rml.core;
 
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
@@ -21,8 +22,10 @@ import java.util.zip.ZipFile;
  * @Date 2023/12/3 9:53
  *
  **/
+@PrivateAPI
 @SuppressWarnings("unused")
 public class RMLModDiscover {
+    @PrivateAPI
     public static void inject(List<ModContainer> modContainers){
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
 

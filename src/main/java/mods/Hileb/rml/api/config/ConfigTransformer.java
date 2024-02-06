@@ -6,6 +6,7 @@ import com.google.common.collect.Multimap;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.clazz.ClassValueTransformer;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
@@ -30,12 +31,15 @@ import java.nio.file.Files;
  * @Author Hileb
  * @Date 2024/2/6 12:58
  **/
+@PrivateAPI
 public class ConfigTransformer {
-    private static final Method m_sync=ReflectionHelper.findMethod(ConfigManager.class,"sync","sync", Configuration.class, Class.class, String.class, String.class, boolean.class, Object.class);
+    @PrivateAPI private static final Method m_sync=ReflectionHelper.findMethod(ConfigManager.class,"sync","sync", Configuration.class, Class.class, String.class, String.class, boolean.class, Object.class);
     static {
         m_sync.setAccessible(true);
     }
-    public static void sync(Configuration cfg, Class<?> cls, String modid, String category, boolean loading, Object instance)  {
+    @PrivateAPI public static void sync(Configuration cfg, Class<?> cls, String modid, String category, boolean loading, Object instance)  {
+        searchRedefault();
+        searchOverride();
         transformConfigRedefalut(cls,cfg.getConfigFile().getName());
         try {
             m_sync.invoke(null,cfg,cls,modid,category,loading,instance);
@@ -46,26 +50,32 @@ public class ConfigTransformer {
         }
         transformConfigOverride(cls,cfg.getConfigFile().getName());
     }
-    public static void transformConfigRedefalut(Class<?> clazz, String name){
-        for(JsonObject json:cachedRedefault.get(name)){
-            try {
-                ClassValueTransformer.transform(clazz,json,null);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Could not load redefault config for "+ name ,e);
+    @PrivateAPI public static void transformConfigRedefalut(Class<?> clazz, String name){
+        if (cachedRedefault!=null){
+            for(JsonObject json:cachedRedefault.get(name)){
+                try {
+                    ClassValueTransformer.transform(clazz,json,null);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Could not load redefault config for "+ name ,e);
+                }
             }
+            cachedRedefault=null;
         }
     }
-    public static void transformConfigOverride(Class<?> clazz, String name){
-        for(JsonObject json:cachedOverrides.get(name)){
-            try {
-                ClassValueTransformer.transform(clazz,json,null);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Could not load override config for "+ name ,e);
+    @PrivateAPI public static void transformConfigOverride(Class<?> clazz, String name){
+        if (cachedOverrides!=null){
+            for(JsonObject json:cachedOverrides.get(name)){
+                try {
+                    ClassValueTransformer.transform(clazz,json,null);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Could not load override config for "+ name ,e);
+                }
             }
+            cachedOverrides=null;
         }
     }
-    private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
-    public static void searchRedefault(){
+    @PrivateAPI private static Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
+    @PrivateAPI public static void searchRedefault(){
         for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
             FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/redefault",null,
@@ -106,8 +116,8 @@ public class ConfigTransformer {
     }
 
 
-    private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
-    public static void searchOverride(){
+    @PrivateAPI  private static Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
+    @PrivateAPI public static void searchOverride(){
         for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
             FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/override",null,

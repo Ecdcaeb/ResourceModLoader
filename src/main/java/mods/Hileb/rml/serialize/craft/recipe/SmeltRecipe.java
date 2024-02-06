@@ -2,6 +2,7 @@ package mods.Hileb.rml.serialize.craft.recipe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraftforge.common.crafting.CraftingHelper;
@@ -16,6 +17,7 @@ import javax.annotation.Nonnull;
  * @Author Hileb
  * @Date 2023/12/3 23:24
  **/
+@PrivateAPI
 public class SmeltRecipe extends NamedEmptyRecipeImpl {
     public SmeltRecipe(@Nonnull ItemStack input, @Nonnull ItemStack output, float xp)
     {

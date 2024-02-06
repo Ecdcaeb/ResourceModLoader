@@ -4,6 +4,7 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import mods.Hileb.rml.api.PublicAPI;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -24,20 +25,22 @@ import java.util.function.Function;
  * @Author Hileb
  * @Date 2023/12/14 23:23
  **/
+@PublicAPI
 public class FileHelper {
+    @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-    @Deprecated
+    @PublicAPI @Deprecated
     public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor)
     {
         return findFiles(mod, base, preprocessor, processor, false, false);
     }
 
-    @Deprecated
+    @PublicAPI @Deprecated
     public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor, boolean defaultUnfoundRoot)
     {
         return findFiles(mod, base, preprocessor, processor, defaultUnfoundRoot, false);
     }
-
+    @PublicAPI
     public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor, boolean defaultUnfoundRoot, boolean visitAllFiles)
     {
         FileSystem fs = null;
@@ -117,9 +120,11 @@ public class FileHelper {
             IOUtils.closeQuietly(fs);
         }
     }
+    @PublicAPI
     public static CharArrayReader getCachedFile(Path path) throws IOException {
         return new CharArrayReader(IOUtils.toCharArray(Files.newBufferedReader(path)));
     }
+    @PublicAPI
     public static ByteSource getByteSource(Path path) throws IOException {
         return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path)));
     }

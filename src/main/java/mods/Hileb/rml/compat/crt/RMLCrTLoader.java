@@ -5,6 +5,7 @@ import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
 import crafttweaker.runtime.providers.ScriptProviderCustom;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
@@ -22,6 +23,7 @@ import java.lang.reflect.Field;
  * @Date 2023/12/19 22:45
  **/
 public class RMLCrTLoader {
+    @PrivateAPI
     public static final Field scriptProvider;
     static {
         try {
@@ -37,7 +39,7 @@ public class RMLCrTLoader {
      *         RMLCrTLoader.inject(this);
      *     }
      * **/
-    public static void inject(CrTTweaker craftTweaker){
+    @PrivateAPI public static void inject(CrTTweaker craftTweaker){
         try {
             IScriptProvider provider_1=(IScriptProvider) scriptProvider.get(craftTweaker);
             EventScriptProvider proxy=new EventScriptProvider(provider_1);
@@ -48,7 +50,7 @@ public class RMLCrTLoader {
         }
     }
     @SubscribeEvent
-    public static void inject(CrTFindingIScriptIteratorEvent event){
+    @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
         for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
 

@@ -1,5 +1,7 @@
 package mods.Hileb.rml.core;
 
+import mods.Hileb.rml.api.EarlyClass;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraftforge.fml.common.FMLLog;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -16,6 +18,8 @@ import java.util.ListIterator;
  * @Author Hileb
  * @Date 2023/12/14 23:01
  **/
+@EarlyClass
+@PrivateAPI
 public class ASMUtil {
     public static File gameDir;
     public static final boolean saveTransformedClass= FMLLog.log.isDebugEnabled();

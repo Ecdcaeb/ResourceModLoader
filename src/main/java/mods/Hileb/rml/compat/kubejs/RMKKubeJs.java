@@ -6,6 +6,7 @@ import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
@@ -27,7 +28,9 @@ import java.util.Map;
  * @Author Hileb
  * @Date 2023/12/3 11:33
  **/
+@PrivateAPI
 public class RMKKubeJs {
+    @PrivateAPI
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
@@ -66,6 +69,7 @@ public class RMKKubeJs {
             Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
     }
+    @PrivateAPI
     private static void load(ScriptManager manager, String name,char[] file, String modid) {
         KubeJS.LOGGER.info("Found script at " + name);
         int weight;
@@ -77,8 +81,8 @@ public class RMKKubeJs {
         manager.scripts.put(scriptFile.path, scriptFile);
         KubeJS.LOGGER.info("Load script at " + scriptFile.path);
     }
-    public static final Method newPack;
-    public static final Map<String, ScriptPack> packs;
+    @PrivateAPI public static final Method newPack;
+    @PrivateAPI public static final Map<String, ScriptPack> packs;
     static {
         try {
             newPack=ScriptManager.class.getDeclaredMethod("newPack", String.class);

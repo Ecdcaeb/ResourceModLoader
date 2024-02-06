@@ -7,6 +7,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import mods.Hileb.rml.ResourceModLoader;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.api.file.FileHelper;
@@ -35,6 +36,7 @@ import java.util.List;
  * @Author Hileb
  * @Date 2023/12/19 12:56
  **/
+@PrivateAPI
 public class RMLSerializeLoader {
     /**
      * @Project ResourceModLoader

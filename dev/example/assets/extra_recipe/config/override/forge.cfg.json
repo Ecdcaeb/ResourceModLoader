@@ -1,6 +1,13 @@
 {
     "client": {
-        "forgeCloudsEnabled":true
+        "forgeCloudsEnabled":true,
+        "zoomInMissingModelTextInGui": true,
+        "disableStairSlabCulling": true,
+        "alwaysSetupTerrainOffThread": true,
+        "biomeSkyBlendRange": [1,2,3]
+    },
+    "general": {
+        "zombieBabyChance": 0.99
     }
 }
 

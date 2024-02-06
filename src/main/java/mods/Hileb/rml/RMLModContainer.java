@@ -1,6 +1,7 @@
 package mods.Hileb.rml;
 
 import com.google.common.eventbus.EventBus;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.InjectedModContainer;
 import net.minecraftforge.fml.common.LoadController;
@@ -13,6 +14,7 @@ import java.io.File;
  * @Author Hileb
  * @Date 2023/12/3 10:19
  **/
+@PrivateAPI
 public class RMLModContainer extends InjectedModContainer {
     public RMLModContainer(ModMetadata metadata,File source) {
         super(new DummyModContainer(metadata), source);

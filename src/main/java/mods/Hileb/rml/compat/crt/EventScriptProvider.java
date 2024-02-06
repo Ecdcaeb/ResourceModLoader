@@ -2,6 +2,7 @@ package mods.Hileb.rml.compat.crt;
 
 import crafttweaker.runtime.IScriptIterator;
 import crafttweaker.runtime.IScriptProvider;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.util.ArrayList;
@@ -14,16 +15,18 @@ import java.util.List;
  * @Author Hileb
  * @Date 2023/12/19 22:40
  **/
+@PrivateAPI
 public class EventScriptProvider implements IScriptProvider {
-    public IScriptProvider proxy;
-    public EventScriptProvider(IScriptProvider provider){
+    @PrivateAPI public IScriptProvider proxy;
+    @PrivateAPI public EventScriptProvider(IScriptProvider provider){
         proxy=provider;
     }
+    @PrivateAPI
     @Override
     public Iterator<IScriptIterator> getScripts() {
         return this.combine().iterator();
     }
-    public List<IScriptIterator> combine(){
+    @PrivateAPI public List<IScriptIterator> combine(){
         LinkedList<IScriptIterator> list=new LinkedList<>();
 
         Iterator<IScriptIterator> iterator=proxy.getScripts();

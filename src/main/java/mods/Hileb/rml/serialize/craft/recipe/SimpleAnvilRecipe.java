@@ -2,6 +2,7 @@ package mods.Hileb.rml.serialize.craft.recipe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
+import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
@@ -18,6 +19,7 @@ import java.util.HashSet;
  * @Author Hileb
  * @Date 2023/12/4 12:36
  **/
+@PrivateAPI
 public class SimpleAnvilRecipe extends NamedEmptyRecipeImpl {
     public static final HashSet<SimpleAnvilRecipe> recipes=new HashSet<>();
     public Ingredient left;

@@ -1,5 +1,6 @@
 package mods.Hileb.rml.api.mods;
 
+import mods.Hileb.rml.api.PublicAPI;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
@@ -11,12 +12,13 @@ import java.util.HashSet;
  * @Author Hileb
  * @Date 2024/1/17 12:21
  **/
+@PublicAPI
 public class BuffedModIDContainer {
-    public HashSet<String> modids=new HashSet<>();
-    public void add(String modid){
+    @PublicAPI public HashSet<String> modids=new HashSet<>();
+    @PublicAPI public void add(String modid){
         modids.add(modid);
     }
-    public ArrayList<ModContainer> get(){
+    @PublicAPI public ArrayList<ModContainer> get(){
         ArrayList<ModContainer> containers=new ArrayList<>();
         for(ModContainer modContainer:Loader.instance().getModList()){
             if (modids.contains(modContainer.getModId())){
@@ -25,7 +27,7 @@ public class BuffedModIDContainer {
         }
         return containers;
     }
-    public void clear(){
+    @PublicAPI public void clear(){
         modids.clear();
     }
 }
