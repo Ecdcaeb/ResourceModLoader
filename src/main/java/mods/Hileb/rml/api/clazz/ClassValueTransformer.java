@@ -38,7 +38,7 @@ public class ClassValueTransformer {
             }
         }
     }
-    public static final HashMap<Class<?>, JsonHelper.JsonReader<?>> cachedBaseType=new HashMap<>();
+    @PublicAPI public static final HashMap<Class<?>, JsonHelper.JsonReader<?>> cachedBaseType=new HashMap<>();
     static {
         register(boolean.class, JsonHelper::getBoolean);
         register(boolean[].class, JsonHelper::getBooleanArray);
@@ -71,7 +71,7 @@ public class ClassValueTransformer {
         register(String.class, JsonHelper::getString);
         register(String[].class, (element)-> JsonHelper.getAsArray(element,JsonHelper::getString));
     }
-    public static <T> void register(Class<T> clazz, JsonHelper.JsonReader<T> reader){
+    @PublicAPI public static <T> void register(Class<T> clazz, JsonHelper.JsonReader<T> reader){
         cachedBaseType.put(clazz,reader);
     }
 }
