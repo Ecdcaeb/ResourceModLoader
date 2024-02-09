@@ -8,16 +8,22 @@ import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
+import mods.Hileb.rml.api.RMLBus;
+import mods.Hileb.rml.api.config.ConfigTransformer;
+import mods.Hileb.rml.api.event.FMLBeforePreInitEvent;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.serialize.RMLForgeEventHandler;
 import mods.Hileb.rml.serialize.craft.recipe.SimpleAnvilRecipe;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModMetadata;
+import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
@@ -66,6 +72,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         return null;
     }
     @PublicAPI
+    @SuppressWarnings("unused")
     public static class Container extends DummyModContainer{
         @PublicAPI public static Container INSTANCE;
         @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
@@ -82,6 +89,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
             metadata.logoFile="assets/rml/icon.png";
             INSTANCE=this;
+            RMLBus.BUS.register(new RMLBusHandler());
         }
         @Override
         @PrivateAPI public boolean registerBus(EventBus bus, LoadController controller) {
@@ -100,6 +108,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
             }
             RMLForgeEventHandler.preInit(event);
+        }
+        @Subscribe
+        @PrivateAPI public void construct(FMLConstructionEvent event){
         }
         @Subscribe
         @SuppressWarnings("unused")
@@ -123,6 +134,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 return null;
             }
         }
+        public static class RMLBusHandler{
 
+        }
     }
 }

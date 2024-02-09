@@ -3,17 +3,22 @@ package mods.Hileb.rml.api.config;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
-import mods.Hileb.rml.api.clazz.ClassValueTransformer;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.file.JsonHelper;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
+import net.minecraftforge.fml.client.config.IConfigElement;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
@@ -22,9 +27,8 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
+import java.util.Map;
 
 /**
  * @Project ResourceModLoader
@@ -33,42 +37,60 @@ import java.nio.file.Files;
  **/
 @PrivateAPI
 public class ConfigTransformer {
-    @PrivateAPI private static final Method m_sync=ReflectionHelper.findMethod(ConfigManager.class,"sync","sync", Configuration.class, Class.class, String.class, String.class, boolean.class, Object.class);
-    static {
-        m_sync.setAccessible(true);
-    }
-    @PrivateAPI public static void sync(Configuration cfg, Class<?> cls, String modid, String category, boolean loading, Object instance)  {
-        transformConfigRedefalut(cls,cfg.getConfigFile().getName());
-        try {
-            m_sync.invoke(null,cfg,cls,modid,category,loading,instance);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
+    public static void transformTheConfiguration(Configuration config, JsonObject json){
+        Multimap<String,String> multimap = HashMultimap.create();
+        for(String s:JsonHelper.walkAndGetAllEntryPath(json)){
+            String[] s1=s.split("\\.");
+            String s2=s1[s1.length-1];
+            multimap.put(s.substring(0,s.length()-s2.length()-1),s2);
         }
-        transformConfigOverride(cls,cfg.getConfigFile().getName());
-    }
-    @PrivateAPI public static void transformConfigRedefalut(Class<?> clazz, String name){
-        for (JsonObject json : cachedRedefault.get(name)) {
-            try {
-                ClassValueTransformer.transform(clazz, json, null);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Could not load redefault config for " + name, e);
+        for(String cateName:multimap.keys()){
+            ConfigElement configElement=new ConfigElement(config.getCategory(cateName));
+            for(IConfigElement iConfigElement:configElement.getChildElements()){
+                for(String childName:multimap.get(cateName)){
+                    if (childName.equals(iConfigElement.getName())){
+                        JsonElement jsonElement=JsonHelper.walkAndGetTheElement(json,cateName+"."+childName);
+                        if (JsonHelper.isList(jsonElement)){
+                            iConfigElement.set(JsonHelper.getAsRawList(jsonElement));
+                        }else iConfigElement.set(JsonHelper.getRawValue(jsonElement));
+                    }
+                }
             }
+        }
+        config.save();//not save auto. Since we break the loading rules.
+    }
+    //INVOKEINTERFACE java/util/Map.put (Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object; (itf)
+    //registerCfg(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)V
+    @SuppressWarnings("unused")
+    public static Object registerCfg(Map<Object, Object> map, Object string, Object configuration){
+        RMLFMLLoadingPlugin.Container.LOGGER.info("register a config {}",string );
+        transformConfigRedefalut((Configuration) configuration,FilenameUtils.getName((String)string));
+        return map.put(string,configuration);
+    }
+    @SuppressWarnings("unchecked")
+    public static void handleOverride(){
+        RMLFMLLoadingPlugin.Container.LOGGER.info("config con {}",((Map<String, Configuration>)ReflectionHelper.getPrivateValue(ConfigManager.class, null,"CONFIGS")).values().size());
+        for(Configuration configuration:((Map<String, Configuration>)ReflectionHelper.getPrivateValue(ConfigManager.class, null,"CONFIGS")).values()){
+            transformConfigOverride(configuration,FilenameUtils.getName(configuration.getConfigFile().getName()));
+        }
+    }
+    @PrivateAPI public static void transformConfigRedefalut(Configuration configuration, String name){
+        RMLFMLLoadingPlugin.Container.LOGGER.debug("try apply config Redefalut for {}",name);
+        for (JsonObject json : cachedRedefault.get(name)) {
+            transformTheConfiguration(configuration,json);
+            RMLFMLLoadingPlugin.Container.LOGGER.debug("apply config redefault for {}",name);
         }
         cachedRedefault.removeAll(name);
     }
-    @PrivateAPI public static void transformConfigOverride(Class<?> clazz, String name){
+    @PrivateAPI public static void transformConfigOverride(Configuration configuration, String name){
+        RMLFMLLoadingPlugin.Container.LOGGER.info("try apply config override for {}",name);
         for(JsonObject json:cachedOverrides.get(name)){
-            try {
-                ClassValueTransformer.transform(clazz,json,null);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Could not load override config for "+ name ,e);
-            }
+            transformTheConfiguration(configuration,json);
+            RMLFMLLoadingPlugin.Container.LOGGER.info("apply config override for {} ",name);
         }
         cachedOverrides.removeAll(name);
     }
-    @PrivateAPI private static Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
+    @PrivateAPI private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
     @PrivateAPI public static void searchRedefault(){
         for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
@@ -107,10 +129,11 @@ public class ConfigTransformer {
                     },true, true);
             Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
+        RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config redefault",cachedRedefault.size());
     }
 
 
-    @PrivateAPI  private static Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
+    @PrivateAPI  private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
     @PrivateAPI public static void searchOverride(){
         for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
             Loader.instance().setActiveModContainer(modContainer);
@@ -130,6 +153,7 @@ public class ConfigTransformer {
                             reader = Files.newBufferedReader(file);
                             JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
                             cachedOverrides.put(name,json);
+                            RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}",name,json);
                         }
                         catch (JsonParseException e)
                         {
@@ -149,5 +173,6 @@ public class ConfigTransformer {
                     },true, true);
             Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
+        RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config overrides",cachedOverrides.size());
     }
 }

@@ -18,6 +18,7 @@ public class LootTableRegistryEvent extends Event {
     @PublicAPI public void register(ResourceLocation name){
         LootTableList.register(name);
     }
+    @SuppressWarnings("unused")
     @PrivateAPI public static void post(){
         MinecraftForge.EVENT_BUS.post(new LootTableRegistryEvent());
     }

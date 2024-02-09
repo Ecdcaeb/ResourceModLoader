@@ -7,6 +7,8 @@ import com.google.common.eventbus.EventBus;
  * @Author Hileb
  * @Date 2024/2/9 21:34
  **/
+@EarlyClass
+@PublicAPI
 public class RMLBus {
-    public static final EventBus BUS=new EventBus("rml");
+    @PublicAPI public static final EventBus BUS=new EventBus("rml");
 }

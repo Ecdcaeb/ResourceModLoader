@@ -1,6 +1,5 @@
 package mods.Hileb.rml.compat.crt;
 
-import crafttweaker.CraftTweakerAPI;
 import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
 import crafttweaker.runtime.providers.ScriptProviderCustom;
@@ -39,6 +38,7 @@ public class RMLCrTLoader {
      *         RMLCrTLoader.inject(this);
      *     }
      * **/
+    @SuppressWarnings("unused")
     @PrivateAPI public static void inject(CrTTweaker craftTweaker){
         try {
             IScriptProvider provider_1=(IScriptProvider) scriptProvider.get(craftTweaker);

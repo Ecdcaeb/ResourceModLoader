@@ -1,0 +1,2 @@
+1.download the minecraft and forge auto.
+2.pack the dev and run instantly.

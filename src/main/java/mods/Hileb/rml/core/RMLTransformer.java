@@ -47,7 +47,7 @@ public class RMLTransformer implements IClassTransformer {
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                    return -1;
                 });
         transformers.put("net.minecraftforge.fml.common.Loader",
                 (cn)->{
@@ -64,7 +64,7 @@ public class RMLTransformer implements IClassTransformer {
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                    return -1;
                 });
         transformers.put("net.minecraft.advancements.FunctionManager",
                 (cn)->{
@@ -82,9 +82,9 @@ public class RMLTransformer implements IClassTransformer {
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                    return -1;
                 });
-        transformers.put("net.minecraft.world.storage.loot.LootTableManager",
+        transformers.put("net.minecraft.world.storage.loot.LootTableList",
                 (cn)->{
                     for(MethodNode mn: cn.methods){
                         /**
@@ -96,9 +96,10 @@ public class RMLTransformer implements IClassTransformer {
                             InsnList hook=new InsnList();
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
+                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                    return -1;
                 });
         transformers.put("crafttweaker.runtime.CrTTweaker",
                 (cn)->{
@@ -117,7 +118,7 @@ public class RMLTransformer implements IClassTransformer {
                             return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                    return -1;
                 });
         transformers.put("net.minecraftforge.common.config.ConfigManager",
                 (cn)->{
@@ -128,20 +129,37 @@ public class RMLTransformer implements IClassTransformer {
                             AbstractInsnNode node;
                             while (iterator.hasNext()){
                                 node=iterator.next();
-                                // INVOKESTATIC net/minecraftforge/common/config/ConfigManager.sync (Lnet/minecraftforge/common/config/Configuration;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Object;)V
-                                if (node.getOpcode()==Opcodes.INVOKESTATIC && node instanceof MethodInsnNode){
+                                if (node.getOpcode()==Opcodes.INVOKEINTERFACE && node instanceof MethodInsnNode){
                                     MethodInsnNode methodInsnNode=(MethodInsnNode) node;
-                                    if ("net/minecraftforge/common/config/ConfigManager".equals(methodInsnNode.owner) && "sync".equals(methodInsnNode.name) && "(Lnet/minecraftforge/common/config/Configuration;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;ZLjava/lang/Object;)V".equals(methodInsnNode.desc)){
+                                    if ("java/util/Map".equals(methodInsnNode.owner) && "put".equals(methodInsnNode.name) && "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;".equals(methodInsnNode.desc) && methodInsnNode.itf){
+                                        methodInsnNode.setOpcode(Opcodes.INVOKESTATIC);
                                         methodInsnNode.owner="mods/Hileb/rml/api/config/ConfigTransformer";
+                                        methodInsnNode.name="registerCfg";
+                                        methodInsnNode.itf=false;
+                                        methodInsnNode.desc="(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
                                         return ClassWriter.COMPUTE_MAXS;
                                     }
                                 }
                             }
                         }
                     }
-                    return ClassWriter.COMPUTE_MAXS;
+                    return -1;
                 }
         );
+        transformers.put("net.minecraftforge.fml.common.LoadController",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("propogateStateMessage".equals(mn.name)){
+                            //beforeFMLBusEventSending(Lnet/minecraftforge/fml/common/event/FMLEvent;)V
+                            InsnList hook=new InsnList();
+                            hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/event/FMLEvent;)V",false));
+                            mn.instructions.insertBefore(mn.instructions.get(0),hook);
+                            return ClassWriter.COMPUTE_MAXS;
+                        }
+                    }
+                    return -1;
+                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
@@ -153,6 +171,7 @@ public class RMLTransformer implements IClassTransformer {
                     classReader.accept(cn, 0);
 
                     int flags=transformers.get(transformedName).apply(cn);
+                    if (flags<0) return basicClass;
 
                     ClassWriter classWriter=new ClassWriter(classReader,flags);
                     cn.accept(classWriter);

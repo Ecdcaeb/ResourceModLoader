@@ -2,10 +2,13 @@ package mods.Hileb.rml.api.file;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PublicAPI;
 
-import java.util.ArrayList;
+import javax.annotation.Nullable;
+import java.util.*;
 
 /**
  * @Project ResourceModLoader
@@ -119,5 +122,42 @@ public class JsonHelper {
     @FunctionalInterface
     public interface JsonReader<T>{
         T read(JsonElement jsonElement);
+    }
+
+    public static List<String> walkAndGetAllEntryPath(JsonObject json){
+        LinkedList<String> list=new LinkedList<>();
+        for(Map.Entry<String,JsonElement> elementEntry:json.entrySet()){
+            if (elementEntry.getValue().isJsonObject()){
+                //merge the path
+                List<String> newList=walkAndGetAllEntryPath(elementEntry.getValue().getAsJsonObject());
+                ListIterator<String> iterator= newList.listIterator();
+                String activeString;
+                while (iterator.hasNext()){
+                    activeString=iterator.next();
+                    list.add(elementEntry.getKey()+"."+activeString);
+                }
+                //end merge.
+            }else {
+                list.add(elementEntry.getKey());
+            }
+        }
+        return list;
+    }
+    @Nullable
+    public static JsonElement walkAndGetTheElement(JsonObject json, String path){
+        String[] strings=path.split("\\.");
+        if (strings.length==1) return json.get(strings[0]);
+        else {
+            return walkAndGetTheElement(json.getAsJsonObject(strings[0]),path.substring(strings[0].length()+1));
+        }
+    }
+    public static boolean isList(JsonElement element){
+        return element.isJsonArray();
+    }
+    public static String getRawValue(JsonElement element){
+        return element.toString();
+    }
+    public static String[] getAsRawList(JsonElement element){
+        return getAsArray(element, JsonHelper::getRawValue);
     }
 }
