@@ -3,6 +3,9 @@ package mods.Hileb.rml.core;
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
+import mods.Hileb.rml.api.RMLBus;
+import mods.Hileb.rml.api.config.ConfigTransformer;
+import mods.Hileb.rml.api.event.RMLAfterInjectEvent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
@@ -46,5 +49,11 @@ public class RMLModDiscover {
                 e.printStackTrace();
             }
         }
+        afterInject();
+    }
+    @PrivateAPI public static void afterInject(){
+        ConfigTransformer.searchRedefault();
+        ConfigTransformer.searchOverride();
+        RMLBus.BUS.post(new RMLAfterInjectEvent());
     }
 }

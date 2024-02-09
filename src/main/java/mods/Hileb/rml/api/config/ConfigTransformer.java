@@ -36,9 +36,6 @@ public class ConfigTransformer {
     @PrivateAPI private static final Method m_sync=ReflectionHelper.findMethod(ConfigManager.class,"sync","sync", Configuration.class, Class.class, String.class, String.class, boolean.class, Object.class);
     static {
         m_sync.setAccessible(true);
-
-        searchRedefault();
-        searchOverride();
     }
     @PrivateAPI public static void sync(Configuration cfg, Class<?> cls, String modid, String category, boolean loading, Object instance)  {
         transformConfigRedefalut(cls,cfg.getConfigFile().getName());
