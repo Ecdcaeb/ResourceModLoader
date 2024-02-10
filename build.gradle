@@ -124,7 +124,6 @@ processResources {
     // replace stuff in mcmod.info, nothing else
     from(sourceSets.main.resources.srcDirs) {
         include "mcmod.info"
-
         // replace version and mcversion
         expand "version":project.version, "mcversion":project.minecraft.version
     }
@@ -140,4 +139,9 @@ tasks.register('buildExample', Zip) {
     destinationDir = file("run/mods")
 
     from "dev/example"
+}
+tasks.register('buildRMDK', Zip) {
+    archiveName = "modpack.zip"
+    destinationDir = file("rmdk/releases/"+version)
+    from "dev/rmdk"
 }
