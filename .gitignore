@@ -25,4 +25,5 @@ runServer/*
 !runServer/eula.txt
 !runServer/server.properties
 libs/
+releases
 

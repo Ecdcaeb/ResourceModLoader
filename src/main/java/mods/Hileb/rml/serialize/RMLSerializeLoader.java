@@ -18,10 +18,12 @@ import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.JsonContext;
+import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.registries.RegistryManager;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -29,6 +31,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -175,6 +178,18 @@ public class RMLSerializeLoader {
                             }
                         },true, true);
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+            }
+        }
+    }
+    public static class MissingRemap{
+        public final ResourceLocation registry;
+        public HashMap<ResourceLocation,ResourceLocation> map=new HashMap<>();
+        public MissingRemap(ResourceLocation registryIn){
+            registry=registryIn;
+        }
+        public void remap(RegistryEvent.MissingMappings event){
+            if (registry.equals(RegistryManager.ACTIVE.getName(event.getRegistry()))){
+                if (event.getName())
             }
         }
     }

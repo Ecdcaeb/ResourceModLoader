@@ -1,1 +1,0 @@
-call gradlew.bat buildRMDK --debug --stacktrace --info

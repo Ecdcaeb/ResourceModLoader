@@ -140,8 +140,14 @@ tasks.register('buildExample', Zip) {
 
     from "dev/example"
 }
+tasks.register('releaseExample', Zip) {
+    archiveName = "example-"+version+".zip"
+    destinationDir = file("releases/example")
+
+    from "dev/example"
+}
 tasks.register('buildRMDK', Zip) {
-    archiveName = "modpack.zip"
-    destinationDir = file("rmdk/releases/"+version)
-    from "dev/rmdk"
+    archiveName = "rmdk-"+version+".zip"
+    destinationDir = file("releases/rmdk")
+    from "rmdk"
 }
