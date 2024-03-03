@@ -5,6 +5,7 @@ import com.google.common.io.CharSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import mods.Hileb.rml.api.PublicAPI;
+import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -119,6 +121,33 @@ public class FileHelper {
         {
             IOUtils.closeQuietly(fs);
         }
+    }
+
+    @PublicAPI
+    public static void findFile(ModContainer mod, String base, Consumer<Path> processor)
+    {
+            File source = mod.getSource();
+            if ("minecraft".equals(mod.getModId()))
+            {
+                return;
+            }
+            if (source.isFile())
+            {
+                try
+                {
+                    FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
+                    processor.accept(fs.getPath("/" + base));
+                    IOUtils.closeQuietly(fs);
+                }
+                catch (IOException e)
+                {
+                    RMLFMLLoadingPlugin.Container.LOGGER.error("Error loading FileSystem from jar: ", e);
+                }
+            }
+            else if (source.isDirectory())
+            {
+                processor.accept(source.toPath().resolve(base));
+            }
     }
     @PublicAPI
     public static CharArrayReader getCachedFile(Path path) throws IOException {
