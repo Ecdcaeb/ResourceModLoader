@@ -9,16 +9,13 @@ import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.api.RMLBus;
-import mods.Hileb.rml.api.config.ConfigTransformer;
-import mods.Hileb.rml.api.event.FMLBeforePreInitEvent;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
-import mods.Hileb.rml.serialize.RMLForgeEventHandler;
-import mods.Hileb.rml.serialize.craft.recipe.SimpleAnvilRecipe;
+import mods.Hileb.rml.deserialize.RMLForgeEventHandler;
+import mods.Hileb.rml.deserialize.RMLSerializeLoader;
+import mods.Hileb.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.Loader;
@@ -111,6 +108,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
+            RMLSerializeLoader.MissingRemap.load();
         }
         @Subscribe
         @SuppressWarnings("unused")

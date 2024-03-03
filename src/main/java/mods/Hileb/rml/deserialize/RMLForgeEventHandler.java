@@ -1,13 +1,13 @@
-package mods.Hileb.rml.serialize;
+package mods.Hileb.rml.deserialize;
 
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.event.CraftingHelperInitEvent;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
-import mods.Hileb.rml.serialize.craft.recipe.NamedEmptyRecipeImpl;
-import mods.Hileb.rml.serialize.craft.recipe.SimpleAnvilRecipe;
-import mods.Hileb.rml.serialize.craft.recipe.SimpleBrewRecipe;
-import mods.Hileb.rml.serialize.craft.recipe.SmeltRecipe;
+import mods.Hileb.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
+import mods.Hileb.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
+import mods.Hileb.rml.deserialize.craft.recipe.SimpleBrewRecipe;
+import mods.Hileb.rml.deserialize.craft.recipe.SmeltRecipe;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
@@ -16,8 +16,6 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.IForgeRegistryEntry;
 
 /**
  * @Project ResourceModLoader

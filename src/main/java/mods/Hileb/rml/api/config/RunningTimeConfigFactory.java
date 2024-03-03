@@ -1,8 +1,5 @@
 package mods.Hileb.rml.api.config;
 
-import com.google.gson.JsonObject;
-import net.minecraftforge.common.config.Configuration;
-
 /**
  * @Project ResourceModLoader
  * @Author Hileb

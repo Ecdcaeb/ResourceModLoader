@@ -1,4 +1,4 @@
-package mods.Hileb.rml.serialize.craft.recipe;
+package mods.Hileb.rml.deserialize.craft.recipe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;

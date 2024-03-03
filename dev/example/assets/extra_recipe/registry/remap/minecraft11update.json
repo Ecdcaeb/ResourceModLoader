@@ -1,0 +1,6 @@
+{
+  "registry": "minecraft:items",
+  "mapping": {
+    "minecraft:totem": "minecraft:totem_of_undying"
+  }
+}

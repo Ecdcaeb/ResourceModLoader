@@ -1,9 +1,11 @@
-package mods.Hileb.rml.serialize;
+package mods.Hileb.rml.deserialize;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.LineProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import mods.Hileb.rml.ResourceModLoader;
@@ -11,6 +13,8 @@ import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.file.JsonHelper;
+import mods.Hileb.rml.api.registry.remap.RemapCollection;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.item.ItemStack;
@@ -23,7 +27,6 @@ import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.oredict.OreDictionary;
-import net.minecraftforge.registries.RegistryManager;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -33,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @Project ResourceModLoader
@@ -182,14 +186,37 @@ public class RMLSerializeLoader {
         }
     }
     public static class MissingRemap{
-        public final ResourceLocation registry;
-        public HashMap<ResourceLocation,ResourceLocation> map=new HashMap<>();
-        public MissingRemap(ResourceLocation registryIn){
-            registry=registryIn;
-        }
-        public void remap(RegistryEvent.MissingMappings event){
-            if (registry.equals(RegistryManager.ACTIVE.getName(event.getRegistry()))){
-                if (event.getName())
+        public static void load(){
+            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
+                Loader.instance().setActiveModContainer(modContainer);
+
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap",null,
+                        (root, file) -> {
+
+                            String relative = root.relativize(file).toString();
+                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return true;
+                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                            try {
+                                JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file),JsonObject.class);
+                                if (json.has("registry")){
+                                    ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
+                                    if (json.has("mapping")){
+                                        JsonObject mapping = json.get("mapping").getAsJsonObject();
+                                        RemapCollection collection = new RemapCollection(registry);
+                                        for(Map.Entry<String,JsonElement> entry : mapping.entrySet()){
+                                            collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
+                                        }
+                                        return true;
+                                    }
+                                    return false;
+                                }
+                                return false;
+                            } catch (IOException e) {
+                                throw new RuntimeException("Could not cache the file "+ file ,e);
+                            }
+                        },true, true);
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
         }
     }
