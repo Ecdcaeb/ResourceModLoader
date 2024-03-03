@@ -6,6 +6,8 @@ import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.InjectedModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.ModMetadata;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
@@ -16,9 +18,10 @@ import java.io.File;
  **/
 @PrivateAPI
 public class RMLModContainer extends InjectedModContainer {
+    public final Logger LOGGER;
     public RMLModContainer(ModMetadata metadata,File source) {
         super(new DummyModContainer(metadata), source);
-        //ResourceModLoader.containers.add(this);
+        LOGGER = LogManager.getLogger(metadata.modId);
     }
 
     @Override
