@@ -73,6 +73,7 @@ dependencies {
 
     compile files('libs/KubeJS-forge-1.12.2-1.0.0.24.jar')
     compile files('libs/CraftTweaker2-1.12-4.1.17.jar')
+    compile files('libs/groovyscript-0.8.0.jar')
     //Magic_Circle-1.0.1.jar
     // you may put jars on which you depend on in ./libs
     // or you may define them like so..
