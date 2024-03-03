@@ -17,7 +17,7 @@ import java.util.HashSet;
 @PublicAPI
 public class ResourceModLoader {
     @PublicAPI public static final String MODID="rml";
-    @PublicAPI public static final String VERSION="1.0.7";
+    @PublicAPI public static final String VERSION="1.0.8";
     @PrivateAPI private static final BuffedModIDContainer buffedModIDContainer=new BuffedModIDContainer();
     @PrivateAPI public static final HashSet<ModContainer> enabledModContainers=new HashSet<>();
     @PublicAPI public static ModContainer enableRML(ModContainer mod){
