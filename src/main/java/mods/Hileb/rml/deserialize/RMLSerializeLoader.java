@@ -207,6 +207,7 @@ public class RMLSerializeLoader {
                                         for(Map.Entry<String,JsonElement> entry : mapping.entrySet()){
                                             collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
                                         }
+                                        RemapCollection.Manager.merge(collection);
                                         return true;
                                     }
                                     return false;
