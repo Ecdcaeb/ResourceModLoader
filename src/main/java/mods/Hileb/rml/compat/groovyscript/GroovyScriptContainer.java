@@ -2,24 +2,16 @@ package mods.Hileb.rml.compat.groovyscript;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import com.cleanroommc.groovyscript.sandbox.GroovySandbox;
-import com.cleanroommc.groovyscript.sandbox.LoadStage;
 import com.cleanroommc.groovyscript.sandbox.RunConfig;
 import com.google.gson.JsonObject;
 import groovy.lang.GroovyClassLoader;
 import mods.Hileb.rml.api.file.FileHelper;
-import mods.Hileb.rml.api.file.JsonHelper;
 import net.minecraft.launchwrapper.Launch;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.LinkedList;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @Project ResourceModLoader
