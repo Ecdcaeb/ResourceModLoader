@@ -1,0 +1,10 @@
+{
+  "loaders": {
+    "preInit": [],
+    "init": [],
+    "postInit": []
+  },
+  "classes": {
+
+  }
+}

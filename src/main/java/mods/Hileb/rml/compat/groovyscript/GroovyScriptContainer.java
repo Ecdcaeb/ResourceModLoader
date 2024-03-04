@@ -1,17 +1,25 @@
 package mods.Hileb.rml.compat.groovyscript;
 
-import com.cleanroommc.groovyscript.GroovyScript;
-import com.cleanroommc.groovyscript.sandbox.GroovySandbox;
-import com.cleanroommc.groovyscript.sandbox.RunConfig;
+import com.cleanroommc.groovyscript.sandbox.LoadStage;
 import com.google.gson.JsonObject;
 import groovy.lang.GroovyClassLoader;
+import groovy.lang.Script;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.launchwrapper.Launch;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
+import org.codehaus.groovy.runtime.InvokerHelper;
 
-import java.io.File;
+import javax.annotation.Nonnegative;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.nio.file.InvalidPathException;
+import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static com.cleanroommc.groovyscript.GroovyScript.getSandbox;
 
 /**
  * @Project ResourceModLoader
@@ -19,52 +27,50 @@ import java.util.LinkedList;
  * @Date 2024/3/3 11:24
  **/
 public class GroovyScriptContainer {
-    public static final GroovyClassLoader classLoader = new GroovyClassLoader(Launch.classLoader);
+    public static long runGroovyScriptsInLoaderSpecially(@Nonnull ModContainer container, @Nonnull GroovyRunConfig config, LoadStage loadStage) {
+        // called via mixin between fml post init and load complete
+        ModContainer current = Loader.instance().activeModContainer();
+        Loader.instance().setActiveModContainer(container);
 
-    public static Class<?> defineClass(byte[] groovyScript){
-        return classLoader.parseClass(new String(groovyScript));
-    }
-    public static JsonObject updateRunConfigJson(ModContainer container, JsonObject json) {
-        json.addProperty("packName", container.getName());
-        json.addProperty("packId", container.getModId());
-        json.addProperty("version", container.getVersion());
-        return json;
-    }
+        long time = System.currentTimeMillis();
 
-
-    /**
-     * {@link GroovySandbox#getClassFiles()}
-     * {@link GroovySandbox#getScriptFiles()}
-     * {@link GroovyScript#getResourcesFile()}
-     *
-     * hard to generate a running time {@link File}
-     * all logic writed with {@link File}
-     * **/
-    public static Class<?>[] loadScriptsToClass(ModContainer container, String[] paths){
-        LinkedList<Class<?>> list = new LinkedList<>();
-        for(String path : paths){
-            FileHelper.findFiles(container, "assets/" + container.getModId() + "/config/groovyscript/" + (path.substring(0, path.length() - 1),null,
-                    (root, file) ->
-                    {
-                        try {
-                            list.add(defineClass(FileHelper.getByteSource(file).read()));
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return true;
-                    },false, false);
-        }
-    }
-
-    public static RunConfig runConfig(ModContainer container){
-        final RunConfig[] config = new RunConfig[1];
-        FileHelper.findFile(container, "assets/" + container.getModId() + "/config/groovyscript/runConfig.json", path -> {
-            try {
-                config[0] = new RunConfig(updateRunConfigJson(container, FileHelper.GSON.fromJson(FileHelper.getCachedFile(path), JsonObject.class)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        HashSet<String> classes = config.loaders.get(loadStage.getName());
+        if (classes != null){
+            for(String clazzName : classes){
+                Class<?> clazz = GroovyByteClassLoader.CLASS_LOADER.load(clazzName);
+                if (clazz != null){
+                    Script script = InvokerHelper.createScript(clazz, binding);
+                    if (false) {
+                        setCurrentScript(scriptFile.toString());
+                        script.run();
+                        setCurrentScript(null);
+                    }
+                }
             }
-        });
-        return config[0];
+        }
+
+
+        time = System.currentTimeMillis() - time;
+        RMLFMLLoadingPlugin.Container.LOGGER.info("Running Groovy scripts during {} took {} ms", loadStage.getName(), time);
+
+        Loader.instance().setActiveModContainer(current);
+        return time;
+    }
+    @Nullable
+    public static GroovyRunConfig makeConfig(ModContainer container){
+        AtomicReference<GroovyRunConfig> groovyRunConfig = new AtomicReference<>(null);
+        try{
+            FileHelper.findFile(container, "assets/" + container.getModId() + "/groovyscript/groovyscript.runconfig.json", path -> {
+                try {
+                    JsonObject jsonObject = FileHelper.GSON.fromJson(FileHelper.getCachedFile(path), JsonObject.class);
+                    groovyRunConfig.set(new GroovyRunConfig(container, jsonObject));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }catch (InvalidPathException invalidPathException){
+            return null;
+        }
+        return groovyRunConfig.get();
     }
 }

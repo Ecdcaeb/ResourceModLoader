@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.function.BiFunction;
@@ -124,7 +125,7 @@ public class FileHelper {
     }
 
     @PublicAPI
-    public static void findFile(ModContainer mod, String base, Consumer<Path> processor)
+    public static void findFile(ModContainer mod, String base, Consumer<Path> processor) throws InvalidPathException
     {
             File source = mod.getSource();
             if ("minecraft".equals(mod.getModId()))

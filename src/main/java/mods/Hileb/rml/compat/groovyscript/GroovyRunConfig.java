@@ -22,20 +22,20 @@ import java.util.Map;
  * @Author Hileb
  * @Date 2024/3/4 12:39
  **/
-public abstract class GroovyRunConfig {
+public class GroovyRunConfig {
+    public final HashMap<String,HashSet<String>> loaders = new HashMap<>();
     public GroovyRunConfig(ModContainer container, JsonObject jsonObject){
         this.container = container;
         JsonObject loaders = jsonObject.getAsJsonObject("loaders");
-        preInitClasses.addAll(Arrays.asList(JsonHelper.getAsArray(loaders.get("preInit"), JsonHelper::getString)));
-        onInitClasses.addAll(Arrays.asList(JsonHelper.getAsArray(loaders.get("init"), JsonHelper::getString)));
-        postInitClasses.addAll(Arrays.asList(JsonHelper.getAsArray(loaders.get("postInit"), JsonHelper::getString)));
+        for(Map.Entry<String,JsonElement> entry:loaders.entrySet()){
+            HashSet<String> hashSet = new HashSet<>();
+            hashSet.addAll(Arrays.asList(JsonHelper.getAsArray(entry.getValue(), JsonHelper::getString)));
+            this.loaders.put(entry.getKey(), hashSet);
+        }
         for(Map.Entry<String, JsonElement> entry:jsonObject.getAsJsonObject("classes").entrySet()){
             class_to_path.put(entry.getKey(), entry.getValue().getAsString());
         }
     }
-    public HashSet<String> preInitClasses = new HashSet<>();
-    public HashSet<String> onInitClasses = new HashSet<>();
-    public HashSet<String> postInitClasses = new HashSet<>();
     protected ModContainer container;
     protected HashMap<String,String> class_to_path = new HashMap<>();
     public void cacheClassesIntoClassLoader(){
