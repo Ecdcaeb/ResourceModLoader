@@ -6,6 +6,7 @@ import crafttweaker.runtime.providers.ScriptProviderCustom;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.Loader;
@@ -51,33 +52,37 @@ public class RMLCrTLoader {
     }
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
-        for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-            Loader.instance().setActiveModContainer(modContainer);
+        ModContainer modContainer;
+        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+            if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_CRT) != 0){
+                modContainer = containerHolder.container;
+                Loader.instance().setActiveModContainer(modContainer);
 
 
-            ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
-            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",null,
-                    (root, file) ->
-                    {
-                        String relative = root.relativize(file).toString();
-                        if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",null,
+                        (root, file) ->
+                        {
+                            String relative = root.relativize(file).toString();
+                            if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return true;
+
+                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                            try{
+                                byte[] fileBytes=FileHelper.getByteSource(file).read();
+
+                                providerCustom.add(name,fileBytes);
+                                RMLFMLLoadingPlugin.Container.LOGGER.debug(key.toString());
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
                             return true;
+                        },true, true);
+                event.load(providerCustom);
 
-                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                        ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                        try{
-                            byte[] fileBytes=FileHelper.getByteSource(file).read();
-
-                            providerCustom.add(name,fileBytes);
-                            RMLFMLLoadingPlugin.Container.LOGGER.debug(key.toString());
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return true;
-                    },true, true);
-            event.load(providerCustom);
-
-            Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.api.file.JsonHelper;
+import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.api.registry.remap.RemapCollection;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.command.FunctionObject;
@@ -53,43 +54,48 @@ public class RMLSerializeLoader {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){//pre-init
-            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-                Loader.instance().setActiveModContainer(modContainer);
-                RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
+            ModContainer modContainer;
+            for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
+                if ((containerHolder.opinion & ContainerHolder.Opinion.ORE_DIC) != 0){
+                    modContainer = containerHolder.container;
+                    Loader.instance().setActiveModContainer(modContainer);
+                    RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",null,
-                        (root, file) -> {
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",null,
+                            (root, file) -> {
 
-                            String relative = root.relativize(file).toString();
-                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return true;
+
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                                BufferedReader reader = null;
+                                try
+                                {
+                                    reader = Files.newBufferedReader(file);
+                                    JsonObject json = JsonUtils.fromJson(GSON, reader, JsonObject.class);
+                                    load(key,json);
+                                }
+                                catch (JsonParseException e)
+                                {
+                                    FMLLog.log.error("Parsing error loading recipe {}", key, e);
+                                    return false;
+                                }
+                                catch (IOException e)
+                                {
+                                    FMLLog.log.error("Couldn't read recipe {} from {}", key, file, e);
+                                    return false;
+                                }
+                                finally
+                                {
+                                    IOUtils.closeQuietly(reader);
+                                }
                                 return true;
+                            },true, true);
+                    Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                }
 
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                            BufferedReader reader = null;
-                            try
-                            {
-                                reader = Files.newBufferedReader(file);
-                                JsonObject json = JsonUtils.fromJson(GSON, reader, JsonObject.class);
-                                load(key,json);
-                            }
-                            catch (JsonParseException e)
-                            {
-                                FMLLog.log.error("Parsing error loading recipe {}", key, e);
-                                return false;
-                            }
-                            catch (IOException e)
-                            {
-                                FMLLog.log.error("Couldn't read recipe {} from {}", key, file, e);
-                                return false;
-                            }
-                            finally
-                            {
-                                IOUtils.closeQuietly(reader);
-                            }
-                            return true;
-                        },true, true);
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
         }
         public static void load(ResourceLocation name, JsonObject json){
@@ -116,20 +122,25 @@ public class RMLSerializeLoader {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event){
-            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-                Loader.instance().setActiveModContainer(modContainer);
+            ModContainer modContainer;
 
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables",null,
-                        (root, file) -> {
-                            String relative = root.relativize(file).toString();
-                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+                if ((containerHolder.opinion & ContainerHolder.Opinion.LOOT_TABLES) != 0) {
+                    modContainer = containerHolder.container;
+                    Loader.instance().setActiveModContainer(modContainer);
+
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables", null,
+                            (root, file) -> {
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return true;
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                                event.register(key);
                                 return true;
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                            event.register(key);
-                            return true;
-                        },true, true);
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                            }, true, true);
+                    Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                }
             }
         }
     }
@@ -144,80 +155,89 @@ public class RMLSerializeLoader {
 
 
         public static void load(FunctionLoadEvent event){
-            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-                Loader.instance().setActiveModContainer(modContainer);
+            ModContainer modContainer;
+            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+                if((containerHolder.opinion & ContainerHolder.Opinion.FUNCTIONS) != 0) {
+                    modContainer = containerHolder.container;
+                    Loader.instance().setActiveModContainer(modContainer);
 
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions",null,
-                        (root, file) -> {
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions", null,
+                            (root, file) -> {
 
-                            String relative = root.relativize(file).toString();
-                            if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return true;
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                            try {
+                                String relative = root.relativize(file).toString();
+                                if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return true;
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                                try {
 
-                                FunctionObject functionObject=FunctionObject.create(
-                                        event.functionManager,
-                                        FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
-                                                .readLines(new LineProcessor<List<String>>(){
-                                                    final List<String> result = Lists.newArrayList();
-                                                    @Override
-                                                    public boolean processLine(String line) {
-                                                        result.add(line);
-                                                        return true;
-                                                    }
+                                    FunctionObject functionObject = FunctionObject.create(
+                                            event.functionManager,
+                                            FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
+                                                    .readLines(new LineProcessor<List<String>>() {
+                                                        final List<String> result = Lists.newArrayList();
 
-                                                    @Override
-                                                    public List<String> getResult() {
-                                                        return result;
-                                                    }
-                                                })
-                                );
-                                event.register(key,functionObject);
-                                return true;
-                            } catch (IOException e) {
-                                RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
-                                return false;
-                            }
-                        },true, true);
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                                                        @Override
+                                                        public boolean processLine(String line) {
+                                                            result.add(line);
+                                                            return true;
+                                                        }
+
+                                                        @Override
+                                                        public List<String> getResult() {
+                                                            return result;
+                                                        }
+                                                    })
+                                    );
+                                    event.register(key, functionObject);
+                                    return true;
+                                } catch (IOException e) {
+                                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
+                                    return false;
+                                }
+                            }, true, true);
+                    Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                }
             }
         }
     }
     public static class MissingRemap{
         public static void load(){
-            for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-                Loader.instance().setActiveModContainer(modContainer);
+            ModContainer modContainer;
+            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+                if ((containerHolder.opinion & ContainerHolder.Opinion.REGISTRY_REMAP) !=0) {
+                    modContainer = containerHolder.container;
+                    Loader.instance().setActiveModContainer(modContainer);
 
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap",null,
-                        (root, file) -> {
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap", null,
+                            (root, file) -> {
 
-                            String relative = root.relativize(file).toString();
-                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return true;
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            try {
-                                JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file),JsonObject.class);
-                                if (json.has("registry")){
-                                    ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
-                                    if (json.has("mapping")){
-                                        JsonObject mapping = json.get("mapping").getAsJsonObject();
-                                        RemapCollection collection = new RemapCollection(registry);
-                                        for(Map.Entry<String,JsonElement> entry : mapping.entrySet()){
-                                            collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return true;
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                try {
+                                    JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file), JsonObject.class);
+                                    if (json.has("registry")) {
+                                        ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
+                                        if (json.has("mapping")) {
+                                            JsonObject mapping = json.get("mapping").getAsJsonObject();
+                                            RemapCollection collection = new RemapCollection(registry);
+                                            for (Map.Entry<String, JsonElement> entry : mapping.entrySet()) {
+                                                collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
+                                            }
+                                            RemapCollection.Manager.merge(collection);
+                                            return true;
                                         }
-                                        RemapCollection.Manager.merge(collection);
-                                        return true;
+                                        return false;
                                     }
                                     return false;
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Could not cache the file " + file, e);
                                 }
-                                return false;
-                            } catch (IOException e) {
-                                throw new RuntimeException("Could not cache the file "+ file ,e);
-                            }
-                        },true, true);
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                            }, true, true);
+                    Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                }
             }
         }
     }

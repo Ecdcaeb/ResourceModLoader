@@ -10,6 +10,7 @@ import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.api.file.JsonHelper;
+import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
@@ -92,42 +93,46 @@ public class ConfigTransformer {
     }
     @PrivateAPI private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
     @PrivateAPI public static void searchRedefault(){
-        for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-            Loader.instance().setActiveModContainer(modContainer);
-            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/redefault",null,
-                    (root, file) ->
-                    {
-                        String relative = root.relativize(file).toString();
-                        if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+        ModContainer modContainer;
+        for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
+            if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_REDEFAULT) != 0){
+                modContainer = containerHolder.container;
+                Loader.instance().setActiveModContainer(modContainer);
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/redefault",null,
+                        (root, file) ->
+                        {
+                            String relative = root.relativize(file).toString();
+                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return true;
+
+                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+
+                            BufferedReader reader = null;
+                            try
+                            {
+                                reader = Files.newBufferedReader(file);
+                                JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
+                                cachedRedefault.put(name,json);
+                            }
+                            catch (JsonParseException e)
+                            {
+                                RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config redefault {}", key, e);
+                                return false;
+                            }
+                            catch (IOException e)
+                            {
+                                RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
+                                return false;
+                            }
+                            finally
+                            {
+                                IOUtils.closeQuietly(reader);
+                            }
                             return true;
-
-                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                        ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-
-                        BufferedReader reader = null;
-                        try
-                        {
-                            reader = Files.newBufferedReader(file);
-                            JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
-                            cachedRedefault.put(name,json);
-                        }
-                        catch (JsonParseException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config redefault {}", key, e);
-                            return false;
-                        }
-                        catch (IOException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
-                            return false;
-                        }
-                        finally
-                        {
-                            IOUtils.closeQuietly(reader);
-                        }
-                        return true;
-                    },true, true);
-            Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+                        },true, true);
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+            }
         }
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config redefault",cachedRedefault.size());
     }
@@ -135,43 +140,48 @@ public class ConfigTransformer {
 
     @PrivateAPI  private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
     @PrivateAPI public static void searchOverride(){
-        for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-            Loader.instance().setActiveModContainer(modContainer);
-            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/override",null,
-                    (root, file) ->
-                    {
-                        String relative = root.relativize(file).toString();
-                        if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+        ModContainer modContainer;
+        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+            if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_OVERRIDE) !=0){
+                modContainer = containerHolder.container;
+                Loader.instance().setActiveModContainer(modContainer);
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/override",null,
+                        (root, file) ->
+                        {
+                            String relative = root.relativize(file).toString();
+                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return true;
+
+                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+
+                            BufferedReader reader = null;
+                            try
+                            {
+                                reader = Files.newBufferedReader(file);
+                                JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
+                                cachedOverrides.put(name,json);
+                                RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}",name,json);
+                            }
+                            catch (JsonParseException e)
+                            {
+                                RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
+                                return false;
+                            }
+                            catch (IOException e)
+                            {
+                                RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
+                                return false;
+                            }
+                            finally
+                            {
+                                IOUtils.closeQuietly(reader);
+                            }
                             return true;
+                        },true, true);
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+            }
 
-                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                        ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-
-                        BufferedReader reader = null;
-                        try
-                        {
-                            reader = Files.newBufferedReader(file);
-                            JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
-                            cachedOverrides.put(name,json);
-                            RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}",name,json);
-                        }
-                        catch (JsonParseException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
-                            return false;
-                        }
-                        catch (IOException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
-                            return false;
-                        }
-                        finally
-                        {
-                            IOUtils.closeQuietly(reader);
-                        }
-                        return true;
-                    },true, true);
-            Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config overrides",cachedOverrides.size());
     }

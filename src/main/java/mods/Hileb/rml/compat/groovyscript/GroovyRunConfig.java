@@ -24,6 +24,10 @@ import java.util.Map;
  **/
 public class GroovyRunConfig {
     public final HashMap<String,HashSet<String>> loaders = new HashMap<>();
+    protected ModContainer container;
+    protected HashMap<String,String> class_to_path = new HashMap<>();
+    protected HashSet<String> scripts = new HashSet<>();
+
     public GroovyRunConfig(ModContainer container, JsonObject jsonObject){
         this.container = container;
         JsonObject loaders = jsonObject.getAsJsonObject("loaders");
@@ -35,9 +39,13 @@ public class GroovyRunConfig {
         for(Map.Entry<String, JsonElement> entry:jsonObject.getAsJsonObject("classes").entrySet()){
             class_to_path.put(entry.getKey(), entry.getValue().getAsString());
         }
+        scripts.addAll(Arrays.asList(JsonHelper.getAsArray(jsonObject.get("scripts"), JsonHelper::getString)));
     }
-    protected ModContainer container;
-    protected HashMap<String,String> class_to_path = new HashMap<>();
+
+    public boolean isScript(String name){
+        return scripts.contains(name);
+    }
+
     public void cacheClassesIntoClassLoader(){
         File source = container.getSource();
         if (source != null){

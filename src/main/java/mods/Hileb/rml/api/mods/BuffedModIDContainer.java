@@ -5,6 +5,7 @@ import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 /**
@@ -14,10 +15,19 @@ import java.util.HashSet;
  **/
 @PublicAPI
 public class BuffedModIDContainer {
-    @PublicAPI public HashSet<String> modids=new HashSet<>();
+    @PublicAPI public HashSet<String> modids = new HashSet<>();
+    @PublicAPI public HashMap<String,Integer> opinions = new HashMap<>();
+
     @PublicAPI public void add(String modid){
-        modids.add(modid);
+        this.add(modid, ContainerHolder.Opinion.ALL);
     }
+
+    @PublicAPI public void add(String modid, int opinion){
+        modids.add(modid);
+        opinions.put(modid, opinion);
+    }
+
+    @Deprecated
     @PublicAPI public ArrayList<ModContainer> get(){
         ArrayList<ModContainer> containers=new ArrayList<>();
         for(ModContainer modContainer:Loader.instance().getModList()){
@@ -27,6 +37,17 @@ public class BuffedModIDContainer {
         }
         return containers;
     }
+
+    @PublicAPI public ArrayList<ContainerHolder> getHolder(){
+        ArrayList<ContainerHolder> containers=new ArrayList<>();
+        for(ModContainer modContainer:Loader.instance().getModList()){
+            if (modids.contains(modContainer.getModId())){
+                containers.add(new ContainerHolder(containers, opinions.get(modContainer.getModId())));
+            }
+        }
+        return containers;
+    }
+
     @PublicAPI public void clear(){
         modids.clear();
     }

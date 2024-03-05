@@ -8,6 +8,7 @@ import dev.latvian.kubejs.script.ScriptPack;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
@@ -34,39 +35,44 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        for(ModContainer modContainer:ResourceModLoader.getCurrentRMLContainers()){
-            Loader.instance().setActiveModContainer(modContainer);
-            if (!packs.containsKey(modContainer.getModId())) {
-                try {
-                    packs.put(modContainer.getModId(),(ScriptPack)newPack.invoke(ScriptManager.instance,modContainer.getModId()));
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    e.printStackTrace();
-                    continue;
+        ModContainer modContainer;
+        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+            if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_KUBEJS) != 0){
+                modContainer = containerHolder.container;
+                Loader.instance().setActiveModContainer(modContainer);
+                if (!packs.containsKey(modContainer.getModId())) {
+                    try {
+                        packs.put(modContainer.getModId(),(ScriptPack)newPack.invoke(ScriptManager.instance,modContainer.getModId()));
+                    } catch (IllegalAccessException | InvocationTargetException e) {
+                        e.printStackTrace();
+                        continue;
+                    }
                 }
-            }
-            FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
-                    (root, file) ->
-                    {
-                        String relative = root.relativize(file).toString();
-                        if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
+                        (root, file) ->
+                        {
+                            String relative = root.relativize(file).toString();
+                            if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return true;
+                            BufferedReader bufferedReader=null;
+                            try {
+                                char[] fileBytes;
+                                bufferedReader=Files.newBufferedReader(file);
+                                fileBytes=IOUtils.toCharArray(bufferedReader);
+                                load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
+
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }finally {
+                                IOUtils.closeQuietly(bufferedReader);
+                            }
+
                             return true;
-                        BufferedReader bufferedReader=null;
-                        try {
-                            char[] fileBytes;
-                            bufferedReader=Files.newBufferedReader(file);
-                            fileBytes=IOUtils.toCharArray(bufferedReader);
-                            load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
+                        },true, true);
 
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }finally {
-                            IOUtils.closeQuietly(bufferedReader);
-                        }
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+            }
 
-                        return true;
-                    },true, true);
-            
-            Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
         }
     }
     @PrivateAPI
