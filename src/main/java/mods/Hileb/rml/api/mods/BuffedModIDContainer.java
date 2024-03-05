@@ -42,7 +42,7 @@ public class BuffedModIDContainer {
         ArrayList<ContainerHolder> containers=new ArrayList<>();
         for(ModContainer modContainer:Loader.instance().getModList()){
             if (modids.contains(modContainer.getModId())){
-                containers.add(new ContainerHolder(containers, opinions.get(modContainer.getModId())));
+                containers.add(new ContainerHolder(modContainer, opinions.get(modContainer.getModId())));
             }
         }
         return containers;

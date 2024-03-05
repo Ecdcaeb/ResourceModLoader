@@ -50,7 +50,7 @@ public class ResourceModLoader {
     @Deprecated
     @PublicAPI public static HashSet<ModContainer> getCurrentRMLContainers(){
         updateRMLContainerState();
-        return (HashSet<ModContainer>) enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toSet()));
+        return (HashSet<ModContainer>) enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toSet());
     }
 
     @PublicAPI public static HashSet<ContainerHolder> getCurrentRMLContainerHolders(){

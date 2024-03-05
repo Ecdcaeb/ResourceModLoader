@@ -13,6 +13,8 @@ import org.apache.commons.io.IOUtils;
 import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -155,7 +157,12 @@ public class FileHelper {
         return new CharArrayReader(IOUtils.toCharArray(Files.newBufferedReader(path)));
     }
     @PublicAPI
+    public static ByteSource getByteSource(Path path, Charset charset) throws IOException {
+        return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), charset));
+    }
+
+    @PublicAPI
     public static ByteSource getByteSource(Path path) throws IOException {
-        return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path)));
+        return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), StandardCharsets.UTF_8));
     }
 }

@@ -93,10 +93,9 @@ public class ConfigTransformer {
     }
     @PrivateAPI private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
     @PrivateAPI public static void searchRedefault(){
-        ModContainer modContainer;
         for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
             if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_REDEFAULT) != 0){
-                modContainer = containerHolder.container;
+                final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/redefault",null,
                         (root, file) ->
@@ -140,10 +139,9 @@ public class ConfigTransformer {
 
     @PrivateAPI  private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
     @PrivateAPI public static void searchOverride(){
-        ModContainer modContainer;
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
             if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_OVERRIDE) !=0){
-                modContainer = containerHolder.container;
+                final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/override",null,
                         (root, file) ->

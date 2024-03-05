@@ -52,10 +52,9 @@ public class RMLCrTLoader {
     }
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
-        ModContainer modContainer;
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
             if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_CRT) != 0){
-                modContainer = containerHolder.container;
+                final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
 
 

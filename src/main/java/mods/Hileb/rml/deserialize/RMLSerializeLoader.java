@@ -54,10 +54,9 @@ public class RMLSerializeLoader {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){//pre-init
-            ModContainer modContainer;
             for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
                 if ((containerHolder.opinion & ContainerHolder.Opinion.ORE_DIC) != 0){
-                    modContainer = containerHolder.container;
+                    final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
                     RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
@@ -122,11 +121,9 @@ public class RMLSerializeLoader {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event){
-            ModContainer modContainer;
-
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
                 if ((containerHolder.opinion & ContainerHolder.Opinion.LOOT_TABLES) != 0) {
-                    modContainer = containerHolder.container;
+                    final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
                     FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables", null,
@@ -155,10 +152,9 @@ public class RMLSerializeLoader {
 
 
         public static void load(FunctionLoadEvent event){
-            ModContainer modContainer;
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
                 if((containerHolder.opinion & ContainerHolder.Opinion.FUNCTIONS) != 0) {
-                    modContainer = containerHolder.container;
+                    final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
                     FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions", null,
