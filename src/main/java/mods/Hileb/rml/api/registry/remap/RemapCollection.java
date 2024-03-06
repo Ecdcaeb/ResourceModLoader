@@ -70,6 +70,7 @@ public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,Reso
                 remapCollection.map(entry.getKey(), entry.getValue());
             }
         }
+        private Manager(){}
     }
 
 }

@@ -108,10 +108,10 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
             }
             RMLForgeEventHandler.preInit(event);
+            RMLSerializeLoader.MissingRemap.load();
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
-            RMLSerializeLoader.MissingRemap.load();
             if (Loader.isModLoaded(GroovyScript.ID)){
                 RMLBus.BUS.register(GroovyScriptHandler.INSTANCE);
             }

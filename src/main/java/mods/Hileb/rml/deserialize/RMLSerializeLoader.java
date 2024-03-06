@@ -210,7 +210,6 @@ public class RMLSerializeLoader {
                                 String relative = root.relativize(file).toString();
                                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                                     return true;
-                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                                 try {
                                     JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file), JsonObject.class);
                                     if (json.has("registry")) {
