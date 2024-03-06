@@ -199,10 +199,9 @@ public class RMLSerializeLoader {
     }
     public static class MissingRemap{
         public static void load(){
-            ModContainer modContainer;
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
                 if ((containerHolder.opinion & ContainerHolder.Opinion.REGISTRY_REMAP) !=0) {
-                    modContainer = containerHolder.container;
+                    final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
                     FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap", null,

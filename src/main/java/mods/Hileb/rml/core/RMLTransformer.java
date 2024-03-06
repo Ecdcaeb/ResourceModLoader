@@ -148,12 +148,15 @@ public class RMLTransformer implements IClassTransformer {
         );
         transformers.put("net.minecraftforge.fml.common.LoadController",
                 (cn)->{
+                    boolean isTransformered;
                     for(MethodNode mn:cn.methods){
-                        if ("propogateStateMessage".equals(mn.name)){
+                        if ("distributeStateMessage".equals(mn.name) && "(Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V".equals(mn.desc)){
                             //beforeFMLBusEventSending(Lnet/minecraftforge/fml/common/event/FMLEvent;)V
                             InsnList hook=new InsnList();
+                            hook.add(new VarInsnNode(Opcodes.ALOAD,0));
                             hook.add(new VarInsnNode(Opcodes.ALOAD,1));
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/event/FMLEvent;)V",false));
+                            hook.add(new VarInsnNode(Opcodes.ALOAD,2));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),hook);
                             return ClassWriter.COMPUTE_MAXS;
                         }

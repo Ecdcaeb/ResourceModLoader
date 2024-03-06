@@ -1,0 +1,21 @@
+{
+  "loaders": {
+    "preInit": [
+      "dev.rml.example.groovy.preinit.Vanilla"
+    ],
+    "init": [
+
+    ],
+    "postInit": [
+      "dev.rml.example.groovy.postinit.Vanilla"
+    ]
+  },
+  "classes": {
+    "dev.rml.example.groovy.postinit.Vanilla": "classes/postInit/vanilla.groovy",
+    "dev.rml.example.groovy.preinit.Vanilla": "classes/preInit/vanilla.groovy"
+  },
+  "scripts": [
+    "dev.rml.example.groovy.postinit.Vanilla",
+    "dev.rml.example.groovy.preinit.Vanilla"
+  ]
+}

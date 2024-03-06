@@ -1,10 +1,9 @@
 package mods.Hileb.rml.compat.fml;
 
-import mods.Hileb.rml.api.config.ConfigTransformer;
-import mods.Hileb.rml.api.event.FMLBeforePreInitEvent;
-import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.fml.common.event.FMLEvent;
-import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import mods.Hileb.rml.api.RMLBus;
+import mods.Hileb.rml.api.event.early.FMLBeforeStageEvent;
+import net.minecraftforge.fml.common.LoadController;
+import net.minecraftforge.fml.common.LoaderState;
 
 /**
  * @Project ResourceModLoader
@@ -13,10 +12,9 @@ import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
  **/
 public class RMLFMLHooks {
     @SuppressWarnings("unused")
-    public static void beforeFMLBusEventSending(FMLEvent event){
-        if (event instanceof FMLPreInitializationEvent){
-            ConfigTransformer.handleOverride();
-            FMLBeforePreInitEvent.post();
+    public static void beforeFMLBusEventSending(LoadController controller, LoaderState state, Object[] args){
+        if (state.hasEvent()){
+            RMLBus.BUS.post(new FMLBeforeStageEvent(state, args));
         }
     }
 }
