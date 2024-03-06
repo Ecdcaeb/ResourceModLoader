@@ -29,6 +29,11 @@ public class ResourceModLoader {
         return mod;
     }
 
+    @PublicAPI public static ModContainer enableRML(ContainerHolder containerHolder){
+        enabledModContainers.add(containerHolder);
+        return containerHolder.container;
+    }
+
     @PublicAPI public static ModContainer enableRML(ModContainer mod, int opinion){
         enabledModContainers.add(new ContainerHolder(mod, opinion));
         return mod;
