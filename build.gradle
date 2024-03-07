@@ -87,15 +87,34 @@ repositories {
             includeGroup 'curse.maven'
         }
     }
+    maven {
+        url = 'https://maven.blamejared.com'
+        name = 'BlameJared Maven'
+    }
+    maven {
+        // Shedaniel's maven (Architectury API)
+        url = "https://maven.architectury.dev"
+        content {
+            includeGroup "dev.architectury"
+        }
+    }
+
+    maven {
+        // saps.dev Maven (KubeJS and Rhino)
+        url = "https://maven.saps.dev/releases"
+        content {
+            includeGroup "dev.latvian.mods"
+        }
+    }
+    flatDir {
+        dirs("libs")
+    }
     mavenLocal() // Must be last for caching to work
 }
 
 dependencies {
 
-    implementation rfg.deobf("curse.maven:crafttweaker-239197:2724129") //CraftTweaker2-1.12-4.1.19.jar
-    implementation rfg.deobf("curse.maven:kubejs-238086:2823753") //KubeJS-forge-1.12.2-1.1.0.63.jar
-
-    implementation rfg.deobf("curse.maven:groovyscript-687577:5120928")
+    implementation rfg.deobf('curse.maven:groovyscript-687577:5120928')
     implementation rfg.deobf('zone.rong:mixinbooter:8.8') // for groovyscript
     // Example of deobfuscating a dependency
     // implementation rfg.deobf('curse.maven:had-enough-items-557549:4543375')
