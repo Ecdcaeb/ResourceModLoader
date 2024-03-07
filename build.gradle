@@ -203,19 +203,19 @@ tasks.named("processIdeaSettings").configure {
 }
 
 tasks.register('buildExample', Zip) {
-    archiveName = "example.zip"
-    destinationDir = file("run/mods")
+    archivesBaseName = "example.zip"
+    destinationDirectory = file("run/mods")
 
     from "dev/example"
 }
 tasks.register('releaseExample', Zip) {
-    archiveName = "example-"+version+".zip"
-    destinationDir = file("releases/example")
+    archivesBaseName = "example-"+version+".zip"
+    destinationDirectory = file("releases/example")
 
     from "dev/example"
 }
 tasks.register('buildRMDK', Zip) {
-    archiveName = "rmdk-"+version+".zip"
-    destinationDir = file("releases/rmdk")
+    archivesBaseName = "rmdk-"+version+".zip"
+    destinationDirectory = file("releases/rmdk")
     from "rmdk"
 }

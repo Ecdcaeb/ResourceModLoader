@@ -6,4 +6,6 @@ if errorlevel 1 (
 )
 chcp 65001
 call gradlew setupDecompWorkspace
+call gradlew genIntellijRuns
+
 pause
