@@ -3,16 +3,13 @@ package mods.Hileb.rml.core;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.stream.JsonReader;
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.RMLBus;
 import mods.Hileb.rml.api.config.ConfigTransformer;
 import mods.Hileb.rml.api.event.RMLAfterInjectEvent;
-import mods.Hileb.rml.api.file.FileHelper;
 import mods.Hileb.rml.api.file.JsonHelper;
 import mods.Hileb.rml.api.mods.ContainerHolder;
 import net.minecraftforge.fml.common.Loader;
@@ -21,9 +18,7 @@ import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
-import org.apache.commons.io.IOUtils;
 
-import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,11 +69,11 @@ public class RMLModDiscover {
     }
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
-        int opinion = ContainerHolder.Opinion.ALL;
+        int opinion = ContainerHolder.Modules.ALL;
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
             try{
-                opinion = ContainerHolder.Opinion.fromNames(JsonHelper.getStringArray(array));
+                opinion = ContainerHolder.Modules.fromNames(JsonHelper.getStringArray(array));
             }catch (NullPointerException e){
                 throw new RuntimeException("illegal modules opinion for "+jsonObject.get("modid").getAsString(), e);
             }

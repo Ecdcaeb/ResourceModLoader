@@ -4,6 +4,17 @@ import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.event.CraftingHelperInitEvent;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
+import mods.Hileb.rml.api.event.villagers.CustomVillageLoaderRegisterEvent;
+import mods.Hileb.rml.api.villagers.LoadedVillage;
+import mods.Hileb.rml.api.villagers.trades.itrades.SlotRecipe;
+import mods.Hileb.rml.api.villagers.trades.ranges.PriceRange;
+import mods.Hileb.rml.api.villagers.trades.ranges.RangeConstant;
+import mods.Hileb.rml.api.villagers.trades.ranges.RangePoisson;
+import mods.Hileb.rml.api.villagers.trades.trades.EmeraldForItems;
+import mods.Hileb.rml.api.villagers.trades.trades.ItemAndEmeraldToItem;
+import mods.Hileb.rml.api.villagers.trades.trades.ListItemForEmeralds;
+import mods.Hileb.rml.api.villagers.villagers.VillageCancer;
+import mods.Hileb.rml.api.villagers.villagers.VillageProfession;
 import mods.Hileb.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import mods.Hileb.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import mods.Hileb.rml.deserialize.craft.recipe.SimpleBrewRecipe;
@@ -15,7 +26,9 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.registries.ForgeRegistry;
+import net.minecraftforge.registries.IForgeRegistry;
 
 /**
  * @Project ResourceModLoader
@@ -30,6 +43,7 @@ public class RMLForgeEventHandler {
         event.register(new ResourceLocation("rml","brew"),new SimpleBrewRecipe.Factory());
         event.register(new ResourceLocation("rml","anvil"),new SimpleAnvilRecipe.Factory());
     }
+
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void afterRecipeRegister(RegistryEvent.Register<IRecipe> event){
         if (NamedEmptyRecipeImpl.removeCaches!=null){
@@ -40,18 +54,48 @@ public class RMLForgeEventHandler {
             NamedEmptyRecipeImpl.removeCaches=null;
         }
     }
+
     @SubscribeEvent
     public static void onLoad(FunctionLoadEvent event){
-        RMLSerializeLoader.Function.load(event);
+        RMLDeserializeLoader.Function.load(event);
     }
+
     @SubscribeEvent
     public static void onRegisterLootTable(LootTableRegistryEvent event){
-        RMLSerializeLoader.LootTable.load(event);
+        RMLDeserializeLoader.LootTable.load(event);
     }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onRegister(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
+        IForgeRegistry<VillagerRegistry.VillagerProfession> forgeRegistry = event.getRegistry();
+        for(LoadedVillage village: RMLDeserializeLoader.CustomVillageLoader.load()){
+            village.run(forgeRegistry);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRegister(CustomVillageLoaderRegisterEvent event){
+        event.add(new ResourceLocation("minecraft","price"), new PriceRange.Factory());
+        //range factory
+        event.add(new ResourceLocation("minecraft","price"), new PriceRange.Factory());
+        event.add(new ResourceLocation("cvh","constant"), new RangeConstant.Factory());
+        event.add(new ResourceLocation("cvh","poisson_distribution"),new RangePoisson.Factory());
+
+        //trade loader
+        event.add(new ResourceLocation("minecraft","emerald_for_items"), new EmeraldForItems.Loader());
+        event.add(new ResourceLocation("minecraft","item_and_emerald_to_item"), new ItemAndEmeraldToItem.Loader());
+        event.add(new ResourceLocation("minecraft","list_item_for_emeralds"), new ListItemForEmeralds.Loader());
+        event.add(new ResourceLocation("cvh","slots"), new SlotRecipe.Loader());
+
+        //base loader
+        event.add(new ResourceLocation("minecraft","profession"), new VillageProfession.Loader());
+        event.add(new ResourceLocation("minecraft","cancer"), new VillageCancer.Loader());
+    }
+
     public static void preInit(FMLPreInitializationEvent event){
         //RMLOreDicLoader.load();
     }
     public static void postInit(FMLPostInitializationEvent event){
-        RMLSerializeLoader.OreDic.load();
+        RMLDeserializeLoader.OreDic.load();
     }
 }
