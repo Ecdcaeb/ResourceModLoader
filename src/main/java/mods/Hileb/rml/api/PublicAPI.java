@@ -18,7 +18,7 @@ import static java.lang.annotation.ElementType.*;
  **/
 @EarlyClass
 @Documented
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE})
 public @interface PublicAPI {
 }
