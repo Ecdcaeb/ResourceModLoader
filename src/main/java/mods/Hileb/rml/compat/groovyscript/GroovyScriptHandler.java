@@ -1,9 +1,7 @@
 package mods.Hileb.rml.compat.groovyscript;
 
 import com.cleanroommc.groovyscript.GroovyScript;
-import com.cleanroommc.groovyscript.event.ScriptRunEvent;
 import com.cleanroommc.groovyscript.sandbox.GroovySandbox;
-import com.cleanroommc.groovyscript.sandbox.GroovyScriptSandbox;
 import com.cleanroommc.groovyscript.sandbox.LoadStage;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
@@ -44,7 +42,7 @@ public enum GroovyScriptHandler {
 
     public static void load(){
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_GROOVY_SCRIPT) != 0){
+            if ((containerHolder.opinion & ContainerHolder.Modules.MOD_GROOVY_SCRIPT) != 0){
                 final ModContainer modContainer = containerHolder.container;
                 GroovyRunConfig config = makeConfig(modContainer);
                 if (config != null){
@@ -67,7 +65,7 @@ public enum GroovyScriptHandler {
             LoadStage stage = STAGES.get(s);
             Binding binding = new Binding((Map<?,?>)ReflectionHelper.getPrivateValue(GroovySandbox.class, GroovyScript.getSandbox(),"bindings"));
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-                if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_GROOVY_SCRIPT) != 0){
+                if ((containerHolder.opinion & ContainerHolder.Modules.MOD_GROOVY_SCRIPT) != 0){
                     final ModContainer modContainer = containerHolder.container;
                     if (REGISTRY.containsKey(modContainer)){
                         GroovyRunConfig config = REGISTRY.get(modContainer);

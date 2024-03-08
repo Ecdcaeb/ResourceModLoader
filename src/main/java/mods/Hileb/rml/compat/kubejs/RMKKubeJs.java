@@ -36,7 +36,7 @@ public class RMKKubeJs {
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if ((containerHolder.opinion & ContainerHolder.Opinion.MOD_KUBEJS) != 0){
+            if ((containerHolder.opinion & ContainerHolder.Modules.MOD_KUBEJS) != 0){
                 final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
                 if (!packs.containsKey(modContainer.getModId())) {

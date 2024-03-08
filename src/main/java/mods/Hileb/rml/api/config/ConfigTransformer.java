@@ -14,12 +14,10 @@ import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.fml.client.config.IConfigElement;
-import net.minecraftforge.fml.client.event.ConfigChangedEvent;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
@@ -94,7 +92,7 @@ public class ConfigTransformer {
     @PrivateAPI private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
     @PrivateAPI public static void searchRedefault(){
         for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
-            if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_REDEFAULT) != 0){
+            if ((containerHolder.opinion & ContainerHolder.Modules.CONFIG_REDEFAULT) != 0){
                 final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/redefault",null,
@@ -140,7 +138,7 @@ public class ConfigTransformer {
     @PrivateAPI  private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
     @PrivateAPI public static void searchOverride(){
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if ((containerHolder.opinion & ContainerHolder.Opinion.CONFIG_OVERRIDE) !=0){
+            if ((containerHolder.opinion & ContainerHolder.Modules.CONFIG_OVERRIDE) !=0){
                 final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/config/override",null,

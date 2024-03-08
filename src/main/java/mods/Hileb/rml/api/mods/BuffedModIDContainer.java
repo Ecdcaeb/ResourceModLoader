@@ -19,7 +19,7 @@ public class BuffedModIDContainer {
     @PublicAPI public HashMap<String,Integer> opinions = new HashMap<>();
 
     @PublicAPI public void add(String modid){
-        this.add(modid, ContainerHolder.Opinion.ALL);
+        this.add(modid, ContainerHolder.Modules.ALL);
     }
 
     @PublicAPI public void add(String modid, int opinion){
