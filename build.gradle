@@ -59,7 +59,7 @@ minecraft {
 dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
     deobf 'curse.maven:groovyscript-687577:5120928'
-    deobf 'zone.rong:mixinbooter:8.8'
+    compile 'zone.rong:mixinbooter:8.8'
     deobf files('libs/CraftTweaker2-1.12-4.1.19.jar')
     deobf files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
 

@@ -12,6 +12,7 @@ import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.commons.io.FilenameUtils;
@@ -75,7 +76,7 @@ public class RMKKubeJs {
         }
     }
     @PrivateAPI
-    private static void load(ScriptManager manager, String name,char[] file, String modid) {
+    private static void load(ScriptManager manager, String name, char[] file, String modid) {
         KubeJS.LOGGER.info("Found script at " + name);
         int weight;
         weight = 0;
@@ -83,8 +84,8 @@ public class RMKKubeJs {
             weight = -100;
         }
         ScriptFile scriptFile = new BuffedJSFile(packs.get(modid), name, weight, file);
-        manager.scripts.put(scriptFile.path, scriptFile);
-        KubeJS.LOGGER.info("Load script at " + scriptFile.path);
+        manager.scripts.put(name, scriptFile);
+        KubeJS.LOGGER.info("Load script at " + name);
     }
     @PrivateAPI public static final Method newPack;
     @PrivateAPI public static final Map<String, ScriptPack> packs;

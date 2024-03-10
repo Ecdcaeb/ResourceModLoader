@@ -16,9 +16,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLLog;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
+import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.registries.IForgeRegistry;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class TradeBase {
         public void run(IForgeRegistry<VillagerRegistry.VillagerProfession> r) {
             VillagerRegistry.VillagerProfession profession_v = r.getValue(this.profession);
 
-            for(VillagerRegistry.VillagerCareer career1 : (List<VillagerRegistry.VillagerCareer>)ObfuscationReflectionHelper.getPrivateValue(VillagerRegistry.VillagerProfession.class, profession_v, "careers")){
+            for(VillagerRegistry.VillagerCareer career1 : (List<VillagerRegistry.VillagerCareer>) ReflectionHelper.getPrivateValue(VillagerRegistry.VillagerProfession.class, profession_v, "careers")){
                 if (career1.getName().equals(career)){
                     career1.addTrade(level,this.list);
                 }
