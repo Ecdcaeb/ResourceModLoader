@@ -4,7 +4,6 @@ import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.asm.MethodName;
 import net.minecraft.launchwrapper.IClassTransformer;
-import net.minecraftforge.fml.common.ModContainer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -174,7 +173,7 @@ public class RMLTransformer implements IClassTransformer {
                     classReader.accept(cn, 0);
 
                     int flags=transformers.get(transformedName).apply(cn);
-                    if (flags<0) return basicClass;
+                    if (flags<0) return ASMUtil.push(transformedName, basicClass);
 
                     ClassWriter classWriter=new ClassWriter(classReader,flags);
                     cn.accept(classWriter);
