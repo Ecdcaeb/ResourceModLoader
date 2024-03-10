@@ -72,7 +72,7 @@ public class RMLCrTLoader {
                                 byte[] fileBytes=FileHelper.getByteSource(file).read();
 
                                 providerCustom.add(name,fileBytes);
-                                RMLFMLLoadingPlugin.Container.LOGGER.debug(key.toString());
+                                RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }

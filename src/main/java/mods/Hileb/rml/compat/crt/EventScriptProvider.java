@@ -27,9 +27,9 @@ public class EventScriptProvider implements IScriptProvider {
         return this.combine().iterator();
     }
     @PrivateAPI public List<IScriptIterator> combine(){
-        LinkedList<IScriptIterator> list=new LinkedList<>();
+        LinkedList<IScriptIterator> list = new LinkedList<>();
 
-        Iterator<IScriptIterator> iterator=proxy.getScripts();
+        Iterator<IScriptIterator> iterator = proxy.getScripts();
         while (iterator.hasNext()){
             list.add(iterator.next());
         }

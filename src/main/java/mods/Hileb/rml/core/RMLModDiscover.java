@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.zip.ZipEntry;
@@ -103,8 +104,13 @@ public class RMLModDiscover {
                 throw new RuntimeException("illegal modules opinion for "+jsonObject.get("modid").getAsString(), e);
             }
             jsonObject.remove("modules");
+            ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
+            return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
+
+        }else {
+            ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
+            return new ContainerHolder(new RMLModContainer(metadata, modFile), ContainerHolder.Modules.values());
         }
-        ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
-        return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
+
     }
 }

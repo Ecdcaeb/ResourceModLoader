@@ -211,12 +211,12 @@ tasks.register("installRML", Copy){
     to "runServer/mods"
 }
 tasks.register('buildServerRM', Zip) {
-    archiveName = "developing_resource_mod.zip"
+    archiveNameBase = "developing_resource_mod.zip"
     destinationDir = file("runServer/mods")
     from "dev"
 }
 tasks.register('buildClientRM', Zip) {
-    archiveName = "developing_resource_mod.zip"
+    archiveNameBase = "developing_resource_mod.zip"
     destinationDir = file("run/mods")
     from "dev"
 }

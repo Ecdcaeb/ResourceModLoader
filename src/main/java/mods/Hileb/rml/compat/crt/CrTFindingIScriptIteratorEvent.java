@@ -20,7 +20,7 @@ public class CrTFindingIScriptIteratorEvent extends Event {
         scriptIterators=list;
     }
     @PublicAPI public void load(IScriptProvider provider){
-        Iterator<IScriptIterator> iterator=provider.getScripts();
+        Iterator<IScriptIterator> iterator = provider.getScripts();
         while (iterator.hasNext()){
             scriptIterators.add(iterator.next());
         }
