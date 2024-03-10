@@ -44,7 +44,7 @@ public class RMLTransformer implements IClassTransformer {
                             InsnList hook=new InsnList();
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
@@ -61,7 +61,7 @@ public class RMLTransformer implements IClassTransformer {
                             injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
                             injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/core/RMLModDiscover","inject","(Ljava/util/List;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),injectList);
-                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
@@ -79,7 +79,7 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new IntInsnNode(Opcodes.ALOAD,0));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
@@ -96,7 +96,7 @@ public class RMLTransformer implements IClassTransformer {
                             InsnList hook=new InsnList();
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
@@ -115,7 +115,7 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new IntInsnNode(Opcodes.ALOAD,0));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/CrTTweaker;)V",false));
                             ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS|ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
