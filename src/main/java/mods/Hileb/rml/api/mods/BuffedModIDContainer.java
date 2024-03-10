@@ -27,17 +27,6 @@ public class BuffedModIDContainer {
         opinions.put(modid, opinion);
     }
 
-    @Deprecated
-    @PublicAPI public ArrayList<ModContainer> get(){
-        ArrayList<ModContainer> containers=new ArrayList<>();
-        for(ModContainer modContainer:Loader.instance().getModList()){
-            if (modids.contains(modContainer.getModId())){
-                containers.add(modContainer);
-            }
-        }
-        return containers;
-    }
-
     @PublicAPI public ArrayList<ContainerHolder> getHolder(){
         ArrayList<ContainerHolder> containers=new ArrayList<>();
         for(ModContainer modContainer:Loader.instance().getModList()){

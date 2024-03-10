@@ -50,13 +50,8 @@ public class ResourceModLoader {
         RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
     }
 
-    @Deprecated
-    @PublicAPI public static HashSet<ModContainer> getCurrentRMLContainers(){
-        updateRMLContainerState();
-        return (HashSet<ModContainer>) enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toSet());
-    }
-
     @PublicAPI public static HashSet<ContainerHolder> getCurrentRMLContainerHolders(){
+        updateRMLContainerState();
         return enabledModContainers;
     }
 
