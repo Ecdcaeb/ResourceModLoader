@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -69,17 +70,19 @@ public class RMLModDiscover {
     }
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
-        int opinion = ContainerHolder.Modules.ALL;
+        ArrayList<ContainerHolder.Modules> modules = new ArrayList<>();
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
             try{
-                opinion = ContainerHolder.Modules.fromNames(JsonHelper.getStringArray(array));
+                for(String name : JsonHelper.getStringArray(array)) {
+                    modules.add(ContainerHolder.Modules.valueOf(name));
+                }
             }catch (NullPointerException e){
                 throw new RuntimeException("illegal modules opinion for "+jsonObject.get("modid").getAsString(), e);
             }
             jsonObject.remove("modules");
         }
         ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
-        return new ContainerHolder(new RMLModContainer(metadata, modFile), opinion);
+        return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
     }
 }

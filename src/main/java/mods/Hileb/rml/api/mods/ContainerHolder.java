@@ -2,17 +2,16 @@ package mods.Hileb.rml.api.mods;
 
 import net.minecraftforge.fml.common.ModContainer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
 public class ContainerHolder {
     public final ModContainer container;
-    @Deprecated
-    public final int opinion;
     public final HashSet<Modules> modules;
     public ContainerHolder(ModContainer container, Modules[] modules){
         this.container = container;
-        this.opinion = opinion;
+        this.modules = new HashSet<>(Arrays.asList(modules));
     }
 
     public ContainerHolder(ModContainer container){

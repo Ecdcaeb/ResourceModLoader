@@ -16,13 +16,13 @@ import java.util.HashSet;
 @PublicAPI
 public class BuffedModIDContainer {
     @PublicAPI public HashSet<String> modids = new HashSet<>();
-    @PublicAPI public HashMap<String,Integer> opinions = new HashMap<>();
+    @PublicAPI public HashMap<String, ContainerHolder.Modules[]> opinions = new HashMap<>();
 
     @PublicAPI public void add(String modid){
-        this.add(modid, ContainerHolder.Modules.ALL);
+        this.add(modid, ContainerHolder.Modules.values());
     }
 
-    @PublicAPI public void add(String modid, int opinion){
+    @PublicAPI public void add(String modid, ContainerHolder.Modules[] opinion){
         modids.add(modid);
         opinions.put(modid, opinion);
     }
@@ -50,5 +50,6 @@ public class BuffedModIDContainer {
 
     @PublicAPI public void clear(){
         modids.clear();
+        opinions.clear();
     }
 }

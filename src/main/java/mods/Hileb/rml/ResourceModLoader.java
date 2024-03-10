@@ -7,9 +7,7 @@ import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -34,7 +32,7 @@ public class ResourceModLoader {
         return containerHolder.container;
     }
 
-    @PublicAPI public static ModContainer enableRML(ModContainer mod, int opinion){
+    @PublicAPI public static ModContainer enableRML(ModContainer mod, ContainerHolder.Modules[] opinion){
         enabledModContainers.add(new ContainerHolder(mod, opinion));
         return mod;
     }
@@ -43,7 +41,7 @@ public class ResourceModLoader {
         buffedModIDContainer.add(modid);
     }
 
-    @PublicAPI public static void enableRML(String modid, int opinion){
+    @PublicAPI public static void enableRML(String modid, ContainerHolder.Modules[] opinion){
         buffedModIDContainer.add(modid, opinion);
     }
 

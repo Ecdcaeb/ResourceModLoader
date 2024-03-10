@@ -58,7 +58,7 @@ public class RMLDeserializeLoader {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){//pre-init
             for(ContainerHolder containerHolder:ResourceModLoader.getCurrentRMLContainerHolders()){
-                if ((containerHolder.opinion & ContainerHolder.Modules.ORE_DIC) != 0){
+                if (containerHolder.modules.contains(ContainerHolder.Modules.ORE_DIC)){
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
                     RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
@@ -125,7 +125,7 @@ public class RMLDeserializeLoader {
     public static class LootTable {
         public static void load(LootTableRegistryEvent event){
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-                if ((containerHolder.opinion & ContainerHolder.Modules.LOOT_TABLES) != 0) {
+                if (containerHolder.modules.contains(ContainerHolder.Modules.LOOT_TABLES)) {
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
@@ -156,7 +156,7 @@ public class RMLDeserializeLoader {
 
         public static void load(FunctionLoadEvent event){
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-                if((containerHolder.opinion & ContainerHolder.Modules.FUNCTIONS) != 0) {
+                if(containerHolder.modules.contains(ContainerHolder.Modules.FUNCTIONS)) {
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 

@@ -42,7 +42,7 @@ public enum GroovyScriptHandler {
 
     public static void load(){
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if ((containerHolder.opinion & ContainerHolder.Modules.MOD_GROOVY_SCRIPT) != 0){
+            if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_GROOVY_SCRIPT)){
                 final ModContainer modContainer = containerHolder.container;
                 GroovyRunConfig config = makeConfig(modContainer);
                 if (config != null){
@@ -65,7 +65,7 @@ public enum GroovyScriptHandler {
             LoadStage stage = STAGES.get(s);
             Binding binding = new Binding((Map<?,?>)ReflectionHelper.getPrivateValue(GroovySandbox.class, GroovyScript.getSandbox(),"bindings"));
             for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-                if ((containerHolder.opinion & ContainerHolder.Modules.MOD_GROOVY_SCRIPT) != 0){
+                if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_GROOVY_SCRIPT)){
                     final ModContainer modContainer = containerHolder.container;
                     if (REGISTRY.containsKey(modContainer)){
                         GroovyRunConfig config = REGISTRY.get(modContainer);
