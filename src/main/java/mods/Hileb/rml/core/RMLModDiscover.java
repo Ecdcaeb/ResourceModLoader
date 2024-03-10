@@ -12,6 +12,7 @@ import mods.Hileb.rml.api.config.ConfigTransformer;
 import mods.Hileb.rml.api.event.RMLAfterInjectEvent;
 import mods.Hileb.rml.api.file.JsonHelper;
 import mods.Hileb.rml.api.mods.ContainerHolder;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
@@ -46,10 +47,10 @@ public class RMLModDiscover {
     public static void inject(List<ModContainer> modContainers){
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
 
-        File modRoots=new File((File)ReflectionHelper.getPrivateValue(Loader.class,null,"minecraftDir"),"mods");
+        File modRoots=new File(Launch.minecraftHome,"mods");
 
         for (File modFile : Objects.requireNonNull(modRoots.listFiles(), "Directory `mods/` is not exist")) {
-            if(modFile.isDirectory()){
+            if(modFile.isFile()){
                 try(ZipFile zipFile = new ZipFile(modFile)) {
                     ZipEntry info = zipFile.getEntry("rml.info");
                     if (info!=null){//fix: https://mclo.gs/4yyaEH5
@@ -64,7 +65,7 @@ public class RMLModDiscover {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
                     e.printStackTrace();
                 }
-            }else if (modFile.isFile()){
+            }else if (modFile.isDirectory()){
                 File[] files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));
                 if (files!=null && files.length==1){
                     try {

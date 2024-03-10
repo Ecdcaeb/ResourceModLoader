@@ -26,7 +26,7 @@ import java.util.ListIterator;
 @PrivateAPI
 public class ASMUtil {
     public static File gameDir;
-    public static final boolean saveTransformedClass= FMLLog.log.isDebugEnabled();
+    public static boolean saveTransformedClass = false;
     public static final Method m_defineClass;
     static {
         try {

@@ -16,6 +16,7 @@ import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.deserialize.RMLDeserializeLoader;
 import mods.Hileb.rml.deserialize.RMLForgeEventHandler;
 import mods.Hileb.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.DummyModContainer;
@@ -64,8 +65,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     }
     @Override
     public void injectData(Map<String, Object> data) {
-        source=(File) data.get("coremodLocation");
+        source = (File) data.get("coremodLocation");
         ASMUtil.gameDir=(File)data.get("mcLocation");
+        ASMUtil.saveTransformedClass = (Launch.blackboard.containsKey("rml.printClasses") && Launch.blackboard.get("rml.printClasses") instanceof Boolean ) ? (Boolean)Launch.blackboard.get("rml.printClasses") : false;
     }
     @Override
     public String getAccessTransformerClass() {
@@ -129,6 +131,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Override
         @PrivateAPI public Class<?> getCustomResourcePackClass()
         {
+            if(getSource() == null) return null;
+
             try
             {
                 return getSource().isDirectory() ? Class.forName("net.minecraftforge.fml.client.FMLFolderResourcePack", true, getClass().getClassLoader()) : Class.forName("net.minecraftforge.fml.client.FMLFileResourcePack", true, getClass().getClassLoader());

@@ -1,3 +1,3 @@
 Manifest-Version: 1.0
 FMLCorePlugin: mods.Hileb.rml.core.RMLFMLLoadingPlugin
-FMLAT: rml-at.cfg
+FMLAT: rml_at.cfg
