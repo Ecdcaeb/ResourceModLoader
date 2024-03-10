@@ -17,11 +17,9 @@ public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,Reso
         this.registry = registry;
     }
 
-
-
     @SuppressWarnings("rawtypes")
     @SubscribeEvent
-    private void onEvent(RegistryEvent.MissingMappings event){//for the wide support.
+    public void onEvent(RegistryEvent.MissingMappings event){//for the wide support.
         if(event.getName().equals(this.registry)){
             Iterator<RegistryEvent.MissingMappings.Mapping> iterator = event.getAllMappings().iterator();
             RegistryEvent.MissingMappings.Mapping mapping;

@@ -106,7 +106,6 @@ public class RMLModDiscover {
             jsonObject.remove("modules");
             ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
             return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
-
         }else {
             ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
             return new ContainerHolder(new RMLModContainer(metadata, modFile), ContainerHolder.Modules.values());
