@@ -1,6 +1,6 @@
 package mods.Hileb.rml.core;
 
-import com.cleanroommc.groovyscript.GroovyScript;
+//import com.cleanroommc.groovyscript.GroovyScript;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
@@ -11,7 +11,7 @@ import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.api.RMLBus;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
-import mods.Hileb.rml.compat.groovyscript.GroovyScriptHandler;
+//import mods.Hileb.rml.compat.groovyscript.GroovyScriptHandler;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.deserialize.RMLDeserializeLoader;
 import mods.Hileb.rml.deserialize.RMLForgeEventHandler;
@@ -114,9 +114,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
-            if (Loader.isModLoaded(GroovyScript.ID)){
-                RMLBus.BUS.register(GroovyScriptHandler.INSTANCE);
-            }
+            //if (Loader.isModLoaded(GroovyScript.ID)){
+             //   RMLBus.BUS.register(GroovyScriptHandler.INSTANCE);
+            //}
         }
         @Subscribe
         @SuppressWarnings("unused")

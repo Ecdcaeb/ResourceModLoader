@@ -4,7 +4,7 @@
       "dev.rml.example.groovy.preinit.Vanilla"
     ],
     "init": [
-
+      "dev.rml.example.HelloWorld"
     ],
     "postInit": [
       "dev.rml.example.groovy.postinit.Vanilla"
@@ -12,7 +12,8 @@
   },
   "classes": {
     "dev.rml.example.groovy.postinit.Vanilla": "classes/postInit/vanilla.groovy",
-    "dev.rml.example.groovy.preinit.Vanilla": "classes/preInit/vanilla.groovy"
+    "dev.rml.example.groovy.preinit.Vanilla": "classes/preInit/vanilla.groovy",
+    "dev.rml.example.HelloWorld": "classes/dev/rml/example/HelloWorld.groovy"
   },
   "scripts": [
     "dev.rml.example.groovy.postinit.Vanilla",
