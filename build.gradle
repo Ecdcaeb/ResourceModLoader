@@ -24,6 +24,18 @@ repositories {
         name 'Blamejared Maven'
         url 'https://maven.blamejared.com/'
     }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
+    maven {
+        name 'GTNH Maven'
+        url 'https://nexus.gtnewhorizons.com/repository/public/'
+    }
+    maven {
+        name 'GTCEu Maven'
+        url 'https://maven.gtceu.com'
+    }
 }
 apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
@@ -72,7 +84,7 @@ minecraft {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
-    //deobf 'curse.maven:groovyscript-687577:5120928'
+    compile 'com.cleanroommc:groovyscript:0.8.0'
     compile 'zone.rong:mixinbooter:8.8'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
     deobf files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')

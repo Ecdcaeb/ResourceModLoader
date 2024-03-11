@@ -8,6 +8,7 @@ import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -50,9 +51,13 @@ public class ResourceModLoader {
         RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
     }
 
-    @PublicAPI public static HashSet<ContainerHolder> getCurrentRMLContainerHolders(){
+    @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(){
         updateRMLContainerState();
         return enabledModContainers;
+    }
+
+    @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(ContainerHolder.Modules module){
+        return getCurrentRMLContainerHolders().stream().filter((containerHolder -> containerHolder.modules.contains(module))).collect(Collectors.toSet());
     }
 
 }
