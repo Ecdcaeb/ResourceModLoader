@@ -48,12 +48,12 @@ public class RMKKubeJs {
                         continue;
                     }
                 }
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",null,
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",
                         (root, file) ->
                         {
                             String relative = root.relativize(file).toString();
                             if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return true;
+                                return;
                             BufferedReader bufferedReader=null;
                             try {
                                 char[] fileBytes;
@@ -66,9 +66,7 @@ public class RMKKubeJs {
                             }finally {
                                 IOUtils.closeQuietly(bufferedReader);
                             }
-
-                            return true;
-                        },true, true);
+                        });
 
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }

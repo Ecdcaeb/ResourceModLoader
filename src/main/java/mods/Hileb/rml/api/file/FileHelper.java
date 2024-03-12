@@ -4,6 +4,8 @@ import com.google.common.io.ByteSource;
 import com.google.common.io.CharSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dev.latvian.kubejs.documentation.P;
+import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.FMLLog;
@@ -21,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,84 +38,63 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    @PublicAPI
-    public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor, boolean defaultUnfoundRoot, boolean visitAllFiles)
-    {
+    @PublicAPI public static void findFiles(ModContainer mod, String base, BiConsumer<Path,Path> processor){
         FileSystem fs = null;
         try
         {
             File source = mod.getSource();
-
-            if ("minecraft".equals(mod.getModId()))
-            {
-                return true;
-
-            }
-
+            if ("minecraft".equals(mod.getModId())) { return;}
             Path root = null;
-            if (source.isFile())
-            {
-                try
-                {
+            if (source.isFile()) {
+                try {
                     fs = FileSystems.newFileSystem(source.toPath(), null);
                     root = fs.getPath("/" + base);
                 }
-                catch (IOException e)
-                {
-                    FMLLog.log.error("Error loading FileSystem from jar: ", e);
-                    return false;
+                catch (IOException e) {
+                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+                    return;
                 }
             }
-            else if (source.isDirectory())
-            {
+            else if (source.isDirectory()) {
                 root = source.toPath().resolve(base);
             }
-
             if (root == null || !Files.exists(root))
-                return defaultUnfoundRoot;
-
-            if (preprocessor != null)
-            {
-                Boolean cont = preprocessor.apply(root);
-                if (cont == null || !cont.booleanValue())
-                    return false;
+                return;
+            if (processor != null) {
+                walkAllPaths(mod, root, processor);
             }
-
-            boolean success = true;
-
-            if (processor != null)
-            {
-                Iterator<Path> itr = null;
-                try
-                {
-                    itr = Files.walk(root).iterator();
-                }
-                catch (IOException e)
-                {
-                    FMLLog.log.error("Error iterating filesystem for: {}", mod.getModId(), e);
-                    return false;
-                }
-
-                while (itr != null && itr.hasNext())
-                {
-                    Boolean cont = processor.apply(root, itr.next());
-
-                    if (visitAllFiles)
-                    {
-                        success &= cont != null && cont;
-                    }
-                    else if (cont == null || !cont)
-                    {
-                        return false;
-                    }
-                }
-            }
-
-            return success;
         }
-        finally
-        {
+        finally {
             IOUtils.closeQuietly(fs);
+        }
+    }
+
+    private static void walkAllPaths(ModContainer mod, Path root, BiConsumer<Path,Path> processor)
+    {
+
+        if (processor != null)
+        {
+            Iterator<Path> itr;
+            try
+            {
+                itr = Files.walk(root).iterator();
+            }
+            catch (IOException e)
+            {
+                RMLFMLLoadingPlugin.LOGGER.error("Error iterating filesystem for: {}", mod.getModId(), e);
+                return;
+            }
+
+            while (itr.hasNext())
+            {
+                Path file = itr.next();
+
+                if (Files.isDirectory(file)){
+                    walkAllPaths(mod, file, processor);
+                }else {
+                    processor.accept(root, file);
+                }
+            }
         }
     }
 
@@ -134,7 +116,7 @@ public class FileHelper {
                 }
                 catch (IOException e)
                 {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Error loading FileSystem from jar: ", e);
+                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
                 }
             }
             else if (source.isDirectory())

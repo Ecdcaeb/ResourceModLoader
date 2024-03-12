@@ -5,6 +5,9 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+import joptsimple.OptionSpec;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
@@ -26,13 +29,16 @@ import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @Project ResourceModLoader
@@ -45,6 +51,8 @@ import java.util.Map;
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public static File source;
+    @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
+
     public RMLFMLLoadingPlugin(){
         RMLBus.BUS.register(EventHandler.INSTANCE);
     }
@@ -66,8 +74,33 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @Override
     public void injectData(Map<String, Object> data) {
         source = (File) data.get("coremodLocation");
-        ASMUtil.gameDir=(File)data.get("mcLocation");
-        ASMUtil.saveTransformedClass = (Launch.blackboard.containsKey("rml.printClasses") && Launch.blackboard.get("rml.printClasses") instanceof Boolean ) ? (Boolean)Launch.blackboard.get("rml.printClasses") : false;
+        ASMUtil.gameDir = (File)data.get("mcLocation");
+
+        //start args>>
+        //read the args :
+        final List<String> argumentList = (List<String>) Launch.blackboard.get("ArgumentList");
+        final OptionParser parser = new OptionParser();
+        parser.allowsUnrecognizedOptions();
+
+        final OptionSpec<Boolean> saveTransformedClass = parser.accepts("rml.printClasses", "Whether we save the transformed classes").withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.FALSE);
+        final OptionSet options = parser.parse(argumentList.toArray(new String[0]));
+
+        //apply the args :
+        ASMUtil.saveTransformedClass = options.valueOf(saveTransformedClass);
+        //>>end args;
+
+        //debug:
+        if (FMLLaunchHandler.isDeobfuscatedEnvironment()){
+            LOGGER.warn("inject data: ");
+            for(String s : data.keySet()){
+                LOGGER.warn("{} : {}",s, String.valueOf(data.get(s)));
+            }
+            LOGGER.warn("args: ");
+            for(String s : argumentList){
+                LOGGER.warn(s);
+            }
+            ASMUtil.saveTransformedClass = true;
+        }
     }
     @Override
     public String getAccessTransformerClass() {

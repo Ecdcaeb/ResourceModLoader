@@ -63,12 +63,12 @@ public class RMLDeserializeLoader {
                     Loader.instance().setActiveModContainer(modContainer);
                     RMLFMLLoadingPlugin.Container.LOGGER.debug("Load oreDic");
 
-                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",null,
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/ore_dic",
                             (root, file) -> {
 
                                 String relative = root.relativize(file).toString();
                                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                    return true;
+                                    return;
 
                                 String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                                 ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
@@ -82,19 +82,16 @@ public class RMLDeserializeLoader {
                                 catch (JsonParseException e)
                                 {
                                     FMLLog.log.error("Parsing error loading recipe {}", key, e);
-                                    return false;
                                 }
                                 catch (IOException e)
                                 {
                                     FMLLog.log.error("Couldn't read recipe {} from {}", key, file, e);
-                                    return false;
                                 }
                                 finally
                                 {
                                     IOUtils.closeQuietly(reader);
                                 }
-                                return true;
-                            },true, true);
+                            });
                     Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
                 }
 
@@ -129,16 +126,15 @@ public class RMLDeserializeLoader {
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
-                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables", null,
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/loot_tables",
                             (root, file) -> {
                                 String relative = root.relativize(file).toString();
                                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                    return true;
+                                    return;
                                 String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                                 ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
                                 event.register(key);
-                                return true;
-                            }, true, true);
+                            });
                     Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
                 }
             }
@@ -160,12 +156,12 @@ public class RMLDeserializeLoader {
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
-                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions", null,
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/functions",
                             (root, file) -> {
 
                                 String relative = root.relativize(file).toString();
                                 if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                    return true;
+                                    return;
                                 String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                                 ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
                                 try {
@@ -189,12 +185,10 @@ public class RMLDeserializeLoader {
                                                     })
                                     );
                                     event.register(key, functionObject);
-                                    return true;
                                 } catch (IOException e) {
                                     RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
-                                    return false;
                                 }
-                            }, true, true);
+                            });
                     Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
                 }
             }
@@ -207,12 +201,12 @@ public class RMLDeserializeLoader {
                     final ModContainer modContainer = containerHolder.container;
                     Loader.instance().setActiveModContainer(modContainer);
 
-                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap", null,
+                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/registry/remap",
                             (root, file) -> {
 
                                 String relative = root.relativize(file).toString();
                                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                    return true;
+                                    return;
                                 try {
                                     JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file), JsonObject.class);
                                     if (json.has("registry")) {
@@ -224,15 +218,12 @@ public class RMLDeserializeLoader {
                                                 collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
                                             }
                                             RemapCollection.Manager.merge(collection);
-                                            return true;
                                         }
-                                        return false;
                                     }
-                                    return false;
                                 } catch (IOException e) {
                                     throw new RuntimeException("Could not cache the file " + file, e);
                                 }
-                            }, true, true);
+                            });
                     Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
                 }
             }
@@ -254,11 +245,11 @@ public class RMLDeserializeLoader {
 
             if (containerHolder.modules.contains(ContainerHolder.Modules.CUSTOM_VILLAGERS)){
                 final ModContainer mod = containerHolder.container;
-                FileHelper.findFiles(mod, "assets/" + mod.getModId() + "/villages", root ->true,
+                FileHelper.findFiles(mod, "assets/" + mod.getModId() + "/villages",
                         (root,file)->{
                             String relative = root.relativize(file).toString();
                             if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return true;
+                                return;
 
                             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                             ResourceLocation key = new ResourceLocation(mod.getModId(), name);
@@ -288,20 +279,16 @@ public class RMLDeserializeLoader {
                             catch (JsonParseException e)
                             {
                                 RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading replacement {}", key, e);
-                                return false;
                             }
                             catch (IOException e)
                             {
                                 RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read replacement {} from {}", key, file, e);
-                                return false;
                             }
                             finally
                             {
                                 IOUtils.closeQuietly(reader);
                             }
-                            return true;
-                        },
-                        true, true
+                        }
                 );
             }
             return list;

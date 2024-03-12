@@ -59,12 +59,12 @@ public class RMLCrTLoader {
 
 
                 ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",null,
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",
                         (root, file) ->
                         {
                             String relative = root.relativize(file).toString();
                             if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return true;
+                                return;
 
                             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                             ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
@@ -77,8 +77,7 @@ public class RMLCrTLoader {
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
-                            return true;
-                        },true, true);
+                        });
                 event.load(providerCustom);
 
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
