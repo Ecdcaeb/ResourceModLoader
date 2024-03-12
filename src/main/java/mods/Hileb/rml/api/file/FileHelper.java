@@ -1,13 +1,11 @@
 package mods.Hileb.rml.api.file;
 
 import com.google.common.io.ByteSource;
-import com.google.common.io.CharSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dev.latvian.kubejs.documentation.P;
-import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
+import net.minecraft.item.crafting.CraftingManager;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -15,6 +13,8 @@ import org.apache.commons.io.IOUtils;
 import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -38,64 +38,93 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    @PublicAPI public static void findFiles(ModContainer mod, String base, BiConsumer<Path,Path> processor){
-        FileSystem fs = null;
-        try
-        {
-            File source = mod.getSource();
-            if ("minecraft".equals(mod.getModId())) { return;}
-            Path root = null;
-            if (source.isFile()) {
-                try {
-                    fs = FileSystems.newFileSystem(source.toPath(), null);
-                    root = fs.getPath("/" + base);
-                }
-                catch (IOException e) {
-                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
-                    return;
-                }
-            }
-            else if (source.isDirectory()) {
-                root = source.toPath().resolve(base);
-            }
-            if (root == null || !Files.exists(root))
-                return;
-            if (processor != null) {
-                walkAllPaths(mod, root, processor);
-            }
-        }
-        finally {
-            IOUtils.closeQuietly(fs);
-        }
-    }
-
-    private static void walkAllPaths(ModContainer mod, Path root, BiConsumer<Path,Path> processor)
+    public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor,
+                                    boolean defaultUnfoundRoot, boolean visitAllFiles)
     {
 
-        if (processor != null)
+        File source = mod.getSource();
+
+        if ("minecraft".equals(mod.getModId()))
         {
-            Iterator<Path> itr;
-            try
+            return false;
+        }
+
+        FileSystem fs = null;
+        boolean success = true;
+
+        try
+        {
+            Path root = null;
+
+            if (source.isFile())
             {
-                itr = Files.walk(root).iterator();
+                try
+                {
+                    fs = FileSystems.newFileSystem(source.toPath(), (ClassLoader)null);
+                    root = fs.getPath("/" + base);
+                }
+                catch (IOException e)
+                {
+                    FMLLog.log.error("Error loading FileSystem from jar: ", e);
+                    return false;
+                }
             }
-            catch (IOException e)
+            else if (source.isDirectory())
             {
-                RMLFMLLoadingPlugin.LOGGER.error("Error iterating filesystem for: {}", mod.getModId(), e);
-                return;
+                root = source.toPath().resolve(base);
             }
 
-            while (itr.hasNext())
-            {
-                Path file = itr.next();
+            if (root == null || !Files.exists(root))
+                return defaultUnfoundRoot;
 
-                if (Files.isDirectory(file)){
-                    walkAllPaths(mod, file, processor);
-                }else {
-                    processor.accept(root, file);
+            if (preprocessor != null)
+            {
+                Boolean cont = preprocessor.apply(root);
+                if (cont == null || !cont)
+                    return false;
+            }
+
+            if (processor != null)
+            {
+                Iterator<Path> itr = null;
+                try
+                {
+                    itr = Files.walk(root).iterator();
+                }
+                catch (IOException e)
+                {
+                    FMLLog.log.error("Error iterating filesystem for: {}", mod.getModId(), e);
+                    return false;
+                }
+
+                while (itr.hasNext())
+                {
+                    Boolean cont = processor.apply(root, itr.next());
+
+                    if (visitAllFiles)
+                    {
+                        success &= cont != null && cont;
+                    }
+                    else if (cont == null || !cont)
+                    {
+                        return false;
+                    }
                 }
             }
         }
+        finally
+        {
+            IOUtils.closeQuietly(fs);
+        }
+
+        return success;
+    }
+
+    @PublicAPI public static void findFiles(ModContainer mod, String base, BiConsumer<Path,Path> processor){
+        findFiles(mod, base, null, (path, path2) -> {
+            processor.accept(path,path2);
+            return Boolean.TRUE;
+        },true,true);
     }
 
     @PublicAPI
