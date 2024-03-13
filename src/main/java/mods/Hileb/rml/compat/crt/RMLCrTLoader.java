@@ -2,6 +2,7 @@ package mods.Hileb.rml.compat.crt;
 
 import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
+import crafttweaker.runtime.ITweaker;
 import crafttweaker.runtime.providers.ScriptProviderCustom;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
@@ -40,15 +41,9 @@ public class RMLCrTLoader {
      *     }
      * **/
     @SuppressWarnings("unused")
-    @PrivateAPI public static void inject(CrTTweaker craftTweaker){
-        try {
-            IScriptProvider provider_1=(IScriptProvider) scriptProvider.get(craftTweaker);
-            EventScriptProvider proxy=new EventScriptProvider(provider_1);
-            scriptProvider.set(craftTweaker,proxy);
-            RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrTTweak");
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+    @PrivateAPI public static IScriptProvider inject(IScriptProvider provider_1){
+        RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrT:"+provider_1.toString());
+        return new EventScriptProvider(provider_1);
     }
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){

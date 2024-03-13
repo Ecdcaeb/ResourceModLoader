@@ -1,5 +1,6 @@
 package mods.Hileb.rml.core;
 
+import dev.latvian.kubejs.documentation.O;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.asm.MethodName;
@@ -111,25 +112,29 @@ public class RMLTransformer implements IClassTransformer {
         globalTransformers.add(new GlobalTransformer() {
             @Override
             public boolean isTarget(ClassNode cn) {
-                return cn.interfaces.contains("crafttweaker/runtime/ITweaker");
+                return cn.interfaces.contains("crafttweaker/runtime/ITweaker"); // make all ITweak Injected.
             }
 
             @Override
             public int apply(ClassNode cn) {
-                for(MethodNode mn:cn.methods){
-                    /**
-                     * public void setScriptProvider(IScriptProvider provider) {
-                     *         this.scriptProvider = provider;
-                     *         RMLCrTLoader.inject(this);
-                     *     }
-                     **/
+                MethodNode mn;
+                ListIterator<MethodNode> iterator = cn.methods.listIterator();
+                while (iterator.hasNext()){
+                    mn = iterator.next();
                     if ("setScriptProvider".equals(mn.name)){
-                        ASMUtil.injectBefore(mn.instructions, ()->{
-                            InsnList hook=new InsnList();
-                            hook.add(new IntInsnNode(Opcodes.ALOAD,0));
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/CrTTweaker;)V",false));
-                            return hook;
-                        }, (node)->node.getOpcode()==Opcodes.RETURN);
+                        mn.name = "setScriptProviderRML";
+
+                        MethodNode newMn = new MethodNode(Opcodes.ASM5, 0x1, "setScriptProvider", mn.desc, mn.signature, mn.exceptions.toArray(new String[0]));
+                        InsnList list = new InsnList();
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;",false));
+                        list.add(new VarInsnNode(Opcodes.ASTORE, 2)); // provider
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, cn.name, "setScriptProviderRML", mn.desc, false));
+                        list.add(new InsnNode(Opcodes.RETURN));
+                        newMn.instructions = list;
+
+                        iterator.add(newMn);
                         return ClassWriter.COMPUTE_MAXS;
                     }
                 }
@@ -192,23 +197,23 @@ public class RMLTransformer implements IClassTransformer {
                     return -1;
                 }
         );
-        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
-                (cn)->{
-                    for(MethodNode mn:cn.methods){
-                        if ("register".equals(mn.name)){
-                            InsnList insnList = new InsnList();
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
-                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
-                            insnList.add(new InsnNode(Opcodes.POP));
-                            insnList.add(new InsnNode(Opcodes.RETURN));
-                            mn.instructions = insnList;
-                        }
-                    }
-                    return -1;
-                });
+//        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
+//                (cn)->{
+//                    for(MethodNode mn:cn.methods){
+//                        if ("register".equals(mn.name)){
+//                            InsnList insnList = new InsnList();
+//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
+//                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
+//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
+//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
+//                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
+//                            insnList.add(new InsnNode(Opcodes.POP));
+//                            insnList.add(new InsnNode(Opcodes.RETURN));
+//                            mn.instructions = insnList;
+//                        }
+//                    }
+//                    return -1;
+//                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
