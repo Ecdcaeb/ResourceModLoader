@@ -3,6 +3,7 @@ package mods.Hileb.rml.api.asm;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
@@ -16,14 +17,23 @@ public class MethodName {
     @PublicAPI public String mcpName;@PublicAPI public String mcpDesc;
     @PublicAPI public String srgName;@PublicAPI public String srgDesc;
     @PublicAPI public String notchName;@PublicAPI public String notchDesc;
+
     @PrivateAPI MethodName(){}
+
     @PublicAPI public static Builder of(){return new Builder();}
+
     @PublicAPI public boolean is(MethodNode mn){return is(mn.name,mn.desc);}
+
     @PublicAPI public boolean is(String name,String desc){
         if (srgName.equals(name))return true;
         else if (mcpName.equals(name) && mcpDesc.equals(desc))return true;
         else return notchName.equals(name) && notchDesc.equals(desc);
     }
+
+    @PublicAPI public boolean is(String owner, MethodInsnNode methodInsnNode){
+        return this.is(methodInsnNode.name, methodInsnNode.desc) && owner.equals(methodInsnNode.owner);
+    }
+
     @EarlyClass
     @PublicAPI
     public static class Builder{

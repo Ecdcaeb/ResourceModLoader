@@ -3,19 +3,21 @@ package mods.Hileb.rml.core;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraft.launchwrapper.Launch;
-import net.minecraftforge.fml.common.FMLLog;
-import net.minecraftforge.fml.common.eventhandler.ASMEventHandler;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import sun.misc.Unsafe;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * @Project ResourceModLoader
@@ -28,13 +30,18 @@ public class ASMUtil {
     public static File gameDir;
     public static boolean saveTransformedClass = false;
     public static final Method m_defineClass;
+    public static final Unsafe unsafe;
     static {
         try {
-            m_defineClass=ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
+            m_defineClass = ClassLoader.class.getDeclaredMethod("defineClass", String.class, byte[].class, int.class, int.class);
             m_defineClass.setAccessible(true);
 
+            Field f1 = Unsafe.class.getDeclaredField("theUnsafe");
+            f1.setAccessible(true);
+            unsafe = (Unsafe) f1.get(null); //static
+
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unable to launch RML ASMUtil", e);
         }
     }
     public static byte[] push(String rawName,byte[] clazz){
@@ -64,18 +71,18 @@ public class ASMUtil {
         }
         return clazz;
     }
-    public static void injectBeforeAllInsnNode(InsnList method, InsnList hook, int code){
+    public static void injectBefore(InsnList method, Supplier<InsnList> hook, Predicate<AbstractInsnNode> predicate){
         LinkedList<AbstractInsnNode> nodes=new LinkedList<>();
         ListIterator<AbstractInsnNode> iterator=method.iterator();
         AbstractInsnNode node;
         while (iterator.hasNext()){
             node=iterator.next();
-            if (node.getOpcode()==code){
+            if (predicate.test(node)){
                 nodes.add(node);
             }
         }
-        for(AbstractInsnNode node1:nodes){
-            method.insertBefore(node1,hook);
+        for(AbstractInsnNode node1 : nodes){
+            method.insertBefore(node1,hook.get());
         }
     }
     public static Class<?> defineClass(String name, byte[] clazz) throws InvocationTargetException, IllegalAccessException {

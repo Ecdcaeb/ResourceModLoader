@@ -17,7 +17,7 @@ import java.util.List;
 public class CrTFindingIScriptIteratorEvent extends Event {
     @PublicAPI public final List<IScriptIterator> scriptIterators;
     @PublicAPI public CrTFindingIScriptIteratorEvent(List<IScriptIterator> list){
-        scriptIterators=list;
+        scriptIterators = list;
     }
     @PublicAPI public void load(IScriptProvider provider){
         Iterator<IScriptIterator> iterator = provider.getScripts();

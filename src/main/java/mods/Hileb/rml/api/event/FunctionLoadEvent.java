@@ -6,8 +6,8 @@ import net.minecraft.advancements.FunctionManager;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.eventhandler.Event;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 
 import java.util.Map;
 
@@ -25,8 +25,8 @@ public class FunctionLoadEvent extends Event {
     @PublicAPI public final FunctionManager functionManager;
     @PublicAPI public final Map<ResourceLocation, FunctionObject> functions;
     @PrivateAPI public FunctionLoadEvent(FunctionManager functionManager){
-        functions= ReflectionHelper.getPrivateValue(FunctionManager.class,functionManager,"field_193070_d","functions");
-        this.functionManager=functionManager;
+        functions = ObfuscationReflectionHelper.getPrivateValue(FunctionManager.class,functionManager,"field_193070_d");//functions
+        this.functionManager = functionManager;
     }
     @PublicAPI public void register(ResourceLocation name,FunctionObject function){
         functions.put(name,function);

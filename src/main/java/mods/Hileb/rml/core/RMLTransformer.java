@@ -10,8 +10,9 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.ListIterator;
-import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 /**
  * @Project ResourceModLoader
@@ -27,7 +28,8 @@ public class RMLTransformer implements IClassTransformer {
             .notch("h","()V")
             .build();
 
-    public static final HashMap<String, Function<ClassNode,Integer>> transformers=new HashMap<>();
+    public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
+    public static final HashSet<ToIntFunction<ClassNode>> globalTransformers = new HashSet<>();
     static {
         transformers.put("net.minecraftforge.common.crafting.CraftingHelper",
                 (cn)->{
@@ -40,9 +42,11 @@ public class RMLTransformer implements IClassTransformer {
                          *     }
                          * **/
                         if ("init".equals(mn.name)){
-                            InsnList hook=new InsnList();
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V",false));
-                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
+                            ASMUtil.injectBefore(mn.instructions, ()->{
+                                InsnList hook=new InsnList();
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V",false));
+                                return hook;
+                            }, (node)->node.getOpcode()==Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS;
                         }
                     }
@@ -74,10 +78,12 @@ public class RMLTransformer implements IClassTransformer {
                             }
                          * **/
                         if (m_193061.is(mn)){
-                            InsnList hook=new InsnList();
-                            hook.add(new IntInsnNode(Opcodes.ALOAD,0));
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
-                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
+                            ASMUtil.injectBefore(mn.instructions, ()->{
+                                InsnList hook=new InsnList();
+                                hook.add(new IntInsnNode(Opcodes.ALOAD,0));
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
+                                return hook;
+                            }, (node)->node.getOpcode()==Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS;
                         }
                     }
@@ -92,33 +98,38 @@ public class RMLTransformer implements IClassTransformer {
                          *     }
                          * **/
                         if ("<clinit>".equals(mn.name)){
-                            InsnList hook=new InsnList();
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
-                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
+                            ASMUtil.injectBefore(mn.instructions, ()->{
+                                InsnList hook=new InsnList();
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
+                                return hook;
+                            }, (node)->node.getOpcode()==Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
                 });
-        transformers.put("crafttweaker.runtime.CrTTweaker",
-                (cn)->{
-                    for(MethodNode mn:cn.methods){
-                        /**
-                         * public void setScriptProvider(IScriptProvider provider) {
-                         *         this.scriptProvider = provider;
-                         *         RMLCrTLoader.inject(this);
-                         *     }
-                         **/
-                        if ("setScriptProvider".equals(mn.name)){
+        globalTransformers.add(cn -> {
+            if (cn.interfaces.contains("crafttweaker/runtime/ITweaker")){ // abstract. For all ITweak.
+                for(MethodNode mn:cn.methods){
+                    /**
+                     * public void setScriptProvider(IScriptProvider provider) {
+                     *         this.scriptProvider = provider;
+                     *         RMLCrTLoader.inject(this);
+                     *     }
+                     **/
+                    if ("setScriptProvider".equals(mn.name)){
+                        ASMUtil.injectBefore(mn.instructions, ()->{
                             InsnList hook=new InsnList();
                             hook.add(new IntInsnNode(Opcodes.ALOAD,0));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/CrTTweaker;)V",false));
-                            ASMUtil.injectBeforeAllInsnNode(mn.instructions,hook,Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS;
-                        }
+                            return hook;
+                        }, (node)->node.getOpcode()==Opcodes.RETURN);
+                        return ClassWriter.COMPUTE_MAXS;
                     }
-                    return -1;
-                });
+                }
+            }
+            return ClassWriter.COMPUTE_MAXS;
+        });
         transformers.put("net.minecraftforge.common.config.ConfigManager",
                 (cn)->{
                     for(MethodNode mn:cn.methods){
@@ -175,17 +186,49 @@ public class RMLTransformer implements IClassTransformer {
                     return -1;
                 }
         );
+        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("register".equals(mn.name)){
+                            InsnList insnList = new InsnList();
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
+                            insnList.add(new InsnNode(Opcodes.POP));
+                            insnList.add(new InsnNode(Opcodes.RETURN));
+                            mn.instructions = insnList;
+                        }
+                    }
+                    return -1;
+                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
         if (basicClass!=null && basicClass.length>0){
             try{
-                if (transformers.containsKey(transformedName)){
+                if (!globalTransformers.isEmpty()){
+                    ClassReader classReader=new ClassReader(basicClass);
+                    ClassNode cn=new ClassNode();
+                    classReader.accept(cn, 0);
+                    int flags = 0;
+
+                    for(ToIntFunction<ClassNode> function : globalTransformers){
+                        flags |= function.applyAsInt(cn);
+                    }
+
+                    ClassWriter classWriter=new ClassWriter(classReader,flags);
+                    cn.accept(classWriter);
+                    return ASMUtil.push(transformedName,classWriter.toByteArray());
+                }
+                else if (transformers.containsKey(transformedName)){
                     ClassReader classReader=new ClassReader(basicClass);
                     ClassNode cn=new ClassNode();
                     classReader.accept(cn, 0);
 
-                    int flags=transformers.get(transformedName).apply(cn);
+                    int flags=transformers.get(transformedName).applyAsInt(cn);
+
                     if (flags<0) return ASMUtil.push(transformedName, basicClass);
 
                     ClassWriter classWriter=new ClassWriter(classReader,flags);
