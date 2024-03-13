@@ -74,7 +74,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @Override
     public void injectData(Map<String, Object> data) {
         source = (File) data.get("coremodLocation");
-        ASMUtil.gameDir = (File)data.get("mcLocation");
+        ASMUtil.gameDir = Launch.minecraftHome;
 
         //start args>>
         //read the args :

@@ -1,5 +1,6 @@
 package mods.Hileb.rml.api.event.villagers;
 
+import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.api.villagers.VillageReader;
 import mods.Hileb.rml.api.villagers.registry.CustomVillagerRegistry;
 import mods.Hileb.rml.api.villagers.trades.ranges.RangeFactory;
@@ -11,6 +12,7 @@ import net.minecraftforge.fml.common.eventhandler.Event;
  * @Author Hileb
  * @Date 2023/8/16 10:22
  **/
+@PublicAPI
 public class CustomVillageLoaderRegisterEvent extends Event {
     public CustomVillageLoaderRegisterEvent(){}
     @Override

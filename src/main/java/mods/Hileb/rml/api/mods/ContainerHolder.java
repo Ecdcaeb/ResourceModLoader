@@ -1,11 +1,13 @@
 package mods.Hileb.rml.api.mods;
 
+import mods.Hileb.rml.api.PublicAPI;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
+@PublicAPI
 public class ContainerHolder {
     public final ModContainer container;
     public final HashSet<Modules> modules;

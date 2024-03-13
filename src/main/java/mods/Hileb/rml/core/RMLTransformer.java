@@ -29,7 +29,7 @@ public class RMLTransformer implements IClassTransformer {
             .build();
 
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
-    public static final HashSet<ToIntFunction<ClassNode>> globalTransformers = new HashSet<>();
+    public static final HashSet<GlobalTransformer> globalTransformers = new HashSet<>();
     static {
         transformers.put("net.minecraftforge.common.crafting.CraftingHelper",
                 (cn)->{
@@ -108,8 +108,14 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return -1;
                 });
-        globalTransformers.add(cn -> {
-            if (cn.interfaces.contains("crafttweaker/runtime/ITweaker")){ // abstract. For all ITweak.
+        globalTransformers.add(new GlobalTransformer() {
+            @Override
+            public boolean isTarget(ClassNode cn) {
+                return cn.interfaces.contains("crafttweaker/runtime/ITweaker");
+            }
+
+            @Override
+            public int apply(ClassNode cn) {
                 for(MethodNode mn:cn.methods){
                     /**
                      * public void setScriptProvider(IScriptProvider provider) {
@@ -127,8 +133,8 @@ public class RMLTransformer implements IClassTransformer {
                         return ClassWriter.COMPUTE_MAXS;
                     }
                 }
+                return ClassWriter.COMPUTE_MAXS;
             }
-            return ClassWriter.COMPUTE_MAXS;
         });
         transformers.put("net.minecraftforge.common.config.ConfigManager",
                 (cn)->{
@@ -208,32 +214,28 @@ public class RMLTransformer implements IClassTransformer {
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
         if (basicClass!=null && basicClass.length>0){
             try{
-                if (!globalTransformers.isEmpty()){
+                if (!globalTransformers.isEmpty() || transformers.containsKey(transformedName)){
                     ClassReader classReader=new ClassReader(basicClass);
                     ClassNode cn=new ClassNode();
                     classReader.accept(cn, 0);
                     int flags = 0;
-
-                    for(ToIntFunction<ClassNode> function : globalTransformers){
-                        flags |= function.applyAsInt(cn);
+                    boolean isTarget = false;
+                    for(GlobalTransformer transformer:globalTransformers){
+                        if (transformer.isTarget(cn)){
+                            flags = transformer.apply(cn);
+                            isTarget = true;
+                        }
                     }
-
-                    ClassWriter classWriter=new ClassWriter(classReader,flags);
-                    cn.accept(classWriter);
-                    return ASMUtil.push(transformedName,classWriter.toByteArray());
-                }
-                else if (transformers.containsKey(transformedName)){
-                    ClassReader classReader=new ClassReader(basicClass);
-                    ClassNode cn=new ClassNode();
-                    classReader.accept(cn, 0);
-
-                    int flags=transformers.get(transformedName).applyAsInt(cn);
-
-                    if (flags<0) return ASMUtil.push(transformedName, basicClass);
-
-                    ClassWriter classWriter=new ClassWriter(classReader,flags);
-                    cn.accept(classWriter);
-                    return ASMUtil.push(transformedName,classWriter.toByteArray());
+                    if (transformers.containsKey(transformedName)){
+                        flags = transformers.get(transformedName).applyAsInt(cn);
+                        isTarget = true;
+                    }
+                    if (!isTarget) return basicClass;
+                    else {
+                        ClassWriter classWriter = new ClassWriter(classReader, flags);
+                        cn.accept(classWriter);
+                        return ASMUtil.push(transformedName, classWriter.toByteArray());
+                    }
                 }else return basicClass;
             }catch (Exception e){
                 e.printStackTrace();

@@ -1,5 +1,7 @@
 package mods.Hileb.rml.api.registry.remap;
 
+import mods.Hileb.rml.api.PrivateAPI;
+import mods.Hileb.rml.api.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
@@ -9,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+@PublicAPI
 public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,ResourceLocation>>{
     public final HashMap<ResourceLocation,ResourceLocation> remap = new HashMap<>();
     public final HashMap<ResourceLocation,ResourceLocation> demap = new HashMap<>();
@@ -48,6 +51,7 @@ public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,Reso
         return remap.entrySet().iterator();
     }
 
+    @PrivateAPI
     public static class Manager{
         public static final HashMap<ResourceLocation,RemapCollection> GLOBAL_COLLECTION = new HashMap<>();
 

@@ -26,6 +26,7 @@ import java.util.function.Supplier;
  **/
 @EarlyClass
 @PrivateAPI
+@SuppressWarnings("all")
 public class ASMUtil {
     public static File gameDir;
     public static boolean saveTransformedClass = false;
@@ -86,6 +87,6 @@ public class ASMUtil {
         }
     }
     public static Class<?> defineClass(String name, byte[] clazz) throws InvocationTargetException, IllegalAccessException {
-        return (Class<?>) m_defineClass.invoke(Launch.classLoader,name,clazz,0,clazz.length);
+        return unsafe.defineClass(name, clazz, 0, clazz.length, Launch.classLoader, null);
     }
 }
