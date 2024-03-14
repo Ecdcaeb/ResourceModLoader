@@ -42,8 +42,12 @@ public class RMLCrTLoader {
      * **/
     @SuppressWarnings("unused")
     @PrivateAPI public static IScriptProvider inject(IScriptProvider provider_1){
-        RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrT:"+provider_1.toString());
-        return new EventScriptProvider(provider_1);
+        if(provider_1 instanceof EventScriptProvider){
+            return provider_1;
+        }else{
+            RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrT:"+provider_1.toString());
+            return new EventScriptProvider(provider_1);
+        }
     }
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){

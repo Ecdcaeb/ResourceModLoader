@@ -122,20 +122,14 @@ public class RMLTransformer implements IClassTransformer {
                 while (iterator.hasNext()){
                     mn = iterator.next();
                     if ("setScriptProvider".equals(mn.name)){
-                        mn.name = "setScriptProviderRML";
-
-                        MethodNode newMn = new MethodNode(Opcodes.ASM5, 0x1, "setScriptProvider", mn.desc, mn.signature, mn.exceptions.toArray(new String[0]));
-                        InsnList list = new InsnList();
-                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;",false));
-                        list.add(new VarInsnNode(Opcodes.ASTORE, 2)); // provider
-                        list.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                        list.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, cn.name, "setScriptProviderRML", mn.desc, false));
-                        list.add(new InsnNode(Opcodes.RETURN));
-                        newMn.instructions = list;
-
-                        iterator.add(newMn);
-                        return ClassWriter.COMPUTE_MAXS;
+                        if(mn.instructions.size() >0){
+                            InsnList list = new InsnList();
+                            list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                            list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;",false));
+                            list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
+                            mn.instructions.insertBefore(mn.instructions.get(0), list);
+                            return ClassWriter.COMPUTE_MAXS;
+                        }
                     }
                 }
                 return ClassWriter.COMPUTE_MAXS;
