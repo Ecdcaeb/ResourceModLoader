@@ -14,7 +14,7 @@ import static java.lang.annotation.ElementType.*;
  *
  *
  * This announces for the public api for java-mod.
- * Please do not invoke the method which is not a {@link PublicAPI} api. Since it will change sometime.
+ * Please do not invoke the method which is not a {@link PublicAPI} not in documents. Since it will change sometime. But we will {@link Deprecated} it at first.
  **/
 @EarlyClass
 @Documented

@@ -4,6 +4,7 @@ import crafttweaker.runtime.IScriptIterator;
 import crafttweaker.runtime.IScriptProvider;
 import mods.Hileb.rml.api.PrivateAPI;
 import net.minecraftforge.common.MinecraftForge;
+import org.lwjgl.Sys;
 
 import java.util.ArrayList;
 import java.util.Iterator;

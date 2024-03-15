@@ -16,7 +16,7 @@ import static java.lang.annotation.ElementType.*;
  **/
 @EarlyClass
 @Documented
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Target(value={TYPE})
 public @interface EarlyClass {
 }

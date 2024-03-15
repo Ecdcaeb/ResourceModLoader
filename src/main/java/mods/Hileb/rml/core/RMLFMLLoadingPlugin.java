@@ -48,6 +48,7 @@ import java.util.Map;
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public static File source;
+    public static boolean isDebug;
     @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
 
     public RMLFMLLoadingPlugin(){
@@ -79,15 +80,17 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         final OptionParser parser = new OptionParser();
         parser.allowsUnrecognizedOptions();
 
-        final OptionSpec<Boolean> saveTransformedClass = parser.accepts("rml.printClasses", "Whether we save the transformed classes").withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.FALSE);
+        final OptionSpec<Boolean> debug = parser.accepts("rml.debug", "Open the debug mode").withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.FALSE);
+
         final OptionSet options = parser.parse(argumentList.toArray(new String[0]));
 
         //apply the args :
-        ASMUtil.saveTransformedClass = options.valueOf(saveTransformedClass);
+        isDebug = options.valueOf(debug);
+        ASMUtil.saveTransformedClass = isDebug;
         //>>end args;
 
         //debug:
-        if (FMLLaunchHandler.isDeobfuscatedEnvironment()){
+        if (isDebug){
             LOGGER.warn("inject data: ");
             for(String s : data.keySet()){
                 LOGGER.warn("{} : {}",s, String.valueOf(data.get(s)));

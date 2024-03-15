@@ -1,13 +1,13 @@
-#priority 1
-#modloaded contenttweaker
-#loader preinit
+#loader contenttweaker
 
 import mods.contenttweaker.VanillaFactory;
 import mods.contenttweaker.Item;
 
-val cotItem as Item = VanillaFactory.createItem("cot_item");
-cotItem.rarity = "epic";
-cotItem.creativeTab = <creativetab:misc>;
-cotItem.beaconPayment = true;
-cotItem.maxStackSize = 999;
-cotItem.register();
+val zsItem as Item = VanillaFactory.createItem("zs_item");
+zsItem.maxDamage = 8848;
+zsItem.rarity = "rare";
+zsItem.creativeTab = <creativetab:tools>;
+zsItem.toolClass = "pickaxe";
+zsItem.toolLevel = 5;
+zsItem.beaconPayment = true;
+zsItem.register();

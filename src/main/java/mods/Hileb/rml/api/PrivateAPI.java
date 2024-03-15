@@ -13,7 +13,7 @@ import static java.lang.annotation.ElementType.*;
  * @Date 2024/2/7 1:06
  *
  *  This announces for the public api for java-mod.
- *  Please do not invoke the method which is  a {@link PrivateAPI} api. Since it will change sometime.
+ *  Please do not invoke the method which is  a {@link PrivateAPI} api. Since it will change sometime, or it is used for asm.
  **/
 @EarlyClass
 @Documented

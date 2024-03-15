@@ -191,23 +191,35 @@ public class RMLTransformer implements IClassTransformer {
                     return -1;
                 }
         );
-//        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
+        transformers.put("crafttweaker.mc1120.CraftTweaker",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("onPreInitialization".equals(mn.name)){
+                            InsnList hook = new InsnList();
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
+                            mn.instructions.insertBefore(mn.instructions.get(0), hook);
+                            return ClassWriter.COMPUTE_MAXS;
+                        }
+                    }
+                    return -1;
+        });
+//        transformers.put("net.minecraft.util.ResourceLocation",
 //                (cn)->{
+//                    for(FieldNode fn:cn.fields){
+//                        fn.access = fn.access & ~Opcodes.ACC_FINAL;
+//                    }
 //                    for(MethodNode mn:cn.methods){
-//                        if ("register".equals(mn.name)){
-//                            InsnList insnList = new InsnList();
-//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
-//                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
-//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
-//                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
-//                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
-//                            insnList.add(new InsnNode(Opcodes.POP));
-//                            insnList.add(new InsnNode(Opcodes.RETURN));
-//                            mn.instructions = insnList;
+//                        if ("<init>".equals(mn.name)){
+//                            ASMUtil.injectBefore(mn.instructions, ()->{
+//                                InsnList hook = new InsnList();
+//                                hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+//                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/RMLHooks", "redefineResourceLocation", "(Lnet/minecraft/utilResourceLocation;)V", false));
+//                                return hook;
+//                            }, (node)->node.getOpcode() == Opcodes.RETURN);
 //                        }
 //                    }
-//                    return -1;
-//                });
+//                    return ClassWriter.COMPUTE_MAXS;
+//        });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
