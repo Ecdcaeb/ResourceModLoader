@@ -2,11 +2,9 @@ package mods.Hileb.rml.compat.crt;
 
 import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
-import crafttweaker.runtime.providers.ScriptProviderCustom;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
-import mods.Hileb.rml.api.java.optional.LazyOptional;
 import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
@@ -17,7 +15,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.HashSet;
 
 /**
  * @Project ResourceModLoader
@@ -51,8 +48,7 @@ public class RMLCrTLoader {
         }
     }
 
-    public static LazyOptional<HashSet<IScriptProvider>> cachedScriptProviders = LazyOptional.of(() -> {
-        HashSet<IScriptProvider> cachedScriptProvider = new HashSet<>();
+    public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
             if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_CRT)){
@@ -85,18 +81,11 @@ public class RMLCrTLoader {
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
         }
-        cachedScriptProvider.add(providerCustom);
-        return cachedScriptProvider;
-    });
+        return providerCustom;
+    }
 
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
-        cachedScriptProviders.actionConsume(scriptProviderCustoms -> {
-            for (IScriptProvider provider : scriptProviderCustoms) {
-                event.load(provider);
-            }
-        }, hashSetLazyOptional -> {
-            throw new RuntimeException("Could not load crt scripts for RML!");
-        }).executeActions();
+        event.load(getScriptProviders());
     }
 }
