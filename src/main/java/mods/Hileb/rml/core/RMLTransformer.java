@@ -1,6 +1,5 @@
 package mods.Hileb.rml.core;
 
-import dev.latvian.kubejs.documentation.O;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.asm.MethodName;
@@ -236,11 +235,24 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.ARETURN);
+                            return ClassWriter.COMPUTE_MAXS;
                         }
                     }
                     return -1;
-                }
-        );
+                });
+        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
+                    (cn)->{
+                        for(MethodNode mn:cn.methods){
+                            if ("requiresBeforeRegister".equals(mn.name)){
+                                InsnList overwrite = new InsnList();
+                                overwrite.add(new InsnNode(Opcodes.ICONST_0));
+                                overwrite.add(new InsnNode(Opcodes.IRETURN));
+                                mn.instructions = overwrite;
+                                return ClassWriter.COMPUTE_MAXS;
+                            }
+                        }
+                        return -1;
+                    });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
