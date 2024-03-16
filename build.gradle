@@ -144,3 +144,7 @@ tasks.register('releaseExample', Zip) {
 
     from "dev/example"
 }
+
+tasks.register('setsnapshot'){
+    version = "snapshot";
+}

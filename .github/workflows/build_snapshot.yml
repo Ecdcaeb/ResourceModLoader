@@ -27,8 +27,16 @@ jobs:
               java-version: '8'
               distribution: 'zulu'
               cache: gradle
+          - name: Setup Version
+            uses: gradle/gradle-build-action@v2
+            with:
+              arguments: setsnapshot
+          - name: Build
+            uses: gradle/gradle-build-action@v2
+            with:
+              arguments: build
           - name: Upload Artifacts
             uses: actions/upload-artifact@v3
             with:
               path: |
-                build/libs
+                build/libs/ResourceModLoader-snapshot.jar

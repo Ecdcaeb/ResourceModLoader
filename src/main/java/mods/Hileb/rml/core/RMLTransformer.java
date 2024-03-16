@@ -48,7 +48,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/CraftingHelperInitEvent","post","()V",false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -65,7 +65,7 @@ public class RMLTransformer implements IClassTransformer {
                             injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
                             injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/core/RMLModDiscover","inject","(Ljava/util/List;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),injectList);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -84,8 +84,8 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new IntInsnNode(Opcodes.ALOAD,0));
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
                                 return hook;
-                            }, (node)->node.getOpcode()==Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS;
+                            }, (node)->node.getOpcode() == Opcodes.RETURN);
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -104,7 +104,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -155,7 +155,7 @@ public class RMLTransformer implements IClassTransformer {
                                         methodInsnNode.name="registerCfg";
                                         methodInsnNode.itf=false;
                                         methodInsnNode.desc="(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
-                                        return ClassWriter.COMPUTE_MAXS;
+                                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                                     }
                                 }
                             }
@@ -175,25 +175,11 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),hook);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
                 });
-        transformers.put("com.cleanroommc.groovyscript.GroovyScript",
-                (cn)->{
-                    for(MethodNode mn:cn.methods){
-                        if ("<clinit>".equals(mn.name)){
-                            InsnList hook = new InsnList();
-                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/RMLHooks$GroovyHook", "initScriptPath", "()Ljava/io/File;", false));
-                            hook.add(new FieldInsnNode(Opcodes.PUTSTATIC, "com/cleanroommc/groovyscript/GroovyScript", "scriptPath", "Ljava/io/File;"));
-                            mn.instructions.insertBefore(mn.instructions.get(0),hook);
-                            return ClassWriter.COMPUTE_MAXS;
-                        }
-                    }
-                    return -1;
-                }
-        );
         transformers.put("crafttweaker.mc1120.CraftTweaker",
                 (cn)->{
                     for(MethodNode mn:cn.methods){
@@ -246,7 +232,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.ARETURN);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
