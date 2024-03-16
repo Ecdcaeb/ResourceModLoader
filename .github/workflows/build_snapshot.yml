@@ -30,4 +30,5 @@ jobs:
           - name: Upload Artifacts
             uses: actions/upload-artifact@v3
             with:
-              path: build/libs/*
+              path: |
+                build/libs
