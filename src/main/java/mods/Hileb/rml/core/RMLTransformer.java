@@ -241,18 +241,22 @@ public class RMLTransformer implements IClassTransformer {
                     return -1;
                 });
         transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
-                    (cn)->{
-                        for(MethodNode mn:cn.methods){
-                            if ("requiresBeforeRegister".equals(mn.name)){
-                                InsnList overwrite = new InsnList();
-                                overwrite.add(new InsnNode(Opcodes.ICONST_0));
-                                overwrite.add(new InsnNode(Opcodes.IRETURN));
-                                mn.instructions = overwrite;
-                                return ClassWriter.COMPUTE_MAXS;
-                            }
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("register".equals(mn.name)){
+                            InsnList insnList = new InsnList();
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
+                            insnList.add(new InsnNode(Opcodes.POP));
+                            insnList.add(new InsnNode(Opcodes.RETURN));
+                            mn.instructions = insnList;
                         }
-                        return -1;
-                    });
+                    }
+                    return -1;
+                });
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
