@@ -21,6 +21,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.function.BiConsumer;
@@ -140,7 +141,13 @@ public class FileHelper {
                 try
                 {
                     FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
-                    processor.accept(fs.getPath("/" + base));
+                    Path path;
+                    try{
+                        path = fs.getPath("/" + base);
+                    }catch (InvalidPathException e){
+                        return;
+                    }
+                    processor.accept(path);
                     IOUtils.closeQuietly(fs);
                 }
                 catch (IOException e)
@@ -150,7 +157,13 @@ public class FileHelper {
             }
             else if (source.isDirectory())
             {
-                processor.accept(source.toPath().resolve(base));
+                Path path;
+                try{
+                    path = source.toPath().resolve(base);
+                } catch (InvalidPathException e){
+                    return;
+                }
+                processor.accept(path);
             }
     }
     @PublicAPI

@@ -30,6 +30,7 @@ public class ContainerHolder {
         ORE_DIC,
         REGISTRY_REMAP,
         MOD_GROOVY_SCRIPT,
-        CUSTOM_VILLAGERS;
+        CUSTOM_VILLAGERS,
+        SPLASH_TEXT;
     }
 }

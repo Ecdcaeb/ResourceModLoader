@@ -29,6 +29,7 @@ public class RMLTransformer implements IClassTransformer {
             .notch("h","()V")
             .build();
 
+
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
     public static final HashSet<GlobalTransformer> globalTransformers = new HashSet<>();
     static {
@@ -112,24 +113,27 @@ public class RMLTransformer implements IClassTransformer {
         globalTransformers.add(new GlobalTransformer() {
             @Override
             public boolean isTarget(ClassNode cn) {
-                return cn.interfaces.contains("crafttweaker/runtime/ITweaker"); // make all ITweak Injected.
+                boolean check = cn.interfaces.contains("crafttweaker/runtime/ITweaker"); // make all ITweak Injected.
+                if (check) for(MethodNode mn:cn.methods){
+                    if ("setScriptProvider".equals(mn.name)){
+                        if(mn.instructions.size() >0){
+                            return true;
+                        }
+                    }
+                }
+                return false;
             }
 
             @Override
             public int apply(ClassNode cn) {
-                MethodNode mn;
-                ListIterator<MethodNode> iterator = cn.methods.listIterator();
-                while (iterator.hasNext()){
-                    mn = iterator.next();
-                    if ("setScriptProvider".equals(mn.name)){
-                        if(mn.instructions.size() >0){
-                            InsnList list = new InsnList();
-                            list.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                            list.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/crt/RMLCrTLoader","inject","(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;",false));
-                            list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
-                            mn.instructions.insertBefore(mn.instructions.get(0), list);
-                            return ClassWriter.COMPUTE_MAXS;
-                        }
+                for (MethodNode mn : cn.methods) {
+                    if ("setScriptProvider".equals(mn.name)) {
+                        InsnList list = new InsnList();
+                        list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                        list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
+                        list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
+                        mn.instructions.insertBefore(mn.instructions.get(0), list);
+                        return ClassWriter.COMPUTE_MAXS;
                     }
                 }
                 return ClassWriter.COMPUTE_MAXS;
@@ -203,23 +207,40 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return -1;
         });
-//        transformers.put("net.minecraft.util.ResourceLocation",
-//                (cn)->{
-//                    for(FieldNode fn:cn.fields){
-//                        fn.access = fn.access & ~Opcodes.ACC_FINAL;
-//                    }
-//                    for(MethodNode mn:cn.methods){
-//                        if ("<init>".equals(mn.name)){
-//                            ASMUtil.injectBefore(mn.instructions, ()->{
-//                                InsnList hook = new InsnList();
-//                                hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
-//                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/RMLHooks", "redefineResourceLocation", "(Lnet/minecraft/utilResourceLocation;)V", false));
-//                                return hook;
-//                            }, (node)->node.getOpcode() == Opcodes.RETURN);
-//                        }
-//                    }
-//                    return ClassWriter.COMPUTE_MAXS;
-//        });
+        transformers.put("net.minecraft.client.gui.GuiMainMenu",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("<init>".equals(mn.name)){
+                            ListIterator<AbstractInsnNode> iterator = mn.instructions.iterator();
+                            AbstractInsnNode node;
+                            while (iterator.hasNext()){
+                                node = iterator.next();
+                                if (node.getOpcode() == Opcodes.INVOKESTATIC){
+                                    MethodInsnNode methodInsnNode = (MethodInsnNode) node;
+                                    if ("com/google/common/collect/Lists".equals(methodInsnNode.owner) && "newArrayList".equals(methodInsnNode.name) && "()Ljava/util/ArrayList;".equals(methodInsnNode.desc)){
+                                        iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
+                                        return ClassWriter.COMPUTE_MAXS;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return -1;
+                });
+        transformers.put("net/minecraftforge/client/ForgeHooksClient",
+                (cn)->{
+                    for(MethodNode mn: cn.methods){
+                        if ("renderMainMenu".equals(mn.name) && "(Lnet/minecraft/client/gui/GuiMainMenu;Lnet/minecraft/client/gui/FontRenderer;IILjava/lang/String;)Ljava/lang/String;".equals(mn.desc)){
+                            ASMUtil.injectBefore(mn.instructions, ()->{
+                                InsnList hook = new InsnList();
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
+                                return hook;
+                            }, (node)->node.getOpcode()==Opcodes.ARETURN);
+                        }
+                    }
+                    return -1;
+                }
+        );
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
