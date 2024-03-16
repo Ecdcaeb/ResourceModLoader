@@ -197,6 +197,12 @@ public class RMLTransformer implements IClassTransformer {
         transformers.put("crafttweaker.mc1120.CraftTweaker",
                 (cn)->{
                     for(MethodNode mn:cn.methods){
+                        /**
+                         *  @EventHandler
+                         *     public void onPreInitialization(FMLPreInitializationEvent ev) {
+                         *         CrTZenClassRegisterEvent.post();
+                         *         PROXY.registerEvents();
+                         * **/
                         if ("onPreInitialization".equals(mn.name)){
                             InsnList hook = new InsnList();
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
@@ -209,6 +215,11 @@ public class RMLTransformer implements IClassTransformer {
         transformers.put("net.minecraft.client.gui.GuiMainMenu",
                 (cn)->{
                     for(MethodNode mn:cn.methods){
+                        /**
+                         *  try {
+                         *             List<String> list = MCMainScreenTextLoader.inject(Lists.newArrayList());
+                         *             iresource = Minecraft.getMinecraft().getResourceManager().getResource(SPLASH_TEXTS);
+                         * **/
                         if ("<init>".equals(mn.name)){
                             ListIterator<AbstractInsnNode> iterator = mn.instructions.iterator();
                             AbstractInsnNode node;
@@ -236,23 +247,6 @@ public class RMLTransformer implements IClassTransformer {
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.ARETURN);
                             return ClassWriter.COMPUTE_MAXS;
-                        }
-                    }
-                    return -1;
-                });
-        transformers.put("com.teamacronymcoders.base.registrysystem.Registry",
-                (cn)->{
-                    for(MethodNode mn:cn.methods){
-                        if ("register".equals(mn.name)){
-                            InsnList insnList = new InsnList();
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                            insnList.add(new FieldInsnNode(Opcodes.GETFIELD, "com/teamacronymcoders/base/registrysystem/Registry", "entries", "Ljava/util/Map;"));
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                            insnList.add(new VarInsnNode(Opcodes.ALOAD, 2));
-                            insnList.add(new MethodInsnNode(Opcodes.INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;", true));
-                            insnList.add(new InsnNode(Opcodes.POP));
-                            insnList.add(new InsnNode(Opcodes.RETURN));
-                            mn.instructions = insnList;
                         }
                     }
                     return -1;

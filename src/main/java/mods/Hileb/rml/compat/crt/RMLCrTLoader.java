@@ -51,15 +51,16 @@ public class RMLCrTLoader {
         }
     }
 
-    public static LazyOptional<HashSet<ScriptProviderCustom>> cachedScriptProviders = LazyOptional.of(() -> {
-        HashSet<ScriptProviderCustom> cachedScriptProvider = new HashSet<>();
+    public static LazyOptional<HashSet<IScriptProvider>> cachedScriptProviders = LazyOptional.of(() -> {
+        HashSet<IScriptProvider> cachedScriptProvider = new HashSet<>();
+        RMLScriptProvider providerCustom = new RMLScriptProvider();
         for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
             if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_CRT)){
                 final ModContainer modContainer = containerHolder.container;
                 Loader.instance().setActiveModContainer(modContainer);
 
 
-                ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
+
                 FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",
                         (root, file) ->
                         {
@@ -73,18 +74,18 @@ public class RMLCrTLoader {
                             try{
                                 byte[] fileBytes = FileHelper.getByteSource(file).read();
 
-                                providerCustom.add(name,fileBytes);
+                                providerCustom.add(name, fileBytes);
 
                                 RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
                             } catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
                         });
-                cachedScriptProvider.add(providerCustom);
 
                 Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
         }
+        cachedScriptProvider.add(providerCustom);
         return cachedScriptProvider;
     });
 

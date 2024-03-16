@@ -49,7 +49,7 @@ import java.util.Map;
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public static File source;
     public static boolean isDebug;
-    @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
+    @PublicAPI public static final Logger LOGGER = LogManager.getLogger(ResourceModLoader.MODID);
 
     public RMLFMLLoadingPlugin(){
         RMLBus.BUS.register(EventHandler.INSTANCE);
@@ -106,7 +106,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @SuppressWarnings("unused")
     public static class Container extends DummyModContainer{
         @PublicAPI public static Container INSTANCE;
-        @PublicAPI public static final Logger LOGGER= LogManager.getLogger(ResourceModLoader.MODID);
+        @PublicAPI public static final Logger LOGGER = RMLFMLLoadingPlugin.LOGGER;
         @PrivateAPI public Container(){
             super(new ModMetadata());
             ModMetadata metadata=this.getMetadata();
