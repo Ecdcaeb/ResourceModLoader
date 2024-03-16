@@ -1,7 +1,0 @@
-{
-    "pack": {
-        "description": "Example RMDK Resource",
-        "_commit": "If this file is exist, it will be also a resource pack. If not exist, pack_format will be 2.",
-        "pack_format": 3
-    }
-}

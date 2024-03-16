@@ -1,3 +1,0 @@
-call gradlew setupDecompWorkspace
-call gradlew installRML
-pause
