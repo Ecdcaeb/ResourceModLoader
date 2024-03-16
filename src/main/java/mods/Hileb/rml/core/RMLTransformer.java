@@ -227,7 +227,7 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     return -1;
                 });
-        transformers.put("net/minecraftforge/client/ForgeHooksClient",
+        transformers.put("net.minecraftforge.client.ForgeHooksClient",
                 (cn)->{
                     for(MethodNode mn: cn.methods){
                         if ("renderMainMenu".equals(mn.name) && "(Lnet/minecraft/client/gui/GuiMainMenu;Lnet/minecraft/client/gui/FontRenderer;IILjava/lang/String;)Ljava/lang/String;".equals(mn.desc)){

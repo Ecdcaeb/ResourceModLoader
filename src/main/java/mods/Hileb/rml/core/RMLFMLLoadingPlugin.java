@@ -76,16 +76,12 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
 
         //start args>>
         //read the args :
-        final List<String> argumentList = (List<String>) Launch.blackboard.get("ArgumentList");
-        final OptionParser parser = new OptionParser();
-        parser.allowsUnrecognizedOptions();
-
-        final OptionSpec<Boolean> debug = parser.accepts("rml.debug", "Open the debug mode").withOptionalArg().ofType(Boolean.class).defaultsTo(Boolean.FALSE);
-
-        final OptionSet options = parser.parse(argumentList.toArray(new String[0]));
-
+        Map<String,String> arguments = (Map<String,String>) Launch.blackboard.get("launchArgs");
+        if (arguments.containsKey("rml.debug")){
+            isDebug = Boolean.parseBoolean(arguments.get("rml.debug"));
+        }
         //apply the args :
-        isDebug = options.valueOf(debug);
+        isDebug = Boolean.parseBoolean(System.getProperty("rml.debug", "false"));
         ASMUtil.saveTransformedClass = isDebug;
         //>>end args;
 
@@ -96,8 +92,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 LOGGER.warn("{} : {}",s, String.valueOf(data.get(s)));
             }
             LOGGER.warn("args: ");
-            for(String s : argumentList){
-                LOGGER.warn(s);
+            for(Map.Entry<String,String> s : arguments.entrySet()){
+                LOGGER.warn(s.getKey()+" >> "+s.getValue());
             }
             ASMUtil.saveTransformedClass = true;
         }

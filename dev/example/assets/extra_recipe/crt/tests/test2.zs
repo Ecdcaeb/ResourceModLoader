@@ -1,1 +1,3 @@
-recipes.addShapeless(<minecraft:diamond> ,[<minecraft:iron_block>,<minecraft:iron_block>,<minecraft:iron_block>]);
+#loader contenttweaker
+
+recipes.addShapeless(<minecraft:diamond> ,[<contenttweaker:zs_item>]);

@@ -302,10 +302,9 @@ public class RMLDeserializeLoader {
 
     @SuppressWarnings("unused")
     public static class MCMainScreenTextLoader {
-        public static final LinkedList<String> rawTexts = new LinkedList<>();
+        public static List<String> rawTexts;
 
         public static void load(){
-            rawTexts.clear();
             ResourceModLoader.getCurrentRMLContainerHolders().stream()
                     .filter(containerHolder -> containerHolder.modules.contains(ContainerHolder.Modules.SPLASH_TEXT))
                     .forEach(containerHolder -> {
@@ -329,8 +328,9 @@ public class RMLDeserializeLoader {
         }
 
         public static ArrayList<String> inject(ArrayList<String> list){
+            rawTexts = list;
             load();
-            list.addAll(rawTexts);
+            RMLFMLLoadingPlugin.LOGGER.info("RML has injected the splashText!");
             return list;
         }
 

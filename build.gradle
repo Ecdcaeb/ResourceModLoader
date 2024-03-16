@@ -66,6 +66,8 @@ minecraft {
 
             //launch the IFMLLoadingPlugin
             property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin'
+
+            property 'rml.debug', 'true'
         }
 
         server {
@@ -78,6 +80,8 @@ minecraft {
 
             //launch the IFMLLoadingPlugin
             property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin'
+
+            property 'rml.debug', 'true'
         }
     }
 }
