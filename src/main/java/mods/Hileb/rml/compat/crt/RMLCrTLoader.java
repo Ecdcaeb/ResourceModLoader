@@ -2,11 +2,11 @@ package mods.Hileb.rml.compat.crt;
 
 import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
-import crafttweaker.runtime.ITweaker;
 import crafttweaker.runtime.providers.ScriptProviderCustom;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.java.optional.LazyOptional;
 import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
@@ -51,50 +51,51 @@ public class RMLCrTLoader {
         }
     }
 
-    public static HashSet<ScriptProviderCustom> cachedScriptProvider = null;
-
-    public static HashSet<ScriptProviderCustom> getCachedScriptProvider(){
-        if (cachedScriptProvider == null){
-            cachedScriptProvider = new HashSet<>();
-            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-                if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_CRT)){
-                    final ModContainer modContainer = containerHolder.container;
-                    Loader.instance().setActiveModContainer(modContainer);
+    public static LazyOptional<HashSet<ScriptProviderCustom>> cachedScriptProviders = LazyOptional.of(() -> {
+        HashSet<ScriptProviderCustom> cachedScriptProvider = new HashSet<>();
+        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
+            if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_CRT)){
+                final ModContainer modContainer = containerHolder.container;
+                Loader.instance().setActiveModContainer(modContainer);
 
 
-                    ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
-                    FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",
-                            (root, file) ->
-                            {
-                                String relative = root.relativize(file).toString();
-                                if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                    return;
+                ScriptProviderCustom providerCustom=new ScriptProviderCustom(modContainer.getModId());
+                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",
+                        (root, file) ->
+                        {
+                            String relative = root.relativize(file).toString();
+                            if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                return;
 
-                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                                ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                                name = "rml/"+key.getResourceDomain()+"/"+name;
-                                try{
-                                    byte[] fileBytes = FileHelper.getByteSource(file).read();
+                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                            name = "rml/"+key.getResourceDomain()+"/"+name;
+                            try{
+                                byte[] fileBytes = FileHelper.getByteSource(file).read();
 
-                                    providerCustom.add(name,fileBytes);
+                                providerCustom.add(name,fileBytes);
 
-                                    RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
-                                } catch (IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            });
-                    cachedScriptProvider.add(providerCustom);
+                                RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                cachedScriptProvider.add(providerCustom);
 
-                    Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
-                }
+                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
             }
         }
         return cachedScriptProvider;
-    }
+    });
+
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
-        for(IScriptProvider provider:cachedScriptProvider){
-            event.load(provider);
-        }
+        cachedScriptProviders.actionConsume(scriptProviderCustoms -> {
+            for (IScriptProvider provider : scriptProviderCustoms) {
+                event.load(provider);
+            }
+        }, hashSetLazyOptional -> {
+            throw new RuntimeException("Could not load crt scripts for RML!");
+        }).executeActions();
     }
 }

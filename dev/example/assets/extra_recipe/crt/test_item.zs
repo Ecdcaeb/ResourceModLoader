@@ -1,3 +1,4 @@
+#priority 1
 #loader contenttweaker
 
 import mods.contenttweaker.VanillaFactory;

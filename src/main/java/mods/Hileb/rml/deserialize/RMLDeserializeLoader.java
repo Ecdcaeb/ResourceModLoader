@@ -24,6 +24,7 @@ import net.minecraft.command.FunctionObject;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.JsonContext;
@@ -38,9 +39,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @Project ResourceModLoader
@@ -292,6 +297,49 @@ public class RMLDeserializeLoader {
                 );
             }
             return list;
+        }
+    }
+
+    @SuppressWarnings("unused")
+    public static class MCMainScreenTextLoader {
+        public static final LinkedList<String> rawTexts = new LinkedList<>();
+
+        public static void load(){
+            rawTexts.clear();
+            ResourceModLoader.getCurrentRMLContainerHolders().stream()
+                    .filter(containerHolder -> containerHolder.modules.contains(ContainerHolder.Modules.SPLASH_TEXT))
+                    .forEach(containerHolder -> {
+                        FileHelper.findFile(containerHolder.container, "assets/" + containerHolder.container.getModId() + "/text/splash_text.txt", path -> {
+                            try {
+                                BufferedReader bufferedreader = Files.newBufferedReader(path);
+                                String s;
+                                while ((s = bufferedreader.readLine()) != null)
+                                {
+                                    s = s.trim();
+
+                                    if (!s.isEmpty())
+                                    {
+                                        rawTexts.add(s);
+                                    }
+                                }
+                            } catch (Exception e) {
+                            }
+                        });
+            });
+        }
+
+        public static ArrayList<String> inject(ArrayList<String> list){
+            load();
+            list.addAll(rawTexts);
+            return list;
+        }
+
+        public static String processComponent(String raw){
+            try{
+                return ITextComponent.Serializer.jsonToComponent(raw).getFormattedText();
+            }catch (Exception ignored){
+                return raw;
+            }
         }
     }
 }
