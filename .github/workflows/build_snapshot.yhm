@@ -6,11 +6,8 @@ name: Build Test Artifact
 
 on:
   push:
-    paths-ignore:
-      - '.github/workflows/build.yml' # Release GHA file, please change this when you change the file name
-      - 'LICENSE' 
-      - 'README.md'
-  workflow_dispatch:
+    branches:
+          - 'main'
 
 jobs:
   build:
@@ -19,9 +16,8 @@ jobs:
 
     steps:
     - name: Checkout branch
-      uses: actions/checkout@v2
-    
-    # https://github.com/madhead/read-java-properties#error-java_home-is-set-to-an-invalid-directory
+      uses: actions/checkout@v4
+
     - name: Gather Gradle properties
       uses: madhead/read-java-properties@latest
       id: gradle_properties
