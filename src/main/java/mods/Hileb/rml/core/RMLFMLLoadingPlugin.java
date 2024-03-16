@@ -115,7 +115,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             metadata.authorList.add("Hileb");
             metadata.version=ResourceModLoader.VERSION;
             metadata.credits="\n" +
-                    "       Idealland - they provided this framework for enviroment.\n";
+                    "       Idealland - they provided this framework for enviroment.\n" +
+                    "       zfms4188  - support the RML at CraftTweaker compat! \n";
             metadata.description="a modloader which load mods from resource packs.(in mods/)";
             metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
             metadata.logoFile="assets/rml/icon.png";
