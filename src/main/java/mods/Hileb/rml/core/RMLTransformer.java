@@ -74,7 +74,6 @@ public class RMLTransformer implements IClassTransformer {
                 (cn)->{
                     for(MethodNode mn:cn.methods){
                         /**
-                         *
                                 FunctionLoadEvent.post(this);
                             }
                          * **/
@@ -104,7 +103,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/api/event/LootTableRegistryEvent","post","()V",false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -135,7 +134,7 @@ public class RMLTransformer implements IClassTransformer {
                         return ClassWriter.COMPUTE_MAXS;
                     }
                 }
-                return ClassWriter.COMPUTE_MAXS;
+                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
             }
         });
         transformers.put("net.minecraftforge.common.config.ConfigManager",
@@ -155,7 +154,7 @@ public class RMLTransformer implements IClassTransformer {
                                         methodInsnNode.name="registerCfg";
                                         methodInsnNode.itf=false;
                                         methodInsnNode.desc="(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
-                                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                        return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                                     }
                                 }
                             }
@@ -175,7 +174,7 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC,"mods/Hileb/rml/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
                             mn.instructions.insertBefore(mn.instructions.get(0),hook);
-                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -193,7 +192,7 @@ public class RMLTransformer implements IClassTransformer {
                             InsnList hook = new InsnList();
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
                             mn.instructions.insertBefore(mn.instructions.get(0), hook);
-                            return ClassWriter.COMPUTE_MAXS;
+                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;
@@ -215,7 +214,7 @@ public class RMLTransformer implements IClassTransformer {
                                     MethodInsnNode methodInsnNode = (MethodInsnNode) node;
                                     if ("com/google/common/collect/Lists".equals(methodInsnNode.owner) && "newArrayList".equals(methodInsnNode.name) && "()Ljava/util/ArrayList;".equals(methodInsnNode.desc)){
                                         iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
-                                        return ClassWriter.COMPUTE_MAXS;
+                                        return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                                     }
                                 }
                             }
@@ -232,7 +231,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                 return hook;
                             }, (node)->node.getOpcode()==Opcodes.ARETURN);
-                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                         }
                     }
                     return -1;

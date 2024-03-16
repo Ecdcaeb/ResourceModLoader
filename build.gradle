@@ -41,7 +41,7 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.0.10'
+version = project.mod_version
 group = 'mods.Hileb.rml' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'ResourceModLoader'
 
@@ -145,6 +145,9 @@ tasks.register('releaseExample', Zip) {
     from "dev/example"
 }
 
-tasks.register('setsnapshot'){
+tasks.register('buildsnapshot'){
     version = "snapshot";
+    gradle.bui
 }
+tasks.buildsnapshot.mustRunAfter("build")
+
