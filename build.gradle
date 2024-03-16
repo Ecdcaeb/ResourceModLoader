@@ -145,9 +145,3 @@ tasks.register('releaseExample', Zip) {
     from "dev/example"
 }
 
-tasks.register('buildsnapshot'){
-    version = "snapshot";
-    gradle.bui
-}
-tasks.buildsnapshot.mustRunAfter("build")
-
