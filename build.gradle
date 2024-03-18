@@ -65,7 +65,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             //launch the IFMLLoadingPlugin
-            property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin'
+            property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin,com.cleanroommc.groovyscript.core.GroovyScriptCore'
 
             property 'rml.debug', 'true'
         }
@@ -79,7 +79,7 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             //launch the IFMLLoadingPlugin
-            property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin'
+            property 'fml.coreMods.load', 'mods.Hileb.rml.core.RMLFMLLoadingPlugin,com.cleanroommc.groovyscript.core.GroovyScriptCore'
 
             property 'rml.debug', 'true'
         }
@@ -88,7 +88,7 @@ minecraft {
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
-    //compile 'com.cleanroommc:groovyscript:0.8.0'
+    compile 'com.cleanroommc:groovyscript:0.8.0'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
     deobf files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
 
