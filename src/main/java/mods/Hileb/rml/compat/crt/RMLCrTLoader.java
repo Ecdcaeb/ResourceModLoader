@@ -66,12 +66,10 @@ public class RMLCrTLoader {
 
                             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                             ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                            name = key.getResourceDomain()+"/"+name;
+                            name = "rml/"+key.getResourceDomain()+"/"+name;
                             try{
                                 byte[] fileBytes = FileHelper.getByteSource(file).read();
 
-                                name = "rml/"+ new String(fileBytes).hashCode() + "/"+ name;
-                                name = name.replace('/','_');
                                 providerCustom.add(name, fileBytes);
 
                                 RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
