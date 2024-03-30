@@ -1,3 +1,4 @@
+
 buildscript {
     repositories {
         if (use_mirror_url == "true") {
@@ -16,10 +17,9 @@ buildscript {
             mavenCentral()
             maven { url "https://maven.minecraftforge.net" }
         }
-
     }
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:2.3.4"
+        classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
     }
 }
 
@@ -30,7 +30,7 @@ apply from: "runmanager.gradle"
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
 version = project.mod_version
-group = "com.ideallandframework.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+group = "mods.rml" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "ResourceModLoader"
 
 sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
@@ -42,7 +42,7 @@ minecraft {
     version = "1.12.2-14.23.5.2847"
     runDir = "run"
     mappings = "snapshot_20171003"
-    makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+    makeObfSourceJar = false
 }
 
 repositories {
@@ -84,7 +84,6 @@ repositories {
     mavenCentral()
 }
 
-
 dependencies {
     compile 'com.cleanroommc:groovyscript:0.8.0'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
@@ -110,12 +109,6 @@ processResources {
     }
 }
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
-
-
-// Example for how to get properties into the manifest for reading by the runtime..
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
