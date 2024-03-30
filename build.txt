@@ -1,0 +1,149 @@
+buildscript {
+    repositories {
+        if (use_mirror_url == "true") {
+            // clear all proxy settings, this is available for global
+            System.clearProperty "http.proxyHost"
+            System.clearProperty "http.proxyPort"
+            System.clearProperty "https.proxyHost"
+            System.clearProperty "https.proxyPort"
+            System.clearProperty "socksProxyHost"
+            System.clearProperty "socksProxyPort"
+            System.setProperty "java.net.useSystemProxies", "false"
+
+            maven { url "https://maven.aliyun.com/nexus/content/groups/public" }
+            maven { url "https://${mirror_maven_url}" }
+        } else {
+            mavenCentral()
+            maven { url "https://maven.minecraftforge.net" }
+        }
+    }
+    dependencies {
+        classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
+    }
+}
+
+boolean useMirror = use_mirror_url == "true"
+if (useMirror) apply from: "mirror.gradle"
+apply plugin: "net.minecraftforge.gradle.forge"
+apply from: "runmanager.gradle"
+//Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+
+version = "1.0"
+group = "com.ideallandframework.modid" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+archivesBaseName = "modid"
+
+sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
+compileJava {
+    sourceCompatibility = targetCompatibility = "1.8"
+}
+
+minecraft {
+    version = "1.12.2-14.23.5.2768"
+    runDir = "run"
+
+    // the mappings can be changed at any time, and must be in the following format.
+    // snapshot_YYYYMMDD   snapshot are built nightly.
+    // stable_#            stables are built at the discretion of the MCP team.
+    // Use non-default mappings at your own risk. they may not always work.
+    // simply re-run your setup task after changing the mappings to update your workspace.
+    mappings = "snapshot_20171003"
+    // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
+}
+
+repositories {
+    maven {
+        name 'Cleanroom Maven'
+        url 'https://maven.cleanroommc.com/'
+    }
+    maven {
+        url "https://repo.cleanroommc.com/snapshots"
+    }
+    maven {
+        url "https://maven.outlands.top/releases/"
+    }
+    maven {
+        name 'CurseMaven'
+        url 'https://cursemaven.com'
+    }
+    maven {
+        name 'SpongePowered Maven'
+        url 'https://repo.spongepowered.org/maven'
+    }
+    maven {
+        name 'Blamejared Maven'
+        url 'https://maven.blamejared.com/'
+    }
+    maven {
+        name = 'Modrinth'
+        url = 'https://api.modrinth.com/maven'
+    }
+    maven {
+        name 'GTNH Maven'
+        url 'https://nexus.gtnewhorizons.com/repository/public/'
+    }
+    maven {
+        name 'GTCEu Maven'
+        url 'https://maven.gtceu.com'
+    }
+
+    mavenCentral()
+}
+
+dependencies {
+
+
+
+    compile 'com.cleanroommc:groovyscript:0.8.0'
+    compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
+    deobfCompile files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
+}
+
+processResources {
+    // this will ensure that this task is redone when the versions change.
+    inputs.property "version", project.version
+    inputs.property "mcversion", project.minecraft.version
+
+    // replace stuff in mcmod.info, nothing else
+    from(sourceSets.main.resources.srcDirs) {
+        include "mcmod.info"
+
+        // replace version and mcversion
+        expand "version":project.version, "mcversion":project.minecraft.version
+    }
+
+    // copy everything else except the mcmod.info
+    from(sourceSets.main.resources.srcDirs) {
+        exclude "mcmod.info"
+    }
+}
+
+// Example for how to get properties into the manifest for reading by the runtime..
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes([
+                'Specification-Title': "rml",
+                'Specification-Vendor': "Hileb",
+                'Specification-Version': '1', // We are version 1 of ourselves
+                'FMLCorePlugin': 'mods.Hileb.rml.core.RMLFMLLoadingPlugin',
+                'FMLAT': 'rml_at.cfg',
+                'Implementation-Title': "ResourceModLoader",
+                'Implementation-Version': mod_version,
+                'Implementation-Vendor': "Hileb",
+                'Implementation-Timestamp': new Date().format('yyyy-MM-dd\'T\'HH:mm:ssZ')
+        ])
+    }
+}
+
+tasks.register('buildExample', Zip) {
+    archiveName = "example.zip"
+    destinationDir = file("run/mods")
+
+    from "dev/example"
+}
+tasks.register('releaseExample', Zip) {
+    archiveName = "example-"+version+".zip"
+    destinationDir = file("releases/example")
+
+    from "dev/example"
+}
