@@ -26,4 +26,5 @@ runServer/*
 !runServer/server.properties
 releases/
 libsource/
+misc/
 
