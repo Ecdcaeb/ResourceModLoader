@@ -11,5 +11,5 @@ if errorlevel 1 (
         set "JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8"
     )
 )
-call gradlew.bat setupDecompWorkspace genIntellijRuns
+call gradlew.bat setupDecompWorkspace genIntellijRuns --info
 pause
