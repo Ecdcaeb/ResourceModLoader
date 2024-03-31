@@ -257,9 +257,10 @@ public class RMLTransformer implements IClassTransformer {
                             ASMUtil.injectBefore(mn.instructions, () -> {
                                 InsnList list = new InsnList();
                                 list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                list.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                 list.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
                                 list.add(new VarInsnNode(Opcodes.ALOAD, 3));
-                                list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/ModMenuInfoEvent", "post", "(Lnet/minecraftforge/fml/common/ModContainer;Ljava/util/List;)V", false));
+                                list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/ModMenuInfoEvent", "post", "(Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;Ljava/util/List;)V", false));
                                 return list;
                             }, (node)->node.getOpcode()==Opcodes.RETURN);
                             return ClassWriter.COMPUTE_MAXS;
@@ -289,9 +290,9 @@ public class RMLTransformer implements IClassTransformer {
                                         hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
                                         hook.add(new VarInsnNode(Opcodes.ILOAD, 2));
                                         hook.add(new VarInsnNode(Opcodes.ILOAD, 3));
-                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postHover", "(ZLnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;II)Z", false));
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postHover", "(Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;II)V", false));
                                         return hook;
-                                        }, (node)->node.getOpcode()==Opcodes.IRETURN);
+                                        }, (node)->node.getOpcode() == Opcodes.RETURN);
                             bar.complete("hover");
                         }
                     }

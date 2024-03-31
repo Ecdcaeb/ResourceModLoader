@@ -3,6 +3,7 @@ package mods.Hileb.rml.api.event.client.gui;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.GuiModList;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.relauncher.Side;
@@ -35,6 +36,7 @@ public class ModMenuInfoEvent extends Event {
     }
 
     public static void post(GuiModList modList, ModContainer mod, List<ITextComponent> textComponentList){
+        FMLLog.log.warn("event posted");
         MinecraftForge.EVENT_BUS.post(new ModMenuInfoEvent(modList, mod, textComponentList));
     }
 
