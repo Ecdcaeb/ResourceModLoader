@@ -16,6 +16,14 @@ public class ContainerHolder {
         this.modules = new HashSet<>(Arrays.asList(modules));
     }
 
+    public ModContainer getContainer() {
+        return container;
+    }
+
+    public HashSet<Modules> getModules() {
+        return modules;
+    }
+
     public ContainerHolder(ModContainer container){
         this(container, Modules.values());
     }

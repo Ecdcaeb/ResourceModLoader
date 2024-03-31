@@ -1,10 +1,16 @@
 package mods.Hileb.rml.deserialize;
 
+import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.event.CraftingHelperInitEvent;
 import mods.Hileb.rml.api.event.FunctionLoadEvent;
 import mods.Hileb.rml.api.event.LootTableRegistryEvent;
+import mods.Hileb.rml.api.event.client.gui.HandleComponentEvent;
+import mods.Hileb.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.Hileb.rml.api.event.villagers.CustomVillageLoaderRegisterEvent;
+import mods.Hileb.rml.api.java.reflection.ReflectionHelper;
+import mods.Hileb.rml.api.mods.ContainerHolder;
+import mods.Hileb.rml.api.text.ChangeModAction;
 import mods.Hileb.rml.api.villagers.LoadedVillage;
 import mods.Hileb.rml.api.villagers.trades.itrades.SlotRecipe;
 import mods.Hileb.rml.api.villagers.trades.ranges.PriceRange;
@@ -15,19 +21,32 @@ import mods.Hileb.rml.api.villagers.trades.trades.ItemAndEmeraldToItem;
 import mods.Hileb.rml.api.villagers.trades.trades.ListItemForEmeralds;
 import mods.Hileb.rml.api.villagers.villagers.VillageCancer;
 import mods.Hileb.rml.api.villagers.villagers.VillageProfession;
+import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import mods.Hileb.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import mods.Hileb.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import mods.Hileb.rml.deserialize.craft.recipe.SimpleBrewRecipe;
 import mods.Hileb.rml.deserialize.craft.recipe.SmeltRecipe;
+import net.minecraft.client.Minecraft;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.TextFormatting;
+import net.minecraft.util.text.event.ClickEvent;
+import net.minecraftforge.common.util.EnumHelper;
 import net.minecraftforge.event.RegistryEvent;
+import net.minecraftforge.fml.client.GuiModList;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 
@@ -99,4 +118,18 @@ public class RMLForgeEventHandler {
     public static void postInit(FMLPostInitializationEvent event){
         RMLDeserializeLoader.OreDic.load();
     }
+
+    @SideOnly(Side.CLIENT)
+    @SubscribeEvent
+    public static void onPrintModList(ModMenuInfoEvent event){
+        if (event.getMod() == RMLFMLLoadingPlugin.Container.INSTANCE) {
+            event.getTextComponents().add(new TextComponentTranslation("rml.gui.modmenu.rmlchilds").setStyle(new Style().setColor(TextFormatting.BLUE)));
+            for (ModContainer container : ResourceModLoader.getCurrentRMLContainers()) {
+                event.getTextComponents().add(new TextComponentString(container.getName()).setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true).setClickEvent(ChangeModAction.makeEvent(container.getModId()))));
+            }
+        }else if (ResourceModLoader.enabledModContainers.stream().map(ContainerHolder::getContainer).anyMatch((container)->container == event.getMod())){
+            event.getTextComponents().add(new TextComponentTranslation("rml.gui.modmenu.enablerml").setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true).setClickEvent(ChangeModAction.makeEvent(event.getMod().getModId()))));
+        }
+    }
+
 }

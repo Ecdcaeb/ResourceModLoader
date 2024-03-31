@@ -1,6 +1,7 @@
 package mods.Hileb.rml.api.villagers.trades.trades;
 
 import com.google.gson.*;
+import mods.Hileb.rml.api.java.reflection.ReflectionHelper;
 import mods.Hileb.rml.api.villagers.LoadedVillage;
 import mods.Hileb.rml.api.villagers.VillageReader;
 import mods.Hileb.rml.api.villagers.trades.ranges.RangeBase;
@@ -18,7 +19,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import net.minecraftforge.registries.IForgeRegistry;
 
 import java.util.ArrayList;

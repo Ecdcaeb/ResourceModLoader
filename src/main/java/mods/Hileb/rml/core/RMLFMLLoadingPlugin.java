@@ -4,14 +4,12 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.api.RMLBus;
+import mods.Hileb.rml.api.text.ChangeModAction;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.deserialize.RMLDeserializeLoader;
@@ -29,12 +27,12 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
+import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -81,7 +79,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             isDebug = Boolean.parseBoolean(arguments.get("rml.debug"));
         }
         //apply the args :
-        isDebug = Boolean.parseBoolean(System.getProperty("rml.debug", "false"));
+        //TODO: handle all pre args.
+        isDebug = true;//Boolean.parseBoolean(System.getProperty("rml.debug", "false"));
         ASMUtil.saveTransformedClass = isDebug;
         //>>end args;
 
@@ -133,6 +132,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
+            if (FMLLaunchHandler.side()== Side.CLIENT){
+                MinecraftForge.EVENT_BUS.register(ChangeModAction.class);
+            }
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
             }

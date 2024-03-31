@@ -68,7 +68,7 @@ repositories {
 
 
 dependencies {
-    compile 'com.cleanroommc:groovyscript:0.8.0'
+    //compile 'com.cleanroommc:groovyscript:0.8.0'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
     compile files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
 }
@@ -117,7 +117,7 @@ jar {
 
 tasks.register('buildExample', Zip) {
     archiveName = "example.zip"
-    destinationDir = file("run/mods")
+    destinationDir = file("run/client/mods")
 
     from "dev/example"
 }

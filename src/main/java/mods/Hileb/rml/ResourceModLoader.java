@@ -56,6 +56,10 @@ public class ResourceModLoader {
         return enabledModContainers;
     }
 
+    @PublicAPI public static Set<ModContainer> getCurrentRMLContainers(){
+        return getCurrentRMLContainerHolders().stream().map(ContainerHolder::getContainer).collect(Collectors.toSet());
+    }
+
     @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(ContainerHolder.Modules module){
         return getCurrentRMLContainerHolders().stream().filter((containerHolder -> containerHolder.modules.contains(module))).collect(Collectors.toSet());
     }

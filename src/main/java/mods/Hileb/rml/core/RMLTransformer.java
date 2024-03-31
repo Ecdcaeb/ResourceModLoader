@@ -1,9 +1,12 @@
 package mods.Hileb.rml.core;
 
+import dev.latvian.kubejs.documentation.O;
 import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.asm.MethodName;
+import mods.Hileb.rml.api.java.progress.ProgressBar;
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraftforge.fml.common.ProgressManager;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -12,6 +15,7 @@ import org.objectweb.asm.tree.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ListIterator;
+import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 
 /**
@@ -22,10 +26,20 @@ import java.util.function.ToIntFunction;
 @EarlyClass
 @PrivateAPI
 public class RMLTransformer implements IClassTransformer {
-    public static final MethodName m_193061=MethodName.of()
+    public static final MethodName m_193061 = MethodName.of()
             .mcp("loadFunctions","()V")
             .srg("func_193061_h","()V")
             .notch("h","()V")
+            .build();
+    public static final MethodName m_175276 = MethodName.of()
+            .mcp("handleComponentClick", "(Lnet/minecraft/util/text/ITextComponent;)Z")
+            .srg("func_175276_a", "(Lnet/minecraft/util/text/ITextComponent;)Z")
+            .notch("a", "(Lhh;)Z")
+            .build();
+    public static final MethodName m_175272 = MethodName.of()
+            .mcp("handleComponentHover", "(Lnet/minecraft/util/text/ITextComponent;II)V")
+            .srg("func_175272_a", "(Lnet/minecraft/util/text/ITextComponent;II)V")
+            .notch("a", "(Lhh;II)V")
             .build();
 
 
@@ -235,6 +249,56 @@ public class RMLTransformer implements IClassTransformer {
                         }
                     }
                     return -1;
+                });
+        transformers.put("net.minecraftforge.fml.client.GuiModList$Info",
+                (cn)->{
+                    for(MethodNode mn:cn.methods){
+                        if ("<init>".equals(mn.name)){
+                            ASMUtil.injectBefore(mn.instructions, () -> {
+                                InsnList list = new InsnList();
+                                list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                list.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
+                                list.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                                list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/ModMenuInfoEvent", "post", "(Lnet/minecraftforge/fml/common/ModContainer;Ljava/util/List;)V", false));
+                                return list;
+                            }, (node)->node.getOpcode()==Opcodes.RETURN);
+                            return ClassWriter.COMPUTE_MAXS;
+                        }
+                    }
+                    return -1;
+                });
+        transformers.put("net.minecraft.client.gui.GuiScreen",
+                (cn)->{
+                    ProgressBar bar = new ProgressBar(new String[]{"click", "hover"});
+                    for(MethodNode mn : cn.methods){
+                        if (m_175276.is(mn)){
+                            ASMUtil.injectBefore(mn.instructions,
+                                    () -> {
+                                        InsnList hook = new InsnList();
+                                        hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                        hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postClick", "(ZLnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;)Z", false));
+                                        return hook;
+                                        }, (node)->node.getOpcode()==Opcodes.IRETURN);
+                            bar.complete("click");
+                        }else if (m_175272.is(mn)){
+                            ASMUtil.injectBefore(mn.instructions,
+                                    () -> {
+                                        InsnList hook = new InsnList();
+                                        hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                        hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                        hook.add(new VarInsnNode(Opcodes.ILOAD, 2));
+                                        hook.add(new VarInsnNode(Opcodes.ILOAD, 3));
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postHover", "(ZLnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;II)Z", false));
+                                        return hook;
+                                        }, (node)->node.getOpcode()==Opcodes.IRETURN);
+                            bar.complete("hover");
+                        }
+                    }
+                    if (bar.isCompleted()) return ClassWriter.COMPUTE_MAXS;
+                    else{
+                        throw new RuntimeException("RML Cannot Transform Class Correctly. Unhandled Works:" + bar.getFailsString());
+                    }
                 });
     }
     @Override

@@ -8,13 +8,12 @@ import dev.latvian.kubejs.script.ScriptPack;
 import mods.Hileb.rml.ResourceModLoader;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.file.FileHelper;
+import mods.Hileb.rml.api.java.reflection.ReflectionHelper;
 import mods.Hileb.rml.api.mods.ContainerHolder;
 import mods.Hileb.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.relauncher.ReflectionHelper;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -91,7 +90,7 @@ public class RMKKubeJs {
         try {
             newPack=ScriptManager.class.getDeclaredMethod("newPack", String.class);
             newPack.setAccessible(true);
-            packs= ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
+            packs = ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
