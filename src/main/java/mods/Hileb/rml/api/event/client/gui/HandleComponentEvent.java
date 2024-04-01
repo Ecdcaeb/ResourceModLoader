@@ -32,8 +32,8 @@ public class HandleComponentEvent extends Event {
         Hover event = new Hover(textComponent, guiScreen, x, y);
         MinecraftForge.EVENT_BUS.post(event);
     }
-    public static boolean postClick(boolean isHandled, ITextComponent textComponent, GuiScreen guiScreen){
-        Click event = new Click(isHandled, textComponent, guiScreen);
+    public static boolean postClick(ITextComponent textComponent, GuiScreen guiScreen){
+        Click event = new Click(false, textComponent, guiScreen);
         MinecraftForge.EVENT_BUS.post(event);
         return event.isHandled();
     }

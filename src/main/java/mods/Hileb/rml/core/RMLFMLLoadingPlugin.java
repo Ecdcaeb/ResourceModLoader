@@ -9,7 +9,7 @@ import mods.Hileb.rml.api.EarlyClass;
 import mods.Hileb.rml.api.PrivateAPI;
 import mods.Hileb.rml.api.PublicAPI;
 import mods.Hileb.rml.api.RMLBus;
-import mods.Hileb.rml.api.text.ChangeModAction;
+import mods.Hileb.rml.api.text.ChangeMod;
 import mods.Hileb.rml.compat.crt.RMLCrTLoader;
 import mods.Hileb.rml.compat.kubejs.RMKKubeJs;
 import mods.Hileb.rml.deserialize.RMLDeserializeLoader;
@@ -21,6 +21,7 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -104,7 +105,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @PublicAPI
     @SuppressWarnings("unused")
     public static class Container extends DummyModContainer{
-        @PublicAPI public static Container INSTANCE;
+        @PublicAPI public static ModContainer INSTANCE;
         @PublicAPI public static final Logger LOGGER = RMLFMLLoadingPlugin.LOGGER;
         @PrivateAPI public Container(){
             super(new ModMetadata());
@@ -119,12 +120,13 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             metadata.description="a modloader which load mods from resource packs.(in mods/)";
             metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
             metadata.logoFile="assets/rml/icon.png";
-            INSTANCE=this;
+            INSTANCE = this;
             RMLBus.BUS.register(new RMLBusHandler());
         }
         @Override
         @PrivateAPI public boolean registerBus(EventBus bus, LoadController controller) {
             bus.register(this);
+            INSTANCE = Loader.instance().getIndexedModList().get("rml");
             return true;
         }
         @Subscribe
@@ -133,7 +135,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
             if (FMLLaunchHandler.side()== Side.CLIENT){
-                MinecraftForge.EVENT_BUS.register(ChangeModAction.class);
+                MinecraftForge.EVENT_BUS.register(ChangeMod.ChangeModAction.class);
             }
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);

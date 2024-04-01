@@ -1,9 +1,10 @@
 package mods.Hileb.rml.api.event.client.gui;
 
+import mods.Hileb.rml.api.java.reflection.FieldAccessor;
+import mods.Hileb.rml.api.java.reflection.ReflectionHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.GuiModList;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.relauncher.Side;
@@ -14,10 +15,12 @@ import java.util.List;
 @SideOnly(Side.CLIENT)
 public class ModMenuInfoEvent extends Event {
     public ModContainer mod;
+    public Object info;
     public List<ITextComponent> textComponents;
     public GuiModList guiModList;
 
-    public ModMenuInfoEvent(GuiModList modList, ModContainer mod, List<ITextComponent> textComponents){
+    public ModMenuInfoEvent(Object info, GuiModList modList, ModContainer mod, List<ITextComponent> textComponents){
+        this.info = info;
         this.guiModList = modList;
         this.mod = mod;
         this.textComponents = textComponents;
@@ -35,9 +38,14 @@ public class ModMenuInfoEvent extends Event {
         return guiModList;
     }
 
-    public static void post(GuiModList modList, ModContainer mod, List<ITextComponent> textComponentList){
-        FMLLog.log.warn("event posted");
-        MinecraftForge.EVENT_BUS.post(new ModMenuInfoEvent(modList, mod, textComponentList));
+    public Object getInfo() {
+        return info;
+    }
+
+    public static List<ITextComponent> post(List<ITextComponent> textComponentList, Object info, GuiModList modList, ModContainer mod){
+        ModMenuInfoEvent event = new ModMenuInfoEvent(info, modList, mod, textComponentList);
+        MinecraftForge.EVENT_BUS.post(event);
+        return event.getTextComponents();
     }
 
 }

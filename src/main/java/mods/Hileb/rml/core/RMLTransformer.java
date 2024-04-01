@@ -9,6 +9,7 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.ProgressManager;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -40,6 +41,11 @@ public class RMLTransformer implements IClassTransformer {
             .mcp("handleComponentHover", "(Lnet/minecraft/util/text/ITextComponent;II)V")
             .srg("func_175272_a", "(Lnet/minecraft/util/text/ITextComponent;II)V")
             .notch("a", "(Lhh;II)V")
+            .build();
+    public static final MethodName m_179140 = MethodName.of()
+            .mcp("disableLighting", "()V")
+            .srg("func_179140_f", "()V")
+            .notch("g", "()V")
             .build();
 
 
@@ -254,16 +260,22 @@ public class RMLTransformer implements IClassTransformer {
                 (cn)->{
                     for(MethodNode mn:cn.methods){
                         if ("<init>".equals(mn.name)){
-                            ASMUtil.injectBefore(mn.instructions, () -> {
-                                InsnList list = new InsnList();
-                                list.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                list.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                list.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
-                                list.add(new VarInsnNode(Opcodes.ALOAD, 3));
-                                list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/ModMenuInfoEvent", "post", "(Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;Ljava/util/List;)V", false));
-                                return list;
-                            }, (node)->node.getOpcode()==Opcodes.RETURN);
-                            return ClassWriter.COMPUTE_MAXS;
+                            ListIterator<AbstractInsnNode> iterator = mn.instructions.iterator();
+                            AbstractInsnNode node;
+                            while (iterator.hasNext()){
+                                node = iterator.next();
+                                if (node instanceof MethodInsnNode){
+                                    MethodInsnNode methodInsnNode = (MethodInsnNode) node;
+                                    if ("resizeContent".equals(methodInsnNode.name)){
+                                        iterator.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                        iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                        iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                        iterator.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
+                                        iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/ModMenuInfoEvent", "post", "(Ljava/util/List;Ljava/lang/Object;Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;)Ljava/util/List;", false));
+                                        return ClassWriter.COMPUTE_MAXS;
+                                    }
+                                }
+                            }
                         }
                     }
                     return -1;
@@ -273,14 +285,29 @@ public class RMLTransformer implements IClassTransformer {
                     ProgressBar bar = new ProgressBar(new String[]{"click", "hover"});
                     for(MethodNode mn : cn.methods){
                         if (m_175276.is(mn)){
+                            Label returnTrueLabel = new Label();
+                            LabelNode labelNode = new LabelNode(returnTrueLabel);
                             ASMUtil.injectBefore(mn.instructions,
                                     () -> {
                                         InsnList hook = new InsnList();
                                         hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                         hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
-                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postClick", "(ZLnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;)Z", false));
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postClick", "(Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;)Z", false));
+                                        hook.add(new JumpInsnNode(Opcodes.IFNE, labelNode));
                                         return hook;
-                                        }, (node)->node.getOpcode()==Opcodes.IRETURN);
+                                        }, (node)->{
+                                            if (node.getNext()!=null){
+                                                node = node.getNext();
+                                                if (node.getOpcode() == Opcodes.LDC){
+                                                    if ("Don't know how to handle {}".equals(((LdcInsnNode)node).cst)){
+                                                        return true;
+                                                    }else return false;
+                                                }else return false;
+                                            }return false;
+                                    });
+                            mn.instructions.add(labelNode);
+                            mn.instructions.add(new InsnNode(Opcodes.ICONST_M1));
+                            mn.instructions.add(new InsnNode(Opcodes.IRETURN));
                             bar.complete("click");
                         }else if (m_175272.is(mn)){
                             ASMUtil.injectBefore(mn.instructions,
@@ -292,7 +319,13 @@ public class RMLTransformer implements IClassTransformer {
                                         hook.add(new VarInsnNode(Opcodes.ILOAD, 3));
                                         hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/Hileb/rml/api/event/client/gui/HandleComponentEvent", "postHover", "(Lnet/minecraft/util/text/ITextComponent;Lnet/minecraft/client/gui/GuiScreen;II)V", false));
                                         return hook;
-                                        }, (node)->node.getOpcode() == Opcodes.RETURN);
+                                        }, (node)->{
+                                            if (node.getOpcode() != Opcodes.INVOKESTATIC)return false;
+                                            else {
+                                                MethodInsnNode md = (MethodInsnNode) node;
+                                                return m_179140.is(md.name, md.desc) && ("bus".equals(md.owner) || "net/minecraft/client/renderer/GlStateManager".equals(md.owner));
+                                            }
+                                        });
                             bar.complete("hover");
                         }
                     }
