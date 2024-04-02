@@ -3,6 +3,7 @@ package mods.Hileb.rml.core;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mods.Hileb.rml.RMLModContainer;
 import mods.Hileb.rml.ResourceModLoader;
@@ -13,10 +14,12 @@ import mods.Hileb.rml.api.event.RMLAfterInjectEvent;
 import mods.Hileb.rml.api.file.JsonHelper;
 import mods.Hileb.rml.api.mods.ContainerHolder;
 import net.minecraft.launchwrapper.Launch;
+import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
+import net.minecraftforge.fml.common.versioning.VersionParser;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,12 +103,67 @@ public class RMLModDiscover {
                 throw new RuntimeException("illegal modules opinion for "+jsonObject.get("modid").getAsString(), e);
             }
             jsonObject.remove("modules");
-            ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
+            ModMetadata metadata = decodeMetaData(jsonObject);
             return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
         }else {
-            ModMetadata metadata = GSON.fromJson(jsonObject, ModMetadata.class);
+            ModMetadata metadata = decodeMetaData(jsonObject);
             return new ContainerHolder(new RMLModContainer(metadata, modFile), ContainerHolder.Modules.values());
         }
 
+    }
+
+    public static ModMetadata decodeMetaData(JsonObject json){
+        ModMetadata metadata = new ModMetadata();
+
+        //basic message
+        metadata.modId = json.get("modid").getAsString();
+        metadata.name = json.get("name").getAsString();
+
+        //optional message
+        if (json.has("description")) metadata.description = json.get("description").getAsString();
+        if (json.has("credits")) metadata.credits = json.get("credits").getAsString();
+        if (json.has("url")) metadata.url = json.get("url").getAsString();
+        if (json.has("updateJSON")) metadata.updateJSON = json.get("updateJSON").getAsString();
+        if (json.has("logoFile")) metadata.logoFile = json.get("logoFile").getAsString();
+        if (json.has("version")) metadata.version = json.get("version").getAsString();
+        if (json.has("parent")) metadata.parent = json.get("parent").getAsString();
+        if (json.has("useDependencyInformation")) metadata.useDependencyInformation = json.get("useDependencyInformation").getAsBoolean();
+        if (metadata.useDependencyInformation){
+            if (json.has("requiredMods")){
+                for(JsonElement element : json.getAsJsonArray("requiredMods")){
+                    metadata.requiredMods.add(VersionParser.parseVersionReference(element.getAsString()));
+                }
+            }
+            if (json.has("dependencies")){
+                for(JsonElement element : json.getAsJsonArray("dependencies")){
+                    metadata.dependencies.add(VersionParser.parseVersionReference(element.getAsString()));
+                }
+            }
+            if (json.has("dependants")){
+                for(JsonElement element : json.getAsJsonArray("dependants")){
+                    metadata.dependants.add(VersionParser.parseVersionReference(element.getAsString()));
+                }
+            }
+        }
+        if (json.has("authorList")){
+            for(JsonElement element : json.getAsJsonArray("authorList")){
+                metadata.authorList.add(element.getAsString());
+            }
+        }
+        if (json.has("screenshots")){ // this field was never used
+            JsonArray array = json.getAsJsonArray("screenshots");
+            int size = array.size();
+            String[] screenshots = new String[size];
+            for (int i = 0; i < size; i++){
+                screenshots[i] = array.get(i).getAsString();
+            }
+            metadata.screenshots = screenshots;
+        }else metadata.screenshots = new String[0];
+        if (json.has("updateUrl")){ // this field is out of date
+            metadata.updateUrl = json.get("updateUrl").getAsString();
+            FMLLog.log.warn("{} is using a deprecated field 'updateUrl' in mcmod.info. Never really used for anything and format is undefined. See updateJSON for replacement.", metadata.modId);
+        }
+
+        return metadata;
     }
 }
