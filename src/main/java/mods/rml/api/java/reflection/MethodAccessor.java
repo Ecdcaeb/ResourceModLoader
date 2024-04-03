@@ -17,13 +17,16 @@ public class MethodAccessor<T, E> {
 
     public T invoke(E instance, Object... args){
         if (method.getReturnType()==void.class){
+            try {
+                method.invoke(instance, args);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                throw new RuntimeException(e);
+            }
             return null;
         }else {
             try {
-                return (T)method.invoke(instance, args);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
+                return (T) method.invoke(instance, args);
+            } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         }

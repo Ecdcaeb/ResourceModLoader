@@ -42,7 +42,7 @@ public class ChangeMod {
                     ArrayList<ModContainer> modList = mods.get(guiModList);
                     for(int i = 0, size = modList.size(); i < size; i++){
                         if (modid.equals(modList.get(i).getModId())){
-                            selectModIndex.invoke(guiModList, modList.get(i));
+                            selectModIndex.invoke(guiModList, i);
                             event.setHandled(true);
                             return;
                         }

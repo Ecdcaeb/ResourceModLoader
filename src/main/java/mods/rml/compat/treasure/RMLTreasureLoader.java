@@ -76,7 +76,6 @@ public class RMLTreasureLoader {
 
     public static void loadTreasures(JsonObject jsonObject){
         try {
-            Treasure_Main.LOGGER.info(s);
             TreasureLoot loot = GSON.fromJson(jsonObject, TreasureLoot.class);
             TreasureLoots.LOOTS.put(loot.id, loot);
         } catch (JsonSyntaxException var8) {
