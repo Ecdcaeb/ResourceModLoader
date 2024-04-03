@@ -38,6 +38,7 @@ public class ContainerHolder {
         REGISTRY_REMAP,
         MOD_GROOVY_SCRIPT,
         CUSTOM_VILLAGERS,
-        SPLASH_TEXT;
+        SPLASH_TEXT,
+        MOD_TREASURES;
     }
 }

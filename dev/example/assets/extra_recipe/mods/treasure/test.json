@@ -1,0 +1,11 @@
+{
+  "id": "extra_recipe:test_treasure",
+  "coldDown": 10,
+  "stacks": [
+    {
+      "item": "物品ID",
+      "count": 数量（1~64）,
+      "chances": 概率（1~100）
+    }
+  ]
+}

@@ -35,7 +35,7 @@ public class EmeraldForItems implements EntityVillager.ITradeList
         {
             i = this.price.get(random);
         }
-        ItemStack stack=buyingItem.copy();
+        ItemStack stack = buyingItem.copy();
         stack.setCount(i);
 
         recipeList.add(new MerchantRecipe(stack, Items.EMERALD));
