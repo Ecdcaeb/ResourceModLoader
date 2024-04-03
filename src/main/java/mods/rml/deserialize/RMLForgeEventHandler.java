@@ -7,7 +7,6 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.rml.api.event.villagers.CustomVillageLoaderRegisterEvent;
-import mods.rml.api.java.utils.EnumUtils;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.text.ChangeMod;
 import mods.rml.api.villagers.LoadedVillage;

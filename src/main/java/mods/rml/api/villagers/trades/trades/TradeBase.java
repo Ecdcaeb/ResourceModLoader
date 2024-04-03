@@ -30,6 +30,7 @@ import java.util.Random;
  * @Author Hileb
  * @Date 2023/8/16 10:44
  **/
+@SuppressWarnings("all")
 public class TradeBase {
     public static class Loaded extends LoadedVillage {
         public ResourceLocation profession;

@@ -112,6 +112,7 @@ public class RMLModDiscover {
         return new ContainerHolder(new RMLModContainer(metadata, modFile), modules);
     }
 
+    @SuppressWarnings("all")
     public static ModMetadata decodeMetaData(JsonObject json){
         ModMetadata metadata = new ModMetadata();
 
