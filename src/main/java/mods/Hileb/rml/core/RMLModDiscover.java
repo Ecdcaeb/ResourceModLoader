@@ -92,24 +92,25 @@ public class RMLModDiscover {
     }
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
-        ArrayList<ContainerHolder.Modules> modules = new ArrayList<>();
+        ModMetadata metadata = decodeMetaData(jsonObject);
+        ContainerHolder.Modules[] modules;
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
+            int size = array.size();
+            modules = new ContainerHolder.Modules[size];
             try{
-                for(String name : JsonHelper.getStringArray(array)) {
-                    modules.add(ContainerHolder.Modules.valueOf(name));
+                String[] strings = JsonHelper.getStringArray(array);
+                for(int i=0; i < size; i++) {
+                    modules[i] = (ContainerHolder.Modules.valueOf(strings[i]));
                 }
             }catch (NullPointerException e){
-                throw new RuntimeException("illegal modules opinion for "+jsonObject.get("modid").getAsString(), e);
+                throw new RuntimeException("illegal modules opinion for " + jsonObject.get("modid").getAsString(), e);
             }
-            jsonObject.remove("modules");
-            ModMetadata metadata = decodeMetaData(jsonObject);
-            return new ContainerHolder(new RMLModContainer(metadata, modFile), modules.toArray(new ContainerHolder.Modules[0]));
         }else {
-            ModMetadata metadata = decodeMetaData(jsonObject);
-            return new ContainerHolder(new RMLModContainer(metadata, modFile), ContainerHolder.Modules.values());
+            modules = ContainerHolder.Modules.values();
         }
 
+        return new ContainerHolder(new RMLModContainer(metadata, modFile), modules);
     }
 
     public static ModMetadata decodeMetaData(JsonObject json){
