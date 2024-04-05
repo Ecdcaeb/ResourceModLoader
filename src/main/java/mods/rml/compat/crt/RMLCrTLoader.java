@@ -1,6 +1,5 @@
 package mods.rml.compat.crt;
 
-import crafttweaker.runtime.CrTTweaker;
 import crafttweaker.runtime.IScriptProvider;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.PrivateAPI;
@@ -8,13 +7,10 @@ import mods.rml.api.file.FileHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 
 /**
  * @Project ResourceModLoader
@@ -22,16 +18,6 @@ import java.lang.reflect.Field;
  * @Date 2023/12/19 22:45
  **/
 public class RMLCrTLoader {
-    @PrivateAPI
-    public static final Field scriptProvider;
-    static {
-        try {
-            scriptProvider= CrTTweaker.class.getDeclaredField("scriptProvider");
-            scriptProvider.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
     /**
      * public void setScriptProvider(IScriptProvider provider) {
      *         this.scriptProvider = provider;
@@ -50,37 +36,27 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_CRT)){
-                final ModContainer modContainer = containerHolder.container;
-                Loader.instance().setActiveModContainer(modContainer);
+        ResourceModLoader.loadModule(ContainerHolder.Modules.MOD_CRT, containerHolder ->
+            FileHelper.findAssets(containerHolder, "crt", (holder, root, file) -> {
+                String relative = root.relativize(file).toString();
+                if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                    return;
 
+                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                ResourceLocation key = new ResourceLocation(holder.getContainer().getModId(), name);
+                name = "rml/"+key.getResourceDomain()+"/"+name;
+                try{
+                    byte[] fileBytes = FileHelper.getByteSource(file).read();
 
+                    providerCustom.add(name, fileBytes);
 
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/crt",
-                        (root, file) ->
-                        {
-                            String relative = root.relativize(file).toString();
-                            if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return;
+                    RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
+                } catch (IOException e) {
+                    throw new RuntimeException("IOException when RML loading " + file, e);
+                }
+            })
+        );
 
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
-                            name = "rml/"+key.getResourceDomain()+"/"+name;
-                            try{
-                                byte[] fileBytes = FileHelper.getByteSource(file).read();
-
-                                providerCustom.add(name, fileBytes);
-
-                                RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }
-                        });
-
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
-            }
-        }
         return providerCustom;
     }
 

@@ -3,7 +3,9 @@ package mods.rml.api.file;
 import com.google.common.io.ByteSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import dev.latvian.kubejs.documentation.P;
 import mods.rml.api.PublicAPI;
+import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
@@ -35,16 +37,20 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    public static boolean findFiles(ModContainer mod, String base, Function<Path, Boolean> preprocessor, BiFunction<Path, Path, Boolean> processor,
-                                    boolean defaultUnfoundRoot, boolean visitAllFiles)
-    {
 
-        File source = mod.getSource();
+    public static void findAssets(ContainerHolder containerHolder, String base, ModFileConsumer consumer){
+        findFiles(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
+    }
+
+    public static void findFiles(ContainerHolder containerHolder, String base, ModFileConsumer consumer)
+    {
+        final ModContainer mod = containerHolder.getContainer();
 
         if ("minecraft".equals(mod.getModId()))
         {
-            return false;
+            return;
         }
+        File source = mod.getSource();
 
         FileSystem fs = null;
         boolean success = true;
@@ -57,13 +63,13 @@ public class FileHelper {
             {
                 try
                 {
-                    fs = FileSystems.newFileSystem(source.toPath(), (ClassLoader)null);
+                    fs = FileSystems.newFileSystem(source.toPath(), null);
                     root = fs.getPath("/" + base);
                 }
                 catch (IOException e)
                 {
-                    FMLLog.log.error("Error loading FileSystem from jar: ", e);
-                    return false;
+                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+                    return;
                 }
             }
             else if (source.isDirectory())
@@ -72,40 +78,25 @@ public class FileHelper {
             }
 
             if (root == null || !Files.exists(root))
-                return defaultUnfoundRoot;
+                return;
 
-            if (preprocessor != null)
-            {
-                Boolean cont = preprocessor.apply(root);
-                if (cont == null || !cont)
-                    return false;
-            }
 
-            if (processor != null)
+            if (consumer != null)
             {
-                Iterator<Path> itr = null;
+                Iterator<Path> itr;
                 try
                 {
                     itr = Files.walk(root).iterator();
                 }
                 catch (IOException e)
                 {
-                    FMLLog.log.error("Error iterating filesystem for: {}", mod.getModId(), e);
-                    return false;
+                    RMLFMLLoadingPlugin.LOGGER.error("Error iterating filesystem for: {}", mod.getModId(), e);
+                    return;
                 }
 
                 while (itr.hasNext())
                 {
-                    Boolean cont = processor.apply(root, itr.next());
-
-                    if (visitAllFiles)
-                    {
-                        success &= cont != null && cont;
-                    }
-                    else if (cont == null || !cont)
-                    {
-                        return false;
-                    }
+                    consumer.accept(containerHolder, root, itr.next());
                 }
             }
         }
@@ -113,15 +104,6 @@ public class FileHelper {
         {
             IOUtils.closeQuietly(fs);
         }
-
-        return success;
-    }
-
-    @PublicAPI public static void findFiles(ModContainer mod, String base, BiConsumer<Path,Path> processor){
-        findFiles(mod, base, null, (path, path2) -> {
-            processor.accept(path,path2);
-            return Boolean.TRUE;
-        },true,true);
     }
 
     @PublicAPI
@@ -174,5 +156,9 @@ public class FileHelper {
     @PublicAPI
     public static ByteSource getByteSource(Path path) throws IOException {
         return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), StandardCharsets.UTF_8));
+    }
+
+    public interface ModFileConsumer{
+        void accept(ContainerHolder containerHolder, Path root, Path file);
     }
 }

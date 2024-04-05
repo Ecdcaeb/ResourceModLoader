@@ -2,13 +2,16 @@ package mods.rml;
 
 import mods.rml.api.PrivateAPI;
 import mods.rml.api.PublicAPI;
+import mods.rml.api.event.RMLModuleLoadingEvent;
 import mods.rml.api.mods.BuffedModIDContainer;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -62,6 +65,16 @@ public class ResourceModLoader {
 
     @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(ContainerHolder.Modules module){
         return getCurrentRMLContainerHolders().stream().filter((containerHolder -> containerHolder.modules.contains(module))).collect(Collectors.toSet());
+    }
+
+    public static void loadModule(ContainerHolder.Modules module, Consumer<ContainerHolder> consumer){
+        Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
+        for(ContainerHolder containerHolder : containerHolders){
+            ModContainer oldActive = Loader.instance().activeModContainer();
+            Loader.instance().setActiveModContainer(containerHolder.container);
+            consumer.accept(containerHolder);
+            Loader.instance().setActiveModContainer(oldActive);
+        }
     }
 
 }

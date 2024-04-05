@@ -36,18 +36,15 @@ public class RMLTreasureLoader {
     @SubscribeEvent
     public static void onTreasureLoad(ConfigChangedEvent event){
         if (event.getModID().equals("treasure")) {
-            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders(ContainerHolder.Modules.MOD_TREASURES)){
-                final ModContainer modContainer = containerHolder.container;
-                Loader.instance().setActiveModContainer(modContainer);
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/mods/treasure",
-                        (root, file) ->
-                        {
+            ResourceModLoader.loadModule(ContainerHolder.Modules.MOD_TREASURES, containerHolder ->
+                FileHelper.findAssets(containerHolder, "mods/treasure",
+                        (containerHolder1, root, file) -> {
                             String relative = root.relativize(file).toString();
                             if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                                 return;
 
                             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(modContainer.getModId(), name);
+                            ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
 
                             BufferedReader reader = null;
                             try
@@ -68,9 +65,8 @@ public class RMLTreasureLoader {
                             {
                                 IOUtils.closeQuietly(reader);
                             }
-                        });
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
-            }
+                        })
+            );
         }
     }
 

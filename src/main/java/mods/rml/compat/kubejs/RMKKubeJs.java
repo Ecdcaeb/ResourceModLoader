@@ -8,10 +8,10 @@ import dev.latvian.kubejs.script.ScriptPack;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.PrivateAPI;
 import mods.rml.api.file.FileHelper;
+import mods.rml.api.java.reflection.MethodAccessor;
 import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
@@ -19,8 +19,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.util.Map;
 
@@ -35,42 +33,29 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders()){
-            if (containerHolder.modules.contains(ContainerHolder.Modules.MOD_KUBEJS)){
-                final ModContainer modContainer = containerHolder.container;
-                Loader.instance().setActiveModContainer(modContainer);
-                if (!packs.containsKey(modContainer.getModId())) {
-                    try {
-                        packs.put(modContainer.getModId(),(ScriptPack)newPack.invoke(ScriptManager.instance,modContainer.getModId()));
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        e.printStackTrace();
-                        continue;
-                    }
-                }
-                FileHelper.findFiles(modContainer, "assets/" + modContainer.getModId() + "/kubejs",
-                        (root, file) ->
-                        {
-                            String relative = root.relativize(file).toString();
-                            if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return;
-                            BufferedReader bufferedReader=null;
-                            try {
-                                char[] fileBytes;
-                                bufferedReader=Files.newBufferedReader(file);
-                                fileBytes=IOUtils.toCharArray(bufferedReader);
-                                load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
-
-                            } catch (IOException e) {
-                                throw new RuntimeException(e);
-                            }finally {
-                                IOUtils.closeQuietly(bufferedReader);
-                            }
-                        });
-
-                Loader.instance().setActiveModContainer(RMLFMLLoadingPlugin.Container.INSTANCE);
+        ResourceModLoader.loadModule(ContainerHolder.Modules.MOD_KUBEJS, containerHolder -> {
+            final ModContainer modContainer = containerHolder.getContainer();
+            if (!packs.containsKey(modContainer.getModId())) {
+                packs.put(modContainer.getModId(), newPack.invoke(ScriptManager.instance,modContainer.getModId()));
             }
+            FileHelper.findAssets(containerHolder, "kubejs", (containerHolder1, root, file) -> {
+                String relative = root.relativize(file).toString();
+                if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                    return;
+                BufferedReader bufferedReader=null;
+                try {
+                    char[] fileBytes;
+                    bufferedReader=Files.newBufferedReader(file);
+                    fileBytes=IOUtils.toCharArray(bufferedReader);
+                    load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
 
-        }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }finally {
+                    IOUtils.closeQuietly(bufferedReader);
+                }
+            });
+        });
     }
     @PrivateAPI
     private static void load(ScriptManager manager, String name, char[] file, String modid) {
@@ -84,16 +69,10 @@ public class RMKKubeJs {
         manager.scripts.put(name, scriptFile);
         KubeJS.LOGGER.info("Load script at " + name);
     }
-    @PrivateAPI public static final Method newPack;
+    @PrivateAPI public static final MethodAccessor<ScriptPack, ScriptManager> newPack = ReflectionHelper.getMethodAccessor(ScriptManager.class, "newPack", null, String.class);
     @PrivateAPI public static final Map<String, ScriptPack> packs;
     static {
-        try {
-            newPack=ScriptManager.class.getDeclaredMethod("newPack", String.class);
-            newPack.setAccessible(true);
-            packs = ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+        packs = ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
     }
 }
 
