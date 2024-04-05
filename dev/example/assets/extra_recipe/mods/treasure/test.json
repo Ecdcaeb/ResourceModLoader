@@ -3,9 +3,9 @@
   "coldDown": 10,
   "stacks": [
     {
-      "item": "物品ID",
-      "count": 数量（1~64）,
-      "chances": 概率（1~100）
+      "item": "extra_recipe:test_item",
+      "count": 2,
+      "chances": 50
     }
   ]
 }

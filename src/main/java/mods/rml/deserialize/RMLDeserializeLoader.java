@@ -9,29 +9,28 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.PrivateAPI;
+import mods.rml.api.RMLRegistries;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
-import mods.rml.api.event.villagers.CustomVillageLoaderRegisterEvent;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.registry.remap.RemapCollection;
 import mods.rml.api.villagers.LoadedVillage;
 import mods.rml.api.villagers.VillageReader;
-import mods.rml.api.villagers.registry.CustomVillagerRegistry;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.JsonContext;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.oredict.OreDictionary;
+import net.minecraftforge.registries.GameData;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -42,6 +41,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 /**
  * @Project ResourceModLoader
@@ -239,12 +239,15 @@ public class RMLDeserializeLoader {
     public static class CustomVillageLoader {
         public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-        public static List<LoadedVillage> load(){
-            MinecraftForge.EVENT_BUS.post(new CustomVillageLoaderRegisterEvent());
-            final List<LoadedVillage> list=new ArrayList<>();
-            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders())
+        public static void initVillageRegistry(){
+            GameData.fireRegistryEvents(resourceLocation -> RMLRegistries.Names.RANGE_FACTORIES.equals(resourceLocation) || RMLRegistries.Names.VILLAGE_READERS.equals(resourceLocation));
+        }
 
-            if (containerHolder.modules.contains(ContainerHolder.Modules.CUSTOM_VILLAGERS)){
+        public static List<LoadedVillage> load(){
+            initVillageRegistry();
+
+            final List<LoadedVillage> list=new ArrayList<>();
+            for(ContainerHolder containerHolder : ResourceModLoader.getCurrentRMLContainerHolders(ContainerHolder.Modules.CUSTOM_VILLAGERS)) {
                 final ModContainer mod = containerHolder.container;
                 FileHelper.findFiles(mod, "assets/" + mod.getModId() + "/villages",
                         (root,file)->{
@@ -262,8 +265,8 @@ public class RMLDeserializeLoader {
                                 JsonObject json = JsonUtils.fromJson(GSON, reader, JsonObject.class);
                                 String s=JsonUtils.getString(json,"type");
                                 ResourceLocation resourceLocation=new ResourceLocation(s);
-                                if (CustomVillagerRegistry.VILLAGE_READERS.containsKey(resourceLocation)){
-                                    VillageReader villageReader = CustomVillagerRegistry.VILLAGE_READERS.get(resourceLocation);
+                                if (RMLRegistries.VILLAGE_READERS.containsKey(resourceLocation)){
+                                    VillageReader villageReader = RMLRegistries.VILLAGE_READERS.getValue(resourceLocation);
                                     try{
                                         LoadedVillage loadedVillage=villageReader.load(json);
                                         RMLFMLLoadingPlugin.Container.LOGGER.info("load village :"+file.getFileName());

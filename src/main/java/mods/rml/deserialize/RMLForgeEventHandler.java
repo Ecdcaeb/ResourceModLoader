@@ -6,13 +6,14 @@ import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
-import mods.rml.api.event.villagers.CustomVillageLoaderRegisterEvent;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.text.ChangeMod;
 import mods.rml.api.villagers.LoadedVillage;
+import mods.rml.api.villagers.VillageReader;
 import mods.rml.api.villagers.trades.itrades.SlotRecipe;
 import mods.rml.api.villagers.trades.ranges.PriceRange;
 import mods.rml.api.villagers.trades.ranges.RangeConstant;
+import mods.rml.api.villagers.trades.ranges.RangeFactory;
 import mods.rml.api.villagers.trades.ranges.RangePoisson;
 import mods.rml.api.villagers.trades.trades.EmeraldForItems;
 import mods.rml.api.villagers.trades.trades.ItemAndEmeraldToItem;
@@ -85,26 +86,29 @@ public class RMLForgeEventHandler {
     }
 
     @SubscribeEvent
-    public static void onRegister(CustomVillageLoaderRegisterEvent event){
-        event.add(new ResourceLocation("minecraft","price"), new PriceRange.Factory());
-        //range factory
-        event.add(new ResourceLocation("minecraft","price"), new PriceRange.Factory());
-        event.add(new ResourceLocation("cvh","constant"), new RangeConstant.Factory());
-        event.add(new ResourceLocation("cvh","poisson_distribution"),new RangePoisson.Factory());
-
+    public static void registerVillageReaders(RegistryEvent.Register<VillageReader> event){
+        IForgeRegistry<VillageReader> registry = event.getRegistry();
         //trade loader
-        event.add(new ResourceLocation("minecraft","emerald_for_items"), new EmeraldForItems.Loader());
-        event.add(new ResourceLocation("minecraft","item_and_emerald_to_item"), new ItemAndEmeraldToItem.Loader());
-        event.add(new ResourceLocation("minecraft","list_item_for_emeralds"), new ListItemForEmeralds.Loader());
-        event.add(new ResourceLocation("cvh","slots"), new SlotRecipe.Loader());
+        registry.register(new EmeraldForItems.Loader().setRegistryName(new ResourceLocation("minecraft","emerald_for_items")));
+        registry.register(new ItemAndEmeraldToItem.Loader().setRegistryName(new ResourceLocation("minecraft","item_and_emerald_to_item")));
+        registry.register(new ListItemForEmeralds.Loader().setRegistryName(new ResourceLocation("minecraft","list_item_for_emeralds")));
+        registry.register(new SlotRecipe.Loader().setRegistryName(new ResourceLocation("cvh","slots")));
 
         //base loader
-        event.add(new ResourceLocation("minecraft","profession"), new VillageProfession.Loader());
-        event.add(new ResourceLocation("minecraft","cancer"), new VillageCancer.Loader());
+        registry.register(new VillageProfession.Loader().setRegistryName(new ResourceLocation("minecraft","profession")));
+        registry.register(new VillageCancer.Loader().setRegistryName(new ResourceLocation("minecraft","cancer")));
+    }
+
+    @SubscribeEvent
+    public static void registerRanges(RegistryEvent.Register<RangeFactory> event){
+        IForgeRegistry<RangeFactory> registry = event.getRegistry();
+        registry.register(new PriceRange.Factory().setRegistryName(new ResourceLocation("minecraft","price")));
+        registry.register(new RangeConstant.Factory().setRegistryName(new ResourceLocation("cvh","constant")));
+        registry.register(new RangePoisson.Factory().setRegistryName(new ResourceLocation("cvh","poisson_distribution")));
     }
 
     public static void preInit(FMLPreInitializationEvent event){
-        //RMLOreDicLoader.load();
+
     }
     public static void postInit(FMLPostInitializationEvent event){
         RMLDeserializeLoader.OreDic.load();

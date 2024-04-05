@@ -2,6 +2,7 @@ package mods.rml.api.villagers;
 
 import com.google.gson.JsonObject;
 import mods.rml.api.PublicAPI;
+import net.minecraftforge.registries.IForgeRegistryEntry;
 
 /**
  * @Project CustomVillage
@@ -9,7 +10,7 @@ import mods.rml.api.PublicAPI;
  * @Date 2023/8/16 10:23
  **/
 @PublicAPI
-public abstract class VillageReader {
+public abstract class VillageReader extends IForgeRegistryEntry.Impl<VillageReader> {
     public VillageReader(){
     }
     public abstract LoadedVillage load(JsonObject json);
