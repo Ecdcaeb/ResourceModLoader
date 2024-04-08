@@ -109,18 +109,19 @@ public class RMLDeserializeLoader {
      * @Date 2023/12/15 12:52
      **/
     public static class LootTable {
-        public static void load(LootTableRegistryEvent event){
+        public static void load(LootTableRegistryEvent event) {
             ResourceModLoader.loadModule(ContainerHolder.Modules.LOOT_TABLES, containerHolder ->
-                FileHelper.findAssets(containerHolder, "loot_tables",
-                        (containerHolder1, root, file) -> {
-                            String relative = root.relativize(file).toString();
-                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return;
-                            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                            ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
-                            event.register(key);
-                        })
-        );
+                    FileHelper.findAssets(containerHolder, "loot_tables",
+                            (containerHolder1, root, file) -> {
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return;
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
+                                event.register(key);
+                            })
+            );
+        }
     }
 
     /**
@@ -133,57 +134,58 @@ public class RMLDeserializeLoader {
     public static class Function {
         public static LineProcessor<List<String>> processor(){ return new LineProcessor<List<String>>() {final List<String> result = Lists.newArrayList();@Override public boolean processLine(String line) {result.add(line);return true;}@Override public List<String> getResult() {return result;}};}
 
-        public static void load(FunctionLoadEvent event){
+        public static void load(FunctionLoadEvent event) {
             ResourceModLoader.loadModule(ContainerHolder.Modules.FUNCTIONS, containerHolder ->
                     FileHelper.findAssets(containerHolder, "functions",
-                    (containerHolder1, root, file) -> {
+                            (containerHolder1, root, file) -> {
 
-                        String relative = root.relativize(file).toString();
-                        if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                            return;
-                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                        ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
-                        try {
+                                String relative = root.relativize(file).toString();
+                                if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return;
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
+                                try {
 
-                            FunctionObject functionObject = FunctionObject.create(
-                                    event.functionManager,
-                                    FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
-                                            .readLines(processor())
-                            );
-                            event.register(key, functionObject);
-                        } catch (IOException e) {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
-                        }
-                    }));
-    }
-    public static class MissingRemap{
-        public static void load(){
-            ResourceModLoader.loadModule(ContainerHolder.Modules.REGISTRY_REMAP, containerHolder ->
-                FileHelper.findAssets(containerHolder, "registry/remap",
-                        (containerHolder1, root, file) -> {
-                            String relative = root.relativize(file).toString();
-                            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                                return;
-                            try {
-                                JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file), JsonObject.class);
-                                if (json.has("registry")) {
-                                    ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
-                                    if (json.has("mapping")) {
-                                        JsonObject mapping = json.get("mapping").getAsJsonObject();
-                                        RemapCollection collection = new RemapCollection(registry);
-                                        for (Map.Entry<String, JsonElement> entry : mapping.entrySet()) {
-                                            collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
-                                        }
-                                        RemapCollection.Manager.merge(collection);
-                                    }
+                                    FunctionObject functionObject = FunctionObject.create(
+                                            event.functionManager,
+                                            FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
+                                                    .readLines(processor())
+                                    );
+                                    event.register(key, functionObject);
+                                } catch (IOException e) {
+                                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
                                 }
-                            } catch (IOException e) {
-                                throw new RuntimeException("Could not cache the file " + file, e);
-                            }
-                        })
-            );
+                            }));
+        }
     }
-
+    public static class MissingRemap {
+        public static void load() {
+            ResourceModLoader.loadModule(ContainerHolder.Modules.REGISTRY_REMAP, containerHolder ->
+                    FileHelper.findAssets(containerHolder, "registry/remap",
+                            (containerHolder1, root, file) -> {
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return;
+                                try {
+                                    JsonObject json = FileHelper.GSON.fromJson(FileHelper.getCachedFile(file), JsonObject.class);
+                                    if (json.has("registry")) {
+                                        ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
+                                        if (json.has("mapping")) {
+                                            JsonObject mapping = json.get("mapping").getAsJsonObject();
+                                            RemapCollection collection = new RemapCollection(registry);
+                                            for (Map.Entry<String, JsonElement> entry : mapping.entrySet()) {
+                                                collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
+                                            }
+                                            RemapCollection.Manager.merge(collection);
+                                        }
+                                    }
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Could not cache the file " + file, e);
+                                }
+                            })
+            );
+        }
+    }
     /**
      * @Project CustomVillage
      * @Author Hileb
@@ -192,60 +194,53 @@ public class RMLDeserializeLoader {
     public static class CustomVillageLoader {
         public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-        public static void initVillageRegistry(){
+        public static void initVillageRegistry() {
             GameData.fireRegistryEvents(resourceLocation -> RMLRegistries.Names.RANGE_FACTORIES.equals(resourceLocation) || RMLRegistries.Names.VILLAGE_READERS.equals(resourceLocation));
         }
 
-        public static List<LoadedVillage> load(){
+        public static List<LoadedVillage> load() {
             initVillageRegistry();
 
-            final List<LoadedVillage> list=new ArrayList<>();
+            final List<LoadedVillage> list = new ArrayList<>();
             ResourceModLoader.loadModule(ContainerHolder.Modules.CUSTOM_VILLAGERS, containerHolder ->
                     FileHelper.findAssets(mod, "assets/" + mod.getModId() + "/villages",
-                    (containerHolder1, root, file) -> {
-                        String relative = root.relativize(file).toString();
-                        if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                            return;
+                            (containerHolder1, root, file) -> {
+                                String relative = root.relativize(file).toString();
+                                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                                    return;
 
-                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                        ResourceLocation key = new ResourceLocation(mod.getModId(), name);
+                                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                                ResourceLocation key = new ResourceLocation(mod.getModId(), name);
 
-                        BufferedReader reader = null;
-                        try
-                        {
-                            reader = Files.newBufferedReader(file);
-                            JsonObject json = JsonUtils.fromJson(GSON, reader, JsonObject.class);
-                            String s=JsonUtils.getString(json,"type");
-                            ResourceLocation resourceLocation=new ResourceLocation(s);
-                            if (RMLRegistries.VILLAGE_READERS.containsKey(resourceLocation)){
-                                VillageReader villageReader = RMLRegistries.VILLAGE_READERS.getValue(resourceLocation);
-                                try{
-                                    LoadedVillage loadedVillage=villageReader.load(json);
-                                    RMLFMLLoadingPlugin.Container.LOGGER.info("load village :"+file.getFileName());
-                                    list.add(loadedVillage);
-                                }catch (Exception e){
-                                    RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at "+file.getFileName());
-                                    RMLFMLLoadingPlugin.Container.LOGGER.error(e);
+                                BufferedReader reader = null;
+                                try {
+                                    reader = Files.newBufferedReader(file);
+                                    JsonObject json = JsonUtils.fromJson(GSON, reader, JsonObject.class);
+                                    String s = JsonUtils.getString(json, "type");
+                                    ResourceLocation resourceLocation = new ResourceLocation(s);
+                                    if (RMLRegistries.VILLAGE_READERS.containsKey(resourceLocation)) {
+                                        VillageReader villageReader = RMLRegistries.VILLAGE_READERS.getValue(resourceLocation);
+                                        try {
+                                            LoadedVillage loadedVillage = villageReader.load(json);
+                                            RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
+                                            list.add(loadedVillage);
+                                        } catch (Exception e) {
+                                            RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at " + file.getFileName());
+                                            RMLFMLLoadingPlugin.Container.LOGGER.error(e);
+                                        }
+
+                                    } else {
+                                        RMLFMLLoadingPlugin.Container.LOGGER.error("type: " + s + " not found!");
+                                    }
+                                } catch (JsonParseException e) {
+                                    RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading replacement {}", key, e);
+                                } catch (IOException e) {
+                                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read replacement {} from {}", key, file, e);
+                                } finally {
+                                    IOUtils.closeQuietly(reader);
                                 }
-
-                            }else {
-                                RMLFMLLoadingPlugin.Container.LOGGER.error("type: "+s+" not found!");
                             }
-                        }
-                        catch (JsonParseException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading replacement {}", key, e);
-                        }
-                        catch (IOException e)
-                        {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read replacement {} from {}", key, file, e);
-                        }
-                        finally
-                        {
-                            IOUtils.closeQuietly(reader);
-                        }
-                    }
-            ));
+                    ));
             return list;
         }
     }
@@ -292,3 +287,9 @@ public class RMLDeserializeLoader {
         }
     }
 }
+
+
+
+
+
+
