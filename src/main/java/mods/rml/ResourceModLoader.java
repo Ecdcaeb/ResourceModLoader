@@ -3,6 +3,7 @@ package mods.rml;
 import mods.rml.api.PrivateAPI;
 import mods.rml.api.PublicAPI;
 import mods.rml.api.event.RMLModuleLoadingEvent;
+import mods.rml.api.file.FileHelper;
 import mods.rml.api.mods.BuffedModIDContainer;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
@@ -59,22 +60,52 @@ public class ResourceModLoader {
         return enabledModContainers;
     }
 
-    @PublicAPI public static Set<ModContainer> getCurrentRMLContainers(){
-        return getCurrentRMLContainerHolders().stream().map(ContainerHolder::getContainer).collect(Collectors.toSet());
+    @PublicAPI public static HashSet<ModContainer> getCurrentRMLContainers(){
+        HashSet<ModContainer> containerHolders = new HashSet<>();
+        for(ContainerHolder containerHolder : getCurrentRMLContainerHolders()){
+            containerHolders.add(containerHolder.container);
+        }
+        return containerHolders;
     }
 
-    @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(ContainerHolder.Modules module){
-        return getCurrentRMLContainerHolders().stream().filter((containerHolder -> containerHolder.modules.contains(module))).collect(Collectors.toSet());
+    @PublicAPI public static HashSet<ContainerHolder> getCurrentRMLContainerHolders(ContainerHolder.ModuleType module){
+        HashSet<ContainerHolder> containerHolders = new HashSet<>();
+        for(ContainerHolder containerHolder : getCurrentRMLContainerHolders()){
+            if (containerHolder.hasModule(module)) containerHolders.add(containerHolder);
+        }
+        return containerHolders;
     }
 
-    public static void loadModule(ContainerHolder.Modules module, Consumer<ContainerHolder> consumer){
+    public static void loadModule(ContainerHolder.ModuleType module, ContainerHolder.ModuleConsumer consumer){
         Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
         for(ContainerHolder containerHolder : containerHolders){
             ModContainer oldActive = Loader.instance().activeModContainer();
             Loader.instance().setActiveModContainer(containerHolder.container);
-            consumer.accept(containerHolder);
+            consumer.accept(module, containerHolder);
             Loader.instance().setActiveModContainer(oldActive);
         }
     }
+
+    public static void loadModuleFindAssets(ContainerHolder.ModuleType module, FileHelper.ModFileConsumer consumer){
+        Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
+        for(ContainerHolder containerHolder : containerHolders){
+            ModContainer oldActive = Loader.instance().activeModContainer();
+            Loader.instance().setActiveModContainer(containerHolder.container);
+            FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
+            Loader.instance().setActiveModContainer(oldActive);
+        }
+    }
+
+    public static void loadModuleFindAssets(ContainerHolder.ModuleType module,ContainerHolder.ModuleConsumer moduleConsumer, FileHelper.ModFileConsumer consumer){
+        Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
+        for(ContainerHolder containerHolder : containerHolders){
+            ModContainer oldActive = Loader.instance().activeModContainer();
+            Loader.instance().setActiveModContainer(containerHolder.container);
+            moduleConsumer.accept(module, containerHolder);
+            FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
+            Loader.instance().setActiveModContainer(oldActive);
+        }
+    }
+
 
 }

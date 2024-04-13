@@ -6,7 +6,6 @@ import net.minecraftforge.fml.common.eventhandler.Cancelable;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @Project ResourceModLoader
@@ -15,22 +14,22 @@ import java.util.Set;
  **/
 @Cancelable
 public class RMLModuleLoadingEvent extends Event {
-    public final Set<ContainerHolder> containerHolders;
-    public final ContainerHolder.Modules module;
-    public RMLModuleLoadingEvent(Set<ContainerHolder> containerHolders, ContainerHolder.Modules module){
+    public final HashSet<ContainerHolder> containerHolders;
+    public final ContainerHolder.ModuleType module;
+    public RMLModuleLoadingEvent(HashSet<ContainerHolder> containerHolders, ContainerHolder.ModuleType module){
         this.containerHolders = containerHolders;
         this.module = module;
     }
 
-    public Set<ContainerHolder> getContainerHolders() {
+    public HashSet<ContainerHolder> getContainerHolders() {
         return containerHolders;
     }
 
-    public ContainerHolder.Modules getModule() {
+    public ContainerHolder.ModuleType getModule() {
         return module;
     }
 
-    public static Set<ContainerHolder> post(Set<ContainerHolder> containerHolders, ContainerHolder.Modules module){
+    public static HashSet<ContainerHolder> post(HashSet<ContainerHolder> containerHolders, ContainerHolder.ModuleType module){
         RMLModuleLoadingEvent event = new RMLModuleLoadingEvent(containerHolders, module);
         if (MinecraftForge.EVENT_BUS.post(event)) event.getContainerHolders().clear();
         return event.getContainerHolders();

@@ -11,7 +11,6 @@ import mods.rml.api.PrivateAPI;
 import mods.rml.api.RMLBus;
 import mods.rml.api.config.ConfigTransformer;
 import mods.rml.api.event.RMLAfterInjectEvent;
-import mods.rml.api.file.JsonHelper;
 import mods.rml.api.mods.ContainerHolder;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.FMLLog;
@@ -52,7 +51,7 @@ public class RMLModDiscover {
             if(modFile.isFile()){
                 try(ZipFile zipFile = new ZipFile(modFile)) {
                     ZipEntry info = zipFile.getEntry("rml.info");
-                    if (info!=null){//fix: https://mclo.gs/4yyaEH5
+                    if (info!=null){
                         InputStream inputStream = zipFile.getInputStream(info);
                         JsonArray jsonArray = GSON.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), JsonArray.class);
 
@@ -92,21 +91,20 @@ public class RMLModDiscover {
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
         ModMetadata metadata = decodeMetaData(jsonObject);
-        ContainerHolder.Modules[] modules;
+        ContainerHolder.Module[] modules;
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
             int size = array.size();
-            modules = new ContainerHolder.Modules[size];
+            modules = new ContainerHolder.Module[size];
             try{
-                String[] strings = JsonHelper.getStringArray(array);
                 for(int i=0; i < size; i++) {
-                    modules[i] = (ContainerHolder.Modules.valueOf(strings[i]));
+                    modules[i] = ContainerHolder.Module.decode(array.get(i));
                 }
             }catch (NullPointerException e){
                 throw new RuntimeException("illegal modules opinion for " + jsonObject.get("modid").getAsString(), e);
             }
         }else {
-            modules = ContainerHolder.Modules.values();
+            modules = ContainerHolder.ModuleType.getAllForDefault();
         }
 
         return new ContainerHolder(new RMLModContainer(metadata, modFile), modules);

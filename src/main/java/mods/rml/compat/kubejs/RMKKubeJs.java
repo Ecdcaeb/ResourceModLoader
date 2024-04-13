@@ -7,12 +7,10 @@ import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.PrivateAPI;
-import mods.rml.api.file.FileHelper;
 import mods.rml.api.java.reflection.MethodAccessor;
 import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -33,29 +31,30 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        ResourceModLoader.loadModule(ContainerHolder.Modules.MOD_KUBEJS, containerHolder -> {
-            final ModContainer modContainer = containerHolder.getContainer();
-            if (!packs.containsKey(modContainer.getModId())) {
-                packs.put(modContainer.getModId(), newPack.invoke(ScriptManager.instance,modContainer.getModId()));
-            }
-            FileHelper.findAssets(containerHolder, "kubejs", (containerHolder1, root, file) -> {
-                String relative = root.relativize(file).toString();
-                if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                    return;
-                BufferedReader bufferedReader=null;
-                try {
-                    char[] fileBytes;
-                    bufferedReader=Files.newBufferedReader(file);
-                    fileBytes=IOUtils.toCharArray(bufferedReader);
-                    load(ScriptManager.instance, file.toUri().toString(),fileBytes,modContainer.getModId());
+        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.MOD_KUBEJS,
+                (module, containerHolder) -> {
+                    if (!packs.containsKey(containerHolder.getContainer().getModId())) {
+                     packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));
+                    }
+                },
+                (containerHolder, root, file) -> {
+                    String relative = root.relativize(file).toString();
+                    if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                        return;
+                    BufferedReader bufferedReader=null;
+                    try {
+                        char[] fileBytes;
+                        bufferedReader=Files.newBufferedReader(file);
+                        fileBytes=IOUtils.toCharArray(bufferedReader);
+                        load(ScriptManager.instance, file.toUri().toString(), fileBytes, containerHolder.getContainer().getModId());
 
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }finally {
-                    IOUtils.closeQuietly(bufferedReader);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }finally {
+                        IOUtils.closeQuietly(bufferedReader);
+                    }
                 }
-            });
-        });
+        );
     }
     @PrivateAPI
     private static void load(ScriptManager manager, String name, char[] file, String modid) {

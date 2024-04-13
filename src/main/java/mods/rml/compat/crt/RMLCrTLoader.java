@@ -36,27 +36,24 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModule(ContainerHolder.Modules.MOD_CRT, containerHolder ->
-            FileHelper.findAssets(containerHolder, "crt", (holder, root, file) -> {
-                String relative = root.relativize(file).toString();
-                if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                    return;
+        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.MOD_CRT, (containerHolder, root, file) -> {
+            String relative = root.relativize(file).toString();
+            if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                return;
 
-                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                ResourceLocation key = new ResourceLocation(holder.getContainer().getModId(), name);
-                name = "rml/"+key.getResourceDomain()+"/"+name;
-                try{
-                    byte[] fileBytes = FileHelper.getByteSource(file).read();
+            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+            name = "rml/"+key.getResourceDomain()+"/"+name;
+            try{
+                byte[] fileBytes = FileHelper.getByteSource(file).read();
 
-                    providerCustom.add(name, fileBytes);
+                providerCustom.add(name, fileBytes);
 
-                    RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
-                } catch (IOException e) {
-                    throw new RuntimeException("IOException when RML loading " + file, e);
-                }
-            })
-        );
-
+                RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
+            } catch (IOException e) {
+                throw new RuntimeException("IOException when RML loading " + file, e);
+            }
+        });
         return providerCustom;
     }
 

@@ -9,31 +9,31 @@ import java.util.Map;
  * @Author Hileb
  * @Date 2024/3/31 9:24
  **/
-public class ProgressBar {
-    public Object2BooleanArrayMap<String> progress;
-    public ProgressBar(String[] progress){
-        this.progress = new Object2BooleanArrayMap<>(progress, new boolean[progress.length]);
+public class Tasks {
+    public Object2BooleanArrayMap<String> tasks;
+    public Tasks(String[] tasks){
+        this.tasks = new Object2BooleanArrayMap<>(tasks, new boolean[tasks.length]);
     }
 
     public void complete(String s){
-        if (progress.containsKey(s)){
-            this.progress.put(s, true);
+        if (tasks.containsKey(s)){
+            this.tasks.put(s, true);
         }else throw new IllegalArgumentException("progress must be defined ahead!");
     }
 
     public boolean isCompleted(){
-        for (boolean b : this.progress.values()){
+        for (boolean b : this.tasks.values()){
             if (!b) return false;
         }
         return true;
     }
 
     public String[] getCompleted(){
-        return this.progress.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).distinct().toArray(String[]::new);
+        return this.tasks.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).distinct().toArray(String[]::new);
     }
 
     public String[] getFails(){
-        return this.progress.entrySet().stream().filter((entry)->!entry.getValue()).map(Map.Entry::getKey).distinct().toArray(String[]::new);
+        return this.tasks.entrySet().stream().filter((entry)->!entry.getValue()).map(Map.Entry::getKey).distinct().toArray(String[]::new);
     }
 
     public String getCompletedString(){

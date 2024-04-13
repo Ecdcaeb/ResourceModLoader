@@ -97,66 +97,62 @@ public class ConfigTransformer {
     }
     @PrivateAPI private static final Multimap<String,JsonObject> cachedRedefault=HashMultimap.create();
     @PrivateAPI public static void searchRedefault(){
-        ResourceModLoader.loadModule(ContainerHolder.Modules.CONFIG_REDEFAULT, containerHolder ->
-            FileHelper.findAssets(containerHolder, "config/redefault", (containerHolder1, root, file) -> {
-                String relative = root.relativize(file).toString();
-                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                    return;
+        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_REDEFAULT, (containerHolder, root, file) -> {
+            String relative = root.relativize(file).toString();
+            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                return;
 
-                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                ResourceLocation key = new ResourceLocation(containerHolder1.getContainer().getModId(), name);
+            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
 
-                BufferedReader reader = null;
-                try
-                {
-                    reader = Files.newBufferedReader(file);
-                    JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
-                    cachedRedefault.put(name,json);
-                }
-                catch (JsonParseException e)
-                {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config redefault {}", key, e);
-                }
-                catch (IOException e)
-                {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
-                }
-                finally
-                {
-                    IOUtils.closeQuietly(reader);
-                }
-            })
-        );
+            BufferedReader reader = null;
+            try
+            {
+                reader = Files.newBufferedReader(file);
+                JsonObject json = JsonHelper.getJson(reader);
+                cachedRedefault.put(name,json);
+            }
+            catch (JsonParseException e)
+            {
+                RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config redefault {}", key, e);
+            }
+            catch (IOException e)
+            {
+                RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
+            }
+            finally
+            {
+                IOUtils.closeQuietly(reader);
+            }
+        });
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config redefault",cachedRedefault.size());
     }
 
 
     @PrivateAPI  private static final Multimap<String,JsonObject> cachedOverrides=HashMultimap.create();
     @PrivateAPI public static void searchOverride(){
-        ResourceModLoader.loadModule(ContainerHolder.Modules.CONFIG_OVERRIDE, (containerHolder)->
-                FileHelper.findAssets(containerHolder, "config/override", (ContainerHolder holder, Path root, Path file) -> {
-                    String relative = root.relativize(file).toString();
-                    if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                        return;
+        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_OVERRIDE, (containerHolder, root, file) -> {
+            String relative = root.relativize(file).toString();
+            if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                return;
 
-                    String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                    ResourceLocation key = new ResourceLocation(holder.getContainer().getModId(), name);
+            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
 
-                    BufferedReader reader = null;
-                    try {
-                        reader = Files.newBufferedReader(file);
-                        JsonObject json = JsonUtils.fromJson(FileHelper.GSON, reader, JsonObject.class);
-                        cachedOverrides.put(name, json);
-                        RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}", name, json);
-                    } catch (JsonParseException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
-                    } catch (IOException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
-                    } finally {
-                        IOUtils.closeQuietly(reader);
-                    }
-                })
-        );
+            BufferedReader reader = null;
+            try {
+                reader = Files.newBufferedReader(file);
+                JsonObject json = JsonHelper.getJson(reader);
+                cachedOverrides.put(name, json);
+                RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}", name, json);
+            } catch (JsonParseException e) {
+                RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
+            } catch (IOException e) {
+                RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
+            } finally {
+                IOUtils.closeQuietly(reader);
+            }
+        });
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config overrides",cachedOverrides.size());
     }
 }

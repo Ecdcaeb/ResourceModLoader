@@ -3,7 +3,7 @@ package mods.rml.core;
 import mods.rml.api.EarlyClass;
 import mods.rml.api.PrivateAPI;
 import mods.rml.api.asm.MethodName;
-import mods.rml.api.java.progress.ProgressBar;
+import mods.rml.api.java.progress.Tasks;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -279,7 +279,7 @@ public class RMLTransformer implements IClassTransformer {
                 });
         transformers.put("net.minecraft.client.gui.GuiScreen",
                 (cn)->{
-                    ProgressBar bar = new ProgressBar(new String[]{"click", "hover"});
+                    Tasks bar = new Tasks(new String[]{"click", "hover"});
                     for(MethodNode mn : cn.methods){
                         if (m_175276.is(mn)){
                             Label returnTrueLabel = new Label();

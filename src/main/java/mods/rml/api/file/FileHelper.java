@@ -37,6 +37,13 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
+    public static void findAssets(ContainerHolder containerHolder, ContainerHolder.Module module, ModFileConsumer consumer){
+        if (module.moduleType.isFile){
+            findFile(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
+        }else {
+            findAssets(containerHolder, module.location, consumer);
+        }
+    }
 
     public static void findAssets(ContainerHolder containerHolder, String base, ModFileConsumer consumer){
         findFiles(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
@@ -53,7 +60,6 @@ public class FileHelper {
         File source = mod.getSource();
 
         FileSystem fs = null;
-        boolean success = true;
 
         try
         {
@@ -107,42 +113,42 @@ public class FileHelper {
     }
 
     @PublicAPI
-    public static void findFile(ModContainer mod, String base, Consumer<Path> processor) throws InvalidPathException
+    public static void findFile(ContainerHolder containerHolder, String base, ModFileConsumer processor) throws InvalidPathException
     {
-            File source = mod.getSource();
-            if ("minecraft".equals(mod.getModId()))
+        ModContainer mod = containerHolder.container;
+        File source = mod.getSource();
+        if ("minecraft".equals(mod.getModId()))
+        {
+            return;
+        }
+        if (source.isFile())
+        {
+            try
             {
-                return;
-            }
-            if (source.isFile())
-            {
-                try
-                {
-                    FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
-                    Path path;
-                    try{
-                        path = fs.getPath("/" + base);
-                    }catch (InvalidPathException e){
-                        return;
-                    }
-                    processor.accept(path);
-                    IOUtils.closeQuietly(fs);
-                }
-                catch (IOException e)
-                {
-                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
-                }
-            }
-            else if (source.isDirectory())
-            {
+                FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
                 Path path;
                 try{
-                    path = source.toPath().resolve(base);
-                } catch (InvalidPathException e){
+                    path = fs.getPath("/" + base);
+                }catch (InvalidPathException e){
                     return;
                 }
-                processor.accept(path);
+                processor.accept(containerHolder, path, path);
+                IOUtils.closeQuietly(fs);
             }
+            catch (IOException e) {
+                RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+            }
+        }
+        else if (source.isDirectory())
+        {
+            Path path;
+            try{
+                path = source.toPath().resolve(base);
+            } catch (InvalidPathException e){
+                return;
+            }
+            processor.accept(containerHolder, path, path);
+        }
     }
     @PublicAPI
     public static CharArrayReader getCachedFile(Path path) throws IOException {
@@ -158,6 +164,7 @@ public class FileHelper {
         return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), StandardCharsets.UTF_8));
     }
 
+    @FunctionalInterface
     public interface ModFileConsumer{
         void accept(ContainerHolder containerHolder, Path root, Path file);
     }

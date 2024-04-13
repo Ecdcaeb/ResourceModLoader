@@ -3,10 +3,12 @@ package mods.rml.api.file;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import mods.rml.api.EarlyClass;
 import mods.rml.api.PublicAPI;
 
 import javax.annotation.Nullable;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -158,5 +160,12 @@ public class JsonHelper {
     }
     public static String[] getAsRawList(JsonElement element){
         return getAsArray(element, JsonHelper::getRawValue);
+    }
+
+    public static JsonObject getJson(String s){
+        return (JsonObject) new JsonParser().parse(s);
+    }
+    public static JsonObject getJson(Reader s){
+        return (JsonObject) new JsonParser().parse(s);
     }
 }
