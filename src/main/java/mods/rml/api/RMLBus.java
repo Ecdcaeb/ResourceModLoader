@@ -10,5 +10,5 @@ import com.google.common.eventbus.EventBus;
 @EarlyClass
 @PublicAPI
 public class RMLBus {
-    @PublicAPI public static final EventBus BUS=new EventBus("rml");
+    @PublicAPI public static final EventBus BUS = new EventBus("rml");
 }

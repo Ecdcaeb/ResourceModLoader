@@ -121,7 +121,6 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
             metadata.logoFile="assets/rml/icon.png";
             INSTANCE = this;
-            RMLBus.BUS.register(new RMLBusHandler());
         }
         @Override
         @PrivateAPI public boolean registerBus(EventBus bus, LoadController controller) {
@@ -134,7 +133,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
-            if (FMLLaunchHandler.side()== Side.CLIENT){
+            if (FMLLaunchHandler.side() == Side.CLIENT){
                 MinecraftForge.EVENT_BUS.register(ChangeMod.ChangeModAction.class);
             }
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
@@ -163,7 +162,6 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @PrivateAPI public Class<?> getCustomResourcePackClass()
         {
             if(getSource() == null) return null;
-
             try
             {
                 return getSource().isDirectory() ? Class.forName("net.minecraftforge.fml.client.FMLFolderResourcePack", true, getClass().getClassLoader()) : Class.forName("net.minecraftforge.fml.client.FMLFileResourcePack", true, getClass().getClassLoader());
@@ -172,9 +170,6 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             {
                 return null;
             }
-        }
-        public static class RMLBusHandler{
-
         }
     }
 }

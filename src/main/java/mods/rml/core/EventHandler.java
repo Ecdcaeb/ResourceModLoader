@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import mods.rml.api.config.ConfigTransformer;
 import mods.rml.api.event.early.FMLBeforeStageEvent;
 import mods.rml.compat.crt.CrTZenClassRegisterEvent;
+import net.minecraftforge.fml.common.LoaderState;
 
 /**
  * @Project ResourceModLoader
@@ -15,7 +16,7 @@ public enum EventHandler {
     INSTANCE;
     @Subscribe
     public void beforePreInitializationEvent(FMLBeforeStageEvent event){
-        if (event.stage == net.minecraftforge.fml.common.LoaderState.PREINITIALIZATION){
+        if (event.stage == LoaderState.PREINITIALIZATION){
             ConfigTransformer.handleOverride();
         }
     }
@@ -23,5 +24,11 @@ public enum EventHandler {
     @Subscribe
     public void registerZenClass(CrTZenClassRegisterEvent event){
         //event.register(RMLVanillaFactory.class);
+    }
+
+    public void beforeConstruction(FMLBeforeStageEvent event){
+        if (event.stage == LoaderState.CONSTRUCTING){
+            RMLTransformer.Transformers.initModTransformers();
+        }
     }
 }
