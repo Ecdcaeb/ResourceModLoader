@@ -1,0 +1,8 @@
+{
+  "ore": "oreDiamond",
+  "item": {
+    "item": "minecraft:dirt",
+    "count": 1,
+    "data": 0
+  }
+}

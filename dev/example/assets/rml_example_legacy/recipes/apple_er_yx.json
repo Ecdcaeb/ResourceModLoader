@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+
+  "pattern":
+  [
+    "323",
+    "212",
+    "323"
+  ],
+
+  "key":
+  {
+    "1":
+    {
+      "item": "minecraft:log",
+      "data": 0
+    },
+    "2": {
+      "item": "minecraft:wheat_seeds"
+    },
+    "3":
+    {
+      "item": "minecraft:dye",
+      "data": 15
+    }
+  },
+
+  "result":
+  {
+    "item": "minecraft:apple",
+    "count": 4
+  }
+}
