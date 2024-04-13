@@ -13,16 +13,17 @@ import java.util.HashSet;
  * @Author Hileb
  * @Date 2024/1/17 12:21
  **/
+@Deprecated
 @PublicAPI
 public class BuffedModIDContainer {
     @PublicAPI public HashSet<String> modids = new HashSet<>();
-    @PublicAPI public HashMap<String, ContainerHolder.Modules[]> opinions = new HashMap<>();
+    @PublicAPI public HashMap<String, ContainerHolder.Module[]> opinions = new HashMap<>();
 
     @PublicAPI public void add(String modid){
-        this.add(modid, ContainerHolder.Modules.values());
+        this.add(modid, ContainerHolder.ModuleType.getAllForDefault());
     }
 
-    @PublicAPI public void add(String modid, ContainerHolder.Modules[] opinion){
+    @PublicAPI public void add(String modid, ContainerHolder.Module[] opinion){
         modids.add(modid);
         opinions.put(modid, opinion);
     }

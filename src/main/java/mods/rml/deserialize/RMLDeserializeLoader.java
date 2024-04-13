@@ -238,7 +238,7 @@ public class RMLDeserializeLoader {
             ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.SPLASH_TEXT, (containerHolder, root, file) -> {
                 BufferedReader bufferedreader = null;
                 try {
-                    bufferedreader = Files.newBufferedReader(path);
+                    bufferedreader = Files.newBufferedReader(file);
                     String s;
                     while ((s = bufferedreader.readLine()) != null) {
                         s = s.trim();
