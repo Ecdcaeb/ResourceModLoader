@@ -168,4 +168,8 @@ public class JsonHelper {
     public static JsonObject getJson(Reader s){
         return (JsonObject) new JsonParser().parse(s);
     }
+
+    public static JsonArray getArray(Reader s){
+        return (JsonArray) new JsonParser().parse(s);
+    }
 }

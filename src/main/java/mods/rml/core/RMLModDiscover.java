@@ -11,6 +11,7 @@ import mods.rml.api.PrivateAPI;
 import mods.rml.api.RMLBus;
 import mods.rml.api.config.ConfigTransformer;
 import mods.rml.api.event.RMLAfterInjectEvent;
+import mods.rml.api.file.JsonHelper;
 import mods.rml.api.mods.ContainerHolder;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.FMLLog;
@@ -53,7 +54,7 @@ public class RMLModDiscover {
                     ZipEntry info = zipFile.getEntry("rml.info");
                     if (info!=null){
                         InputStream inputStream = zipFile.getInputStream(info);
-                        JsonArray jsonArray = GSON.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), JsonArray.class);
+                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
                         for(int i = 0, size = jsonArray.size(); i<size ; i++){
                             modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
