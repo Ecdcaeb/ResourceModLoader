@@ -1,6 +1,7 @@
 package mods.rml.deserialize;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 import com.google.common.io.LineProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -32,6 +33,8 @@ import net.minecraftforge.registries.GameData;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

@@ -28,7 +28,7 @@ public enum EventHandler {
 
     public void beforeConstruction(FMLBeforeStageEvent event){
         if (event.stage == LoaderState.CONSTRUCTING){
-            RMLTransformer.Transformers.initModTransformers();
+            RMLTransformer.Transformers.Late.initModTransformers(event.event);
         }
     }
 }

@@ -7,6 +7,8 @@ import mods.rml.api.asm.MethodName;
 import mods.rml.api.java.progress.Tasks;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.discovery.ASMDataTable;
+import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -336,55 +338,47 @@ public class RMLTransformer implements IClassTransformer {
                         }
                     });
         }
-        public static void initModTransformers(){
-            if (Loader.isModLoaded(CraftTweaker.MODID)){
-                transformers.put("crafttweaker.mc1120.CraftTweaker",
-                        (cn)->{
-                            for(MethodNode mn:cn.methods){
-                                /**
-                                 *  @EventHandler
-                                 *     public void onPreInitialization(FMLPreInitializationEvent ev) {
-                                 *         CrTZenClassRegisterEvent.post();
-                                 *         PROXY.registerEvents();
-                                 * **/
-                                if ("onPreInitialization".equals(mn.name)){
-                                    InsnList hook = new InsnList();
-                                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
-                                    mn.instructions.insertBefore(mn.instructions.get(0), hook);
-                                    return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+        public static class Late{
+            public static void initModTransformers(Object[] objects){
+                ASMDataTable asmDatas = (ASMDataTable)objects[1];
+                if (Loader.isModLoaded(CraftTweaker.MODID)){
+                    transformers.put("crafttweaker.mc1120.CraftTweaker",
+                            (cn)->{
+                                for(MethodNode mn:cn.methods){
+                                    /**
+                                     *  @EventHandler
+                                     *     public void onPreInitialization(FMLPreInitializationEvent ev) {
+                                     *         CrTZenClassRegisterEvent.post();
+                                     *         PROXY.registerEvents();
+                                     * **/
+                                    if ("onPreInitialization".equals(mn.name)){
+                                        InsnList hook = new InsnList();
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
+                                        mn.instructions.insertBefore(mn.instructions.get(0), hook);
+                                        return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                    }
                                 }
-                            }
-                            return -1;
-                        });
-                globalTransformers.add(new GlobalTransformer() {
-                    @Override
-                    public boolean isTarget(ClassNode cn) {
-                        boolean check = cn.interfaces.contains("crafttweaker/runtime/ITweaker"); // make all ITweak Injected.
-                        if (check) for(MethodNode mn:cn.methods){
-                            if ("setScriptProvider".equals(mn.name)){
-                                if(mn.instructions.size() >0){
-                                    return true;
-                                }
-                            }
-                        }
-                        return false;
-                    }
+                                return -1;
+                            });
+                    for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
 
-                    @Override
-                    public int apply(ClassNode cn) {
-                        for (MethodNode mn : cn.methods) {
-                            if ("setScriptProvider".equals(mn.name)) {
-                                InsnList list = new InsnList();
-                                list.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
-                                list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
-                                mn.instructions.insertBefore(mn.instructions.get(0), list);
-                                return ClassWriter.COMPUTE_MAXS;
-                            }
-                        }
-                        return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                        String name = asmData.getClassName().replace('/', '.');
+                        transformers.put(name,
+                                (cn)->{
+                                    for (MethodNode mn : cn.methods) {
+                                        if ("setScriptProvider".equals(mn.name)) {
+                                            InsnList list = new InsnList();
+                                            list.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                            list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
+                                            list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
+                                            mn.instructions.insertBefore(mn.instructions.get(0), list);
+                                            return ClassWriter.COMPUTE_MAXS;
+                                        }
+                                    }
+                                    return 0;
+                                });
                     }
-                });
+                }
             }
         }
 
