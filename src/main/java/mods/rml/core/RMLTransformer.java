@@ -5,6 +5,7 @@ import mods.rml.api.EarlyClass;
 import mods.rml.api.PrivateAPI;
 import mods.rml.api.asm.MethodName;
 import mods.rml.api.java.progress.Tasks;
+import mods.rml.compat.crt.CrTAutoZenTransformer;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
@@ -360,6 +361,10 @@ public class RMLTransformer implements IClassTransformer {
                                 }
                                 return -1;
                             });
+                    transformers.put("net.minecraftforge.common.config.Property", CrTAutoZenTransformer::transform);
+                    transformers.put("net.minecraftforge.common.config.Property$Type", CrTAutoZenTransformer::transform);
+                    transformers.put("net.minecraftforge.common.config.Configuration", CrTAutoZenTransformer::transform);
+                    transformers.put("net.minecraftforge.common.config.ConfigManager", CrTAutoZenTransformer::transform);
                     for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
 
                         String name = asmData.getClassName().replace('/', '.');
