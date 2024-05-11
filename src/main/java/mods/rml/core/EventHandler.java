@@ -1,7 +1,7 @@
 package mods.rml.core;
 
 import com.google.common.eventbus.Subscribe;
-import mods.rml.api.config.ConfigTransformer;
+import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.early.FMLBeforeStageEvent;
 import mods.rml.compat.crt.CrTZenClassRegisterEvent;
 import net.minecraftforge.fml.common.LoaderState;
@@ -17,7 +17,7 @@ public enum EventHandler {
     @Subscribe
     public void beforePreInitializationEvent(FMLBeforeStageEvent event){
         if (event.stage == LoaderState.PREINITIALIZATION){
-            ConfigTransformer.handleOverride();
+            ConfigPatcher.Json.handleOverride();
         }
     }
 

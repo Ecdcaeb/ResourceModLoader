@@ -3,7 +3,7 @@ package mods.rml.api.mods;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PublicAPI;
 import net.minecraftforge.fml.common.ModContainer;
 
 import java.util.Arrays;

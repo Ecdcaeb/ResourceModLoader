@@ -1,6 +1,6 @@
 package mods.rml.api.mods;
 
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PublicAPI;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 

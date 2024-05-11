@@ -1,7 +1,7 @@
 package mods.rml.core;
 
-import mods.rml.api.EarlyClass;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PrivateAPI;
 import net.minecraft.launchwrapper.Launch;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;

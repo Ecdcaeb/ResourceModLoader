@@ -6,7 +6,7 @@ package mods.rml.api.event;
  * @Date 2024/2/9 21:33
  **/
 
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PublicAPI;
 
 /**
  * fire on {@link mods.rml.api.RMLBus#BUS}

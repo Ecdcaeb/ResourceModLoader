@@ -1,4 +1,4 @@
-package mods.rml.api;
+package mods.rml.api.announces;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;

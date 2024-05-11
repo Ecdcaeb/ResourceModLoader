@@ -1,4 +1,4 @@
-package mods.rml.api;
+package mods.rml.api.announces;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -10,16 +10,15 @@ import static java.lang.annotation.ElementType.*;
 /**
  * @Project ResourceModLoader
  * @Author Hileb
- * @Date 2024/2/7 0:57
+ * @Date 2024/2/7 1:06
  *
- *
- * This announces for the public api for java-mod.
- * Please do not invoke the method which is not a {@link PublicAPI} not in documents. Since it will change sometime. But we will {@link Deprecated} it at first.
+ *  This announces for the public api for java-mod.
+ *  Please do not invoke the method which is  a {@link PrivateAPI} api. Since it will change sometime, or it is used for asm.
  **/
 @EarlyClass
 @Documented
 @PrivateAPI
 @Retention(RetentionPolicy.SOURCE)
 @Target(value={CONSTRUCTOR, FIELD, LOCAL_VARIABLE, METHOD, PACKAGE, PARAMETER, TYPE})
-public @interface PublicAPI {
+public @interface PrivateAPI {
 }

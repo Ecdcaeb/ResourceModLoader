@@ -1,7 +1,7 @@
 package mods.rml.api.registry.remap;
 
-import mods.rml.api.PrivateAPI;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PrivateAPI;
+import mods.rml.api.announces.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;

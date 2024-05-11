@@ -1,7 +1,7 @@
 package mods.rml.api.event.early;
 
-import mods.rml.api.EarlyClass;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader

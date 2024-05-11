@@ -1,11 +1,13 @@
 package mods.rml.deserialize;
 
 import mods.rml.ResourceModLoader;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.PrivateAPI;
+import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
+import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.text.ChangeMod;
 import mods.rml.api.villagers.LoadedVillage;
@@ -30,6 +32,7 @@ import net.minecraft.util.text.Style;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;

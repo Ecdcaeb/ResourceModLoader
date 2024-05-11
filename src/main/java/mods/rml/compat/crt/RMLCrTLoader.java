@@ -2,7 +2,7 @@ package mods.rml.compat.crt;
 
 import crafttweaker.runtime.IScriptProvider;
 import mods.rml.ResourceModLoader;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;

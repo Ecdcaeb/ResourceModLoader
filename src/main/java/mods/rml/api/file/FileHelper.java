@@ -3,11 +3,9 @@ package mods.rml.api.file;
 import com.google.common.io.ByteSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import dev.latvian.kubejs.documentation.P;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
 
@@ -22,10 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * @Project ResourceModLoader

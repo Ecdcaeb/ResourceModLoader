@@ -2,7 +2,7 @@ package mods.rml.deserialize.craft.recipe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.PrivateAPI;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraftforge.common.crafting.CraftingHelper;

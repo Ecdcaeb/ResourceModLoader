@@ -4,8 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import mods.rml.api.EarlyClass;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PublicAPI;
 
 import javax.annotation.Nullable;
 import java.io.Reader;

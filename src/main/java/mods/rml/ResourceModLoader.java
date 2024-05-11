@@ -1,7 +1,7 @@
 package mods.rml;
 
-import mods.rml.api.PrivateAPI;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PrivateAPI;
+import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.event.RMLModuleLoadingEvent;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.mods.BuffedModIDContainer;
@@ -9,6 +9,7 @@ import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
+import org.apache.logging.log4j.Logger;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,6 +26,8 @@ public class ResourceModLoader {
     @PublicAPI public static final String VERSION = "1.0.11";
     @PrivateAPI private static final BuffedModIDContainer buffedModIDContainer = new BuffedModIDContainer();
     @PrivateAPI public static final HashSet<ContainerHolder> enabledModContainers = new HashSet<>();
+
+    @PublicAPI public static final Logger LOGGER = RMLFMLLoadingPlugin.LOGGER;
 
     @PublicAPI public static ModContainer enableRML(ModContainer mod){
         enabledModContainers.add(new ContainerHolder(mod));

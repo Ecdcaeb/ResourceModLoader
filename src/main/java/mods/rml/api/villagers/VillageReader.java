@@ -1,7 +1,7 @@
 package mods.rml.api.villagers;
 
 import com.google.gson.JsonObject;
-import mods.rml.api.PublicAPI;
+import mods.rml.api.announces.PublicAPI;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 /**

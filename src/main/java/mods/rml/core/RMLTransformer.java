@@ -1,15 +1,13 @@
 package mods.rml.core;
 
 import crafttweaker.mc1120.CraftTweaker;
-import mods.rml.api.EarlyClass;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.asm.MethodName;
 import mods.rml.api.java.progress.Tasks;
-import mods.rml.compat.crt.CrTAutoZenTransformer;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
-import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -150,7 +148,7 @@ public class RMLTransformer implements IClassTransformer {
                                         MethodInsnNode methodInsnNode=(MethodInsnNode) node;
                                         if ("java/util/Map".equals(methodInsnNode.owner) && "put".equals(methodInsnNode.name) && "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;".equals(methodInsnNode.desc) && methodInsnNode.itf){
                                             methodInsnNode.setOpcode(Opcodes.INVOKESTATIC);
-                                            methodInsnNode.owner="mods/rml/api/config/ConfigTransformer";
+                                            methodInsnNode.owner="mods/rml/api/config/ConfigPatcher";
                                             methodInsnNode.name="registerCfg";
                                             methodInsnNode.itf=false;
                                             methodInsnNode.desc="(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
@@ -361,10 +359,6 @@ public class RMLTransformer implements IClassTransformer {
                                 }
                                 return -1;
                             });
-                    transformers.put("net.minecraftforge.common.config.Property", CrTAutoZenTransformer::transform);
-                    transformers.put("net.minecraftforge.common.config.Property$Type", CrTAutoZenTransformer::transform);
-                    transformers.put("net.minecraftforge.common.config.Configuration", CrTAutoZenTransformer::transform);
-                    transformers.put("net.minecraftforge.common.config.ConfigManager", CrTAutoZenTransformer::transform);
                     for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
 
                         String name = asmData.getClassName().replace('/', '.');

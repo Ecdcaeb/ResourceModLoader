@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
  * @Author Hileb
  * @Date 2024/3/31 10:23
  **/
+@SuppressWarnings("all")
 public class FieldAccessor<T, E> {
     private final Field field;
     public FieldAccessor(Field field){

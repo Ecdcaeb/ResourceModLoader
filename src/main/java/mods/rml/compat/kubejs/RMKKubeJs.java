@@ -6,7 +6,7 @@ import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import mods.rml.ResourceModLoader;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.java.reflection.MethodAccessor;
 import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;

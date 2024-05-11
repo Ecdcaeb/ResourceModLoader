@@ -1,7 +1,7 @@
 package mods.rml;
 
 import com.google.common.eventbus.EventBus;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.PrivateAPI;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.InjectedModContainer;
 import net.minecraftforge.fml.common.LoadController;

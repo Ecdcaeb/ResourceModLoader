@@ -7,9 +7,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import mods.rml.RMLModContainer;
 import mods.rml.ResourceModLoader;
-import mods.rml.api.PrivateAPI;
+import mods.rml.api.announces.ASMInvoke;
+import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.RMLBus;
-import mods.rml.api.config.ConfigTransformer;
+import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.RMLAfterInjectEvent;
 import mods.rml.api.file.JsonHelper;
 import mods.rml.api.mods.ContainerHolder;
@@ -39,7 +40,8 @@ import java.util.zip.ZipFile;
  *
  **/
 @PrivateAPI
-@SuppressWarnings("unused")
+@ASMInvoke
+@SuppressWarnings("all")
 public class RMLModDiscover {
     public static final Gson GSON = new GsonBuilder().registerTypeAdapter(ArtifactVersion.class, new MetadataCollection.ArtifactVersionAdapter()).create();
     @PrivateAPI
@@ -85,8 +87,8 @@ public class RMLModDiscover {
         afterInject();
     }
     @PrivateAPI public static void afterInject(){
-        ConfigTransformer.searchRedefault();
-        ConfigTransformer.searchOverride();
+        ConfigPatcher.Json.searchRedefault();
+        ConfigPatcher.Json.searchOverride();
         RMLBus.BUS.post(new RMLAfterInjectEvent());
     }
 
