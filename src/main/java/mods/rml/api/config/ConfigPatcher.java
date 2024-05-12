@@ -8,19 +8,28 @@ import com.google.gson.JsonParseException;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.announces.ASMInvoke;
 import mods.rml.api.announces.PrivateAPI;
+import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
 import mods.rml.api.java.reflection.FieldAccessor;
 import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
+import net.minecraft.client.Minecraft;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.config.ConfigCategory;
 import net.minecraftforge.common.config.ConfigElement;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.common.config.Property;
 import net.minecraftforge.fml.client.config.IConfigElement;
+import net.minecraftforge.fml.client.event.ConfigChangedEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.server.FMLServerHandler;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -29,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +52,7 @@ import java.util.regex.Pattern;
  * @Date 2024/5/11 13:10
  **/
 public abstract class ConfigPatcher {
+    public static final HashMap<Configuration, String> OWNED_CONFIGS = new HashMap<>();
     @PrivateAPI private static final Multimap<String, ConfigPatcher> cachedRedefault = HashMultimap.create();
     @PrivateAPI  private static final Multimap<String, ConfigPatcher> cachedOverrides = HashMultimap.create();
 
@@ -57,26 +68,31 @@ public abstract class ConfigPatcher {
     @SuppressWarnings("unused") //target redefault
     @PrivateAPI @ASMInvoke
     public static Object registerCfg(Map<Object, Object> map, Object string, Object configuration){
-        RMLFMLLoadingPlugin.Container.LOGGER.info("register a config {}",string );
+        RMLFMLLoadingPlugin.Container.LOGGER.info("register a config {}", string);
         transformConfigRedefalut((Configuration) configuration, FilenameUtils.getName((String)string));
-        return map.put(string,configuration);
+        if (Loader.instance().activeModContainer() != null){
+            OWNED_CONFIGS.put((Configuration) configuration, Loader.instance().activeModContainer().getModId());
+        }
+        return map.put(string, configuration);
     }
     @PrivateAPI public static void transformConfigRedefalut(Configuration configuration, String name){
-        RMLFMLLoadingPlugin.Container.LOGGER.debug("try apply config Redefalut for {}",name);
-        for (ConfigPatcher patcher : cachedRedefault.get(name)) {
-            patcher.patch(configuration);
-            RMLFMLLoadingPlugin.Container.LOGGER.debug("apply config redefault for {}",name);
-        }
-        cachedRedefault.removeAll(name);
+        runPatches(configuration, name, cachedRedefault, "redefault");
     }
     @PrivateAPI public static void transformConfigOverride(Configuration configuration, String name){
-        RMLFMLLoadingPlugin.Container.LOGGER.info("try apply config override for {}",name);
-        for(ConfigPatcher patcher : cachedOverrides.get(name)){
-            patcher.patch(configuration);
-            RMLFMLLoadingPlugin.Container.LOGGER.info("apply config override for {} ",name);
-        }
-        cachedOverrides.removeAll(name);
+        runPatches(configuration, name, cachedOverrides, "overrides");
     }
+
+    @PublicAPI
+    public static void runPatches(Configuration configuration, String name, Multimap<String, ConfigPatcher> patchers, String type){
+        RMLFMLLoadingPlugin.Container.LOGGER.info("try apply config {} for {}",type, name);
+        for(ConfigPatcher patcher : patchers.get(name)){
+            patcher.patch(configuration);
+            RMLFMLLoadingPlugin.Container.LOGGER.info("apply config {} for {} ",type, name);
+        }
+        patchers.removeAll(name);
+        syncForClassesGeneratedConfigs(configuration);
+    }
+
     @PrivateAPI public static void searchRedefault(){
         ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_REDEFAULT, (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
@@ -152,6 +168,22 @@ public abstract class ConfigPatcher {
             }
         });
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config overrides",cachedOverrides.size());
+    }
+
+    public static void syncForClassesGeneratedConfigs(Configuration configuration){
+        MinecraftForge.EVENT_BUS.post(new ConfigChangedEvent.OnConfigChangedEvent(OWNED_CONFIGS.get(configuration), null, isWorldRunning(), false));
+    }
+
+    public static boolean isWorldRunning(){
+        if (FMLCommonHandler.instance().getSide() == Side.CLIENT){
+            return Minecraft.getMinecraft().world != null;
+        }else {
+            MinecraftServer server = FMLServerHandler.instance().getServer();
+            if (server != null){
+                return server.isServerRunning();
+            }
+        }
+        return false;
     }
 
     /**
