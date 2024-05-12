@@ -10,6 +10,8 @@ import com.google.gson.JsonParseException;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.RMLRegistries;
+import mods.rml.api.config.ConfigFactory;
+import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.file.FileHelper;
@@ -71,7 +73,7 @@ public class RMLDeserializeLoader {
                 }
                 catch (JsonParseException e)
                 {
-                    FMLLog.log.error("Parsing error loading recipe {}", key, e);
+                    FMLLog.log.error("Parsing error loading Ore dic {}", key, e);
                 }
                 catch (IOException e)
                 {
@@ -267,6 +269,33 @@ public class RMLDeserializeLoader {
             } catch (Exception ignored) {
                 return raw;
             }
+        }
+    }
+
+    /**
+     * @Project ResourceModLoader
+     * @Author Hileb
+     * @Date 2024/5/12 11:13
+     **/
+    public static class ConfigLoader {
+        public static void load(){
+            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_DEFINE, (containerHolder, root, file) -> {
+                String relative = root.relativize(file).toString();
+                if (!"cfg".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                    return;
+                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+                BufferedReader reader = null;
+                try
+                {
+                    byte[] cfg = FileHelper.getByteSource(file).read();
+                    ConfigPatcher.OWNED_CONFIGS.put(ConfigFactory.addConfig(name, key.getResourcePath(), cfg), key.getResourceDomain());
+                }
+                catch (IOException e)
+                {
+                    FMLLog.log.error("Couldn't read config define {} from {}", key, file, e);
+                }
+            });
         }
     }
 }

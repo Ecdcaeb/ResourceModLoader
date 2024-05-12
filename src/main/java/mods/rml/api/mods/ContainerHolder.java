@@ -40,6 +40,7 @@ public class ContainerHolder {
     public enum ModuleType {
         CONFIG_OVERRIDE("config/override", false),
         CONFIG_REDEFAULT("config/redefault", false),
+        CONFIG_DEFINE("config/define", false),
         MOD_CRT("crt", false),
         FUNCTIONS("functions", false),
         MOD_KUBEJS("kubejs", false),

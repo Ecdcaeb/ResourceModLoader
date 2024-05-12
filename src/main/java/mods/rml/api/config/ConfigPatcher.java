@@ -13,6 +13,7 @@ import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
 import mods.rml.api.java.reflection.FieldAccessor;
 import mods.rml.api.java.reflection.ReflectionHelper;
+import mods.rml.api.java.utils.ObjectHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -71,7 +73,7 @@ public abstract class ConfigPatcher {
         RMLFMLLoadingPlugin.Container.LOGGER.info("register a config {}", string);
         transformConfigRedefalut((Configuration) configuration, FilenameUtils.getName((String)string));
         if (Loader.instance().activeModContainer() != null){
-            OWNED_CONFIGS.put((Configuration) configuration, Loader.instance().activeModContainer().getModId());
+            OWNED_CONFIGS.put((Configuration) configuration, ObjectHelper.orDefault(Loader.instance().activeModContainer().getModId(), ((String)string).substring(0, ((String)string).length()-4)));
         }
         return map.put(string, configuration);
     }
@@ -171,7 +173,7 @@ public abstract class ConfigPatcher {
     }
 
     public static void syncForClassesGeneratedConfigs(Configuration configuration){
-        MinecraftForge.EVENT_BUS.post(new ConfigChangedEvent.OnConfigChangedEvent(OWNED_CONFIGS.get(configuration), null, isWorldRunning(), false));
+        if (OWNED_CONFIGS.containsKey(configuration)) MinecraftForge.EVENT_BUS.post(new ConfigChangedEvent.OnConfigChangedEvent(OWNED_CONFIGS.get(configuration), null, isWorldRunning(), false));
     }
 
     public static boolean isWorldRunning(){
