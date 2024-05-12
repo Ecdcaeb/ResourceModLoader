@@ -1,6 +1,8 @@
 package mods.rml.deserialize;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.common.io.LineProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -16,6 +18,8 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
+import mods.rml.api.java.reflection.FieldAccessor;
+import mods.rml.api.java.reflection.ReflectionHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.registry.remap.RemapCollection;
 import mods.rml.api.villagers.LoadedVillage;
@@ -26,9 +30,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import net.minecraftforge.common.crafting.JsonContext;
 import net.minecraftforge.fml.common.FMLLog;
+import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.registries.GameData;
 import org.apache.commons.io.FilenameUtils;
@@ -278,6 +285,7 @@ public class RMLDeserializeLoader {
      * @Date 2024/5/12 11:13
      **/
     public static class ConfigLoader {
+        public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
         public static void load(){
             ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_DEFINE, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
@@ -285,11 +293,11 @@ public class RMLDeserializeLoader {
                     return;
                 String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                 ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-                BufferedReader reader = null;
                 try
                 {
                     byte[] cfg = FileHelper.getByteSource(file).read();
                     ConfigPatcher.OWNED_CONFIGS.put(ConfigFactory.addConfig(name, key.getResourcePath(), cfg), key.getResourceDomain());
+                    asm_data.get(null).put(key.getResourceDomain(), HashMultimap.create());
                 }
                 catch (IOException e)
                 {
