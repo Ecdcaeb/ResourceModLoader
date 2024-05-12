@@ -1,5 +1,6 @@
 package mods.rml.deserialize;
 
+import com.google.common.eventbus.Subscribe;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.config.ConfigPatcher;
@@ -35,6 +36,7 @@ import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.ModContainer;
+import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -108,6 +110,10 @@ public class RMLForgeEventHandler {
         registry.register(new PriceRange.Factory().setRegistryName(new ResourceLocation("minecraft","price")));
         registry.register(new RangeConstant.Factory().setRegistryName(new ResourceLocation("cvh","constant")));
         registry.register(new RangePoisson.Factory().setRegistryName(new ResourceLocation("cvh","poisson_distribution")));
+    }
+
+    public static void construct(FMLConstructionEvent event){
+        RMLDeserializeLoader.ConfigLoader.load();
     }
 
     public static void preInit(FMLPreInitializationEvent event){

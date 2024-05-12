@@ -147,6 +147,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
+            RMLForgeEventHandler.construct(event);
         }
         @Subscribe
         @SuppressWarnings("unused")

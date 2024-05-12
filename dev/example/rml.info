@@ -25,6 +25,11 @@
         "forceLoaded":false
       },
       {
+              "type":"CONFIG_DEFINE",
+              "location":"mods/forge/config/define",
+              "forceLoaded":false
+            },
+      {
         "type":"MOD_CRT",
         "location":"mods/crt/scripts",
         "forceLoaded":false
