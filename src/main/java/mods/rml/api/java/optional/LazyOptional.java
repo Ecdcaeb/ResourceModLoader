@@ -306,43 +306,4 @@ public class LazyOptional<T> {
             this.listeners.clear();
         }
     }
-
-    //========RML START========//
-
-    public LinkedList<Consumer<LazyOptional<T>>> actions = new LinkedList<>();
-    public LazyOptional<T> addAction(Consumer<LazyOptional<T>> action){
-        actions.add(action);
-        return this;
-    }
-    public LazyOptional<T> actionIfPresent(Consumer<T> consumer){
-        return addAction(tLazyOptional -> {
-            if (tLazyOptional.isPresent()){
-                consumer.accept(tLazyOptional.getValue());
-            }
-        });
-    }
-
-    public LazyOptional<T> actionOrNull(Consumer<LazyOptional<T>> consumer){
-        return addAction(tLazyOptional -> {
-            if (!tLazyOptional.isPresent()){
-                consumer.accept(tLazyOptional);
-            }
-        });
-    }
-
-    public LazyOptional<T> actionConsume(Consumer<T> ifPresent, Consumer<LazyOptional<T>> orNull){
-        return addAction(tLazyOptional -> {
-            if (tLazyOptional.isPresent()){
-                ifPresent.accept(tLazyOptional.getValue());
-            }else orNull.accept(tLazyOptional);
-        });
-    }
-
-    public void executeActions(){
-        for(Consumer<LazyOptional<T>> action:actions){
-            action.accept(this);
-        }
-        actions.clear();
-    }
-
 }

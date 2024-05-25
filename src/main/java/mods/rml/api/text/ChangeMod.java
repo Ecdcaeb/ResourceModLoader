@@ -1,9 +1,9 @@
 package mods.rml.api.text;
 
 import mods.rml.api.event.client.gui.HandleComponentEvent;
-import mods.rml.api.java.reflection.FieldAccessor;
-import mods.rml.api.java.reflection.MethodAccessor;
-import mods.rml.api.java.reflection.ReflectionHelper;
+import mods.rml.api.java.reflection.jvm.FieldAccessor;
+import mods.rml.api.java.reflection.jvm.MethodAccessor;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraftforge.common.util.EnumHelper;
 import net.minecraftforge.fml.client.GuiModList;

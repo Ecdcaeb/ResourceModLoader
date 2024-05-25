@@ -3,8 +3,10 @@ package mods.rml.core;
 import com.google.common.eventbus.Subscribe;
 import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.early.FMLBeforeStageEvent;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.compat.crt.CrTZenClassRegisterEvent;
 import net.minecraftforge.fml.common.LoaderState;
+import net.minecraftforge.fml.common.discovery.ASMDataTable;
 
 /**
  * @Project ResourceModLoader
@@ -23,11 +25,12 @@ public enum EventHandler {
 
     @Subscribe
     public void registerZenClass(CrTZenClassRegisterEvent event){
-        //event.register(RMLVanillaFactory.class);
+
     }
 
     public void beforeConstruction(FMLBeforeStageEvent event){
         if (event.stage == LoaderState.CONSTRUCTING){
+            ModuleType.PluginManager.loadPlugins((ASMDataTable) event.event[1]);
             RMLTransformer.Transformers.Late.initModTransformers(event.event);
         }
     }

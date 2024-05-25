@@ -4,7 +4,7 @@ import crafttweaker.runtime.IScriptProvider;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.file.FileHelper;
-import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -36,7 +36,7 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.MOD_CRT, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.MOD_CRT, (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                 return;

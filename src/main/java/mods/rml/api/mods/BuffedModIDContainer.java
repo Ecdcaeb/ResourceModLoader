@@ -1,6 +1,8 @@
 package mods.rml.api.mods;
 
 import mods.rml.api.announces.PublicAPI;
+import mods.rml.api.mods.module.Module;
+import mods.rml.api.mods.module.ModuleType;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 
@@ -17,13 +19,13 @@ import java.util.HashSet;
 @PublicAPI
 public class BuffedModIDContainer {
     @PublicAPI public HashSet<String> modids = new HashSet<>();
-    @PublicAPI public HashMap<String, ContainerHolder.Module[]> opinions = new HashMap<>();
+    @PublicAPI public HashMap<String, Module[]> opinions = new HashMap<>();
 
     @PublicAPI public void add(String modid){
-        this.add(modid, ContainerHolder.ModuleType.getAllForDefault());
+        this.add(modid, ModuleType.getAllForDefault());
     }
 
-    @PublicAPI public void add(String modid, ContainerHolder.Module[] opinion){
+    @PublicAPI public void add(String modid, Module[] opinion){
         modids.add(modid);
         opinions.put(modid, opinion);
     }

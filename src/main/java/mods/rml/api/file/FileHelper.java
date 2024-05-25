@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.mods.module.Module;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
@@ -31,7 +32,7 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    public static void findAssets(ContainerHolder containerHolder, ContainerHolder.Module module, ModFileConsumer consumer){
+    public static void findAssets(ContainerHolder containerHolder, Module module, ModFileConsumer consumer){
         if (module.moduleType.isFile){
             findFile(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
         }else {

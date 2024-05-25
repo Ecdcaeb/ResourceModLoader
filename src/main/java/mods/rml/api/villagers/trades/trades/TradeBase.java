@@ -1,7 +1,7 @@
 package mods.rml.api.villagers.trades.trades;
 
 import com.google.gson.*;
-import mods.rml.api.java.reflection.ReflectionHelper;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.villagers.LoadedVillage;
 import mods.rml.api.villagers.VillageReader;
 import mods.rml.api.villagers.trades.ranges.RangeBase;

@@ -18,9 +18,9 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
-import mods.rml.api.java.reflection.FieldAccessor;
-import mods.rml.api.java.reflection.ReflectionHelper;
-import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.java.reflection.jvm.FieldAccessor;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.registry.remap.RemapCollection;
 import mods.rml.api.villagers.LoadedVillage;
 import mods.rml.api.villagers.VillageReader;
@@ -64,7 +64,7 @@ public class RMLDeserializeLoader {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.ORE_DIC, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.ORE_DIC, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -116,7 +116,7 @@ public class RMLDeserializeLoader {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event) {
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.LOOT_TABLES, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.LOOT_TABLES, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -138,7 +138,7 @@ public class RMLDeserializeLoader {
         public static LineProcessor<List<String>> processor(){ return new LineProcessor<List<String>>() {final List<String> result = Lists.newArrayList();@Override public boolean processLine(String line) {result.add(line);return true;}@Override public List<String> getResult() {return result;}};}
 
         public static void load(FunctionLoadEvent event) {
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -160,7 +160,7 @@ public class RMLDeserializeLoader {
     }
     public static class MissingRemap {
         public static void load() {
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.REGISTRY_REMAP, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.REGISTRY_REMAP, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -199,7 +199,7 @@ public class RMLDeserializeLoader {
             initVillageRegistry();
 
             final List<LoadedVillage> list = new ArrayList<>();
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CUSTOM_VILLAGERS, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.CUSTOM_VILLAGERS, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -244,7 +244,7 @@ public class RMLDeserializeLoader {
         public static List<String> rawTexts;
 
         public static void load() {
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.SPLASH_TEXT, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.SPLASH_TEXT, (containerHolder, root, file) -> {
                 BufferedReader bufferedreader = null;
                 try {
                     bufferedreader = Files.newBufferedReader(file);
@@ -287,7 +287,7 @@ public class RMLDeserializeLoader {
     public static class ConfigLoader {
         public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
         public static void load(){
-            ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_DEFINE, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_DEFINE, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"cfg".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;

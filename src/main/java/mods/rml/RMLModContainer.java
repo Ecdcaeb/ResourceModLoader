@@ -1,19 +1,11 @@
 package mods.rml;
 
-import com.google.common.collect.Multimap;
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.java.reflection.FieldAccessor;
-import mods.rml.api.java.reflection.ReflectionHelper;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.common.DummyModContainer;
 import net.minecraftforge.fml.common.InjectedModContainer;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.ModMetadata;
-import net.minecraftforge.fml.common.discovery.ASMDataTable;
-import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

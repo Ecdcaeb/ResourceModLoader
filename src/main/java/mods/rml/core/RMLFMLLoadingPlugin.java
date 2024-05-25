@@ -9,6 +9,8 @@ import mods.rml.api.announces.EarlyClass;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.RMLBus;
+import mods.rml.api.java.reflection.jvm.FieldAccessor;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.text.ChangeMod;
 import mods.rml.compat.crt.RMLCrTLoader;
 import mods.rml.compat.kubejs.RMKKubeJs;
@@ -26,6 +28,7 @@ import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.relauncher.CoreModManager;
 import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import net.minecraftforge.fml.relauncher.Side;
@@ -34,6 +37,10 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.security.CodeSource;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,6 +60,13 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public RMLFMLLoadingPlugin(){
         RMLBus.BUS.register(EventHandler.INSTANCE);
     }
+
+    public static void makeFMLCorePluginContainsFMLMod(File file){
+        String name = file.getName();
+        CoreModManager.getIgnoredMods().remove(name);
+        CoreModManager.getReparseableCoremods().add(name);
+    }
+
     @Override
     public String[] getASMTransformerClass() {
         return new String[]{
@@ -72,31 +86,15 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public void injectData(Map<String, Object> data) {
         source = (File) data.get("coremodLocation");
         ASMUtil.gameDir = Launch.minecraftHome;
-
+        makeFMLCorePluginContainsFMLMod(source);
         //start args>>
         //read the args :
         Map<String,String> arguments = (Map<String,String>) Launch.blackboard.get("launchArgs");
         if (arguments.containsKey("rml.debug")){
-            isDebug = Boolean.parseBoolean(arguments.get("rml.debug"));
+            isDebug = Boolean.parseBoolean(arguments.get("--rml.debug"));
         }
-        //apply the args :
-        //TODO: handle all pre args.
-        isDebug = true;//Boolean.parseBoolean(System.getProperty("rml.debug", "false"));
-        ASMUtil.saveTransformedClass = isDebug;
-        //>>end args;
 
-        //debug:
-        if (isDebug){
-            LOGGER.warn("inject data: ");
-            for(String s : data.keySet()){
-                LOGGER.warn("{} : {}",s, String.valueOf(data.get(s)));
-            }
-            LOGGER.warn("args: ");
-            for(Map.Entry<String,String> s : arguments.entrySet()){
-                LOGGER.warn(s.getKey()+" >> "+s.getValue());
-            }
-            ASMUtil.saveTransformedClass = true;
-        }
+        ASMUtil.saveTransformedClass = isDebug;
     }
     @Override
     public String getAccessTransformerClass() {

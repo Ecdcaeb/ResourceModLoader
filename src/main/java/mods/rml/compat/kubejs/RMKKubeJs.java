@@ -7,9 +7,9 @@ import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import mods.rml.ResourceModLoader;
 import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.java.reflection.MethodAccessor;
-import mods.rml.api.java.reflection.ReflectionHelper;
-import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.java.reflection.jvm.MethodAccessor;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
@@ -31,7 +31,7 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.MOD_KUBEJS,
+        ResourceModLoader.loadModuleFindAssets(ModuleType.MOD_KUBEJS,
                 (module, containerHolder) -> {
                     if (!packs.containsKey(containerHolder.getContainer().getModId())) {
                      packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));

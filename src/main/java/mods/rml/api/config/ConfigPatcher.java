@@ -11,10 +11,10 @@ import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
-import mods.rml.api.java.reflection.FieldAccessor;
-import mods.rml.api.java.reflection.ReflectionHelper;
+import mods.rml.api.java.reflection.jvm.FieldAccessor;
+import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.java.utils.ObjectHelper;
-import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
@@ -42,7 +42,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -96,7 +95,7 @@ public abstract class ConfigPatcher {
     }
 
     @PrivateAPI public static void searchRedefault(){
-        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_REDEFAULT, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_REDEFAULT, (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             String extension = FilenameUtils.getExtension(file.toString());
             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
@@ -135,7 +134,7 @@ public abstract class ConfigPatcher {
     }
 
     @PrivateAPI public static void searchOverride(){
-        ResourceModLoader.loadModuleFindAssets(ContainerHolder.ModuleType.CONFIG_OVERRIDE, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_OVERRIDE, (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             String extension = FilenameUtils.getExtension(file.toString());
             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");

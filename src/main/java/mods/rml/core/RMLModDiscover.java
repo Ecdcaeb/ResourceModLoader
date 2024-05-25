@@ -14,6 +14,8 @@ import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.RMLAfterInjectEvent;
 import mods.rml.api.file.JsonHelper;
 import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.mods.module.Module;
+import mods.rml.api.mods.module.ModuleType;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.MetadataCollection;
@@ -94,20 +96,20 @@ public class RMLModDiscover {
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
         ModMetadata metadata = decodeMetaData(jsonObject);
-        ContainerHolder.Module[] modules;
+        Module[] modules;
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
             int size = array.size();
-            modules = new ContainerHolder.Module[size];
+            modules = new Module[size];
             try{
                 for(int i=0; i < size; i++) {
-                    modules[i] = ContainerHolder.Module.decode(array.get(i));
+                    modules[i] = Module.decode(array.get(i));
                 }
             }catch (NullPointerException e){
                 throw new RuntimeException("illegal modules opinion for " + jsonObject.get("modid").getAsString(), e);
             }
         }else {
-            modules = ContainerHolder.ModuleType.getAllForDefault();
+            modules = ModuleType.getAllForDefault();
         }
 
         return new ContainerHolder(new RMLModContainer(metadata, modFile), modules);
