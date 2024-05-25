@@ -6,6 +6,9 @@ import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
+import mods.rml.api.function.FunctionExecutorFactory;
+import mods.rml.api.function.impl.FunctionExecutorGameLoop;
+import mods.rml.api.function.impl.FunctionExecutorLoad;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.text.ChangeMod;
 import mods.rml.api.villagers.LoadedVillage;
@@ -24,6 +27,7 @@ import mods.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import mods.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import mods.rml.deserialize.craft.recipe.SimpleBrewRecipe;
 import mods.rml.deserialize.craft.recipe.SmeltRecipe;
+import net.minecraft.command.FunctionObject;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.Style;
@@ -42,6 +46,9 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
+
+import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * @Project ResourceModLoader
@@ -106,6 +113,13 @@ public class RMLForgeEventHandler {
         registry.register(new PriceRange.Factory().setRegistryName(new ResourceLocation("minecraft","price")));
         registry.register(new RangeConstant.Factory().setRegistryName(new ResourceLocation("cvh","constant")));
         registry.register(new RangePoisson.Factory().setRegistryName(new ResourceLocation("cvh","poisson_distribution")));
+    }
+
+    @SubscribeEvent
+    public static void registerFunctionExecutorFactories(RegistryEvent.Register<FunctionExecutorFactory> event){
+        IForgeRegistry<FunctionExecutorFactory> registry = event.getRegistry();
+        registry.register(new FunctionExecutorGameLoop().setRegistryName(new ResourceLocation("rml", "tick")));
+        registry.register(new FunctionExecutorLoad().setRegistryName(new ResourceLocation("rml", "load")));
     }
 
     public static void construct(FMLConstructionEvent event){

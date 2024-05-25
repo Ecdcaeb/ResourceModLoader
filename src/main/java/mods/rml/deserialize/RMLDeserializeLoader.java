@@ -1,11 +1,13 @@
 package mods.rml.deserialize;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.io.LineProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -18,8 +20,10 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.file.FileHelper;
 import mods.rml.api.file.JsonHelper;
+import mods.rml.api.function.FunctionExecutorFactory;
 import mods.rml.api.java.reflection.jvm.FieldAccessor;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import mods.rml.api.java.utils.IteratorHelper;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.registry.remap.RemapCollection;
 import mods.rml.api.villagers.LoadedVillage;
@@ -38,6 +42,8 @@ import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.oredict.OreDictionary;
 import net.minecraftforge.registries.GameData;
+import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraftforge.registries.IForgeRegistryEntry;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -46,8 +52,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * @Project ResourceModLoader
@@ -140,20 +149,48 @@ public class RMLDeserializeLoader {
         public static void load(FunctionLoadEvent event) {
             ResourceModLoader.loadModuleFindAssets(ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
-                if (!"mcfunction".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                    return;
-                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-                try {
+                switch (FilenameUtils.getExtension(file.toString())) {
+                    case "mcfunction" :
+                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                        ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+                        try {
 
-                    FunctionObject functionObject = FunctionObject.create(
-                            event.functionManager,
-                            FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
-                                    .readLines(processor())
-                    );
-                    event.register(key, functionObject);
-                } catch (IOException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
+                            FunctionObject functionObject = FunctionObject.create(
+                                    event.functionManager,
+                                    FileHelper.getByteSource(file).asCharSource(StandardCharsets.UTF_8)
+                                            .readLines(processor())
+                            );
+                            event.register(key, functionObject);
+                        } catch (IOException e) {
+                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            });
+            RMLRegistries.Names.FUNCTION_EXECUTOR_FACTORY.fire();
+            loadExecutors();
+        }
+
+        public static void loadExecutors() {
+
+            ResourceModLoader.loadModuleFindAssets(ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
+                String relative = root.relativize(file).toString();
+                switch (FilenameUtils.getExtension(file.toString())) {
+                    case "executor" :
+                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                        ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+                        try {
+                            for(JsonObject object : JsonHelper.getAsArray(JsonHelper.getArray(Files.newBufferedReader(file)), JsonElement::getAsJsonObject)){
+                                RMLRegistries.FUNCTION_EXECUTORS.getValue(new ResourceLocation(object.get("type").getAsString())).apply(object); //TODO caches?
+                            }
+                        } catch (IOException e) {
+                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function executor {} from {}", key, file, e);
+                        }
+                        break;
+                    default:
+                        break;
                 }
             });
         }
@@ -192,7 +229,8 @@ public class RMLDeserializeLoader {
         public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
         public static void initVillageRegistry() {
-            GameData.fireRegistryEvents(resourceLocation -> RMLRegistries.Names.RANGE_FACTORIES.equals(resourceLocation) || RMLRegistries.Names.VILLAGE_READERS.equals(resourceLocation));
+            RMLRegistries.Names.VILLAGE_READERS.fire();
+            RMLRegistries.Names.RANGE_FACTORIES.fire();
         }
 
         public static List<LoadedVillage> load() {

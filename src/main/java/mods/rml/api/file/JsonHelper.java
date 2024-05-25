@@ -23,9 +23,9 @@ public class JsonHelper {
     @PublicAPI public static <T> T[] getAsArray(JsonElement element, JsonReader<T> singleReader){
         JsonArray array=element.getAsJsonArray();
         int size=array.size();
-        ArrayList<T> arrayList=new ArrayList<>(size);
-        for(int i=0;i<size;i++){
-            arrayList.set(i,singleReader.read(array.get(i)));
+        ArrayList<T> arrayList = new ArrayList<>(size);
+        for(int i=0 ; i<size ; i++){
+            arrayList.set(i, singleReader.read(array.get(i)));
         }
         return (T[])arrayList.toArray();
     }

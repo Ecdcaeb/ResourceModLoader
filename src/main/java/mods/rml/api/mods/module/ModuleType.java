@@ -29,9 +29,11 @@ public enum ModuleType implements IModuleType {
     LOOT_TABLES("loot_tables", false),
     ORE_DIC("ore_dic", false),
     REGISTRY_REMAP("registry/remap", false),
-    MOD_GROOVY_SCRIPT("groovy_script", false),
+    MOD_GROOVY_SCRIPT("groovy_script", false),//TODO
     CUSTOM_VILLAGERS("villages", false),
-    SPLASH_TEXT("text/splash_text.txt", true);
+    SPLASH_TEXT("text/splash_text.txt", true),
+    STRUCTURE("structures", false),//TODO
+    DIMENSTION("dimension", false);//TODO
 
     public final boolean isFile;
     public final String defaultLocation;
