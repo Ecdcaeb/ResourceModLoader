@@ -1,5 +1,6 @@
 package mods.rml.api.mods;
 
+import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.mods.module.Module;
 import mods.rml.api.mods.module.ModuleType;
@@ -16,7 +17,7 @@ import java.util.HashSet;
  * @Date 2024/1/17 12:21
  **/
 @Deprecated
-@PublicAPI
+@PrivateAPI
 public class BuffedModIDContainer {
     @PublicAPI public HashSet<String> modids = new HashSet<>();
     @PublicAPI public HashMap<String, Module[]> opinions = new HashMap<>();
