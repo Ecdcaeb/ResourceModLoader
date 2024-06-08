@@ -1,0 +1,8 @@
+[
+  {
+    "type":"rml:load",
+    "world":0,
+    "function":"rml_example:give_much_diamonds"
+    "_world_commit":"optional, could be int or int array."
+  }
+]

@@ -47,4 +47,9 @@ public class Module {
             return new Module(moduleType, location, forceLoaded);
         } else throw new IllegalArgumentException("unable to setup a module for " + jsonElement);
     }
+
+    @Override
+    public String toString() {
+        return "ModuleType:"+this.moduleType+"-location:"+this.location + (this.forceLoaded ? "" : "(Optional)");
+    }
 }

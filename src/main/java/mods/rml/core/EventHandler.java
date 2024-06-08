@@ -32,6 +32,7 @@ public enum EventHandler {
         if (event.stage == LoaderState.CONSTRUCTING){
             ModuleType.PluginManager.loadPlugins((ASMDataTable) event.event[1]);
             RMLTransformer.Transformers.Late.initModTransformers(event.event);
+            ModuleType.PluginManager.runPlugins();
         }
     }
 }

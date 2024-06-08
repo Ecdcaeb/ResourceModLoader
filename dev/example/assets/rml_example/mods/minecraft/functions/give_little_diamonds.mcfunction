@@ -1,0 +1,1 @@
+give @e minecraft:diamond 1

@@ -9,7 +9,7 @@ import mods.rml.api.announces.EarlyClass;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.RMLBus;
-import mods.rml.api.world.text.ChangeMod;
+import mods.rml.api.world.text.RMLTextEffects;
 import mods.rml.compat.crt.RMLCrTLoader;
 import mods.rml.compat.kubejs.RMKKubeJs;
 import mods.rml.deserialize.RMLDeserializeLoader;
@@ -126,7 +126,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
             if (FMLLaunchHandler.side() == Side.CLIENT){
-                MinecraftForge.EVENT_BUS.register(ChangeMod.ChangeModAction.class);
+                MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
             }
             if (Loader.isModLoaded(KubeJS.MOD_ID)){
                 MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);

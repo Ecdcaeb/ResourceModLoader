@@ -20,10 +20,7 @@ public class FunctionExecutorLoad extends FunctionExecutorFactory {
     @Override
     public FunctionExecutor apply(JsonObject jsonObject) {
         ResourceLocation function = new ResourceLocation(jsonObject.get("function").getAsString());
-        IntArrayList worlds;
-        if (jsonObject.get("world").isJsonArray()){
-            worlds = new IntArrayList(JsonHelper.getIntegerArray(jsonObject.get("world")));
-        }else worlds = new IntArrayList(new int[]{jsonObject.get("world").getAsInt()});
+        IntArrayList worlds = getWorlds(jsonObject);
         return new Executor(function, worlds);
     }
     public static class Executor extends FunctionExecutor{

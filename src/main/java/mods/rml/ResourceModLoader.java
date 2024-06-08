@@ -13,6 +13,7 @@ import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -109,6 +110,15 @@ public class ResourceModLoader {
             FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
             Loader.instance().setActiveModContainer(oldActive);
         }
+    }
+
+    @Nullable
+    public static ContainerHolder of(ModContainer modContainer){
+        updateRMLContainerState();
+        for(ContainerHolder containerHolder : enabledModContainers){
+            if (containerHolder.getContainer().getModId().equals(modContainer.getModId())) return containerHolder;
+        }
+        return null;
     }
 
 

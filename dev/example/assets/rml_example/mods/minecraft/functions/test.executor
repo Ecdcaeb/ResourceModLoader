@@ -1,7 +1,0 @@
-[
-  {
-    "type":"rml:tick",
-    "world":0,
-    "function":"rml_example:test"
-  }
-]

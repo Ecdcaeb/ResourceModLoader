@@ -1,0 +1,9 @@
+[
+  {
+    "type":"rml:tick",
+    "world":0,
+    "function":"rml_example:test"
+    "ticks":996
+    "world":[0]
+  }
+]
