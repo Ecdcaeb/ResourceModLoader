@@ -1,8 +1,8 @@
 package mods.rml.api;
 
-import mods.rml.api.function.FunctionExecutorFactory;
-import mods.rml.api.villagers.VillageReader;
-import mods.rml.api.villagers.trades.ranges.RangeFactory;
+import mods.rml.api.world.function.FunctionExecutorFactory;
+import mods.rml.api.world.villagers.VillageReader;
+import mods.rml.api.world.villagers.trades.ranges.RangeFactory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.registries.GameData;
 import net.minecraftforge.registries.IForgeRegistry;

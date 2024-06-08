@@ -9,9 +9,7 @@ import mods.rml.api.announces.EarlyClass;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
 import mods.rml.api.RMLBus;
-import mods.rml.api.java.reflection.jvm.FieldAccessor;
-import mods.rml.api.java.reflection.jvm.ReflectionHelper;
-import mods.rml.api.text.ChangeMod;
+import mods.rml.api.world.text.ChangeMod;
 import mods.rml.compat.crt.RMLCrTLoader;
 import mods.rml.compat.kubejs.RMKKubeJs;
 import mods.rml.deserialize.RMLDeserializeLoader;
@@ -37,10 +35,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.CodeSource;
-import java.util.List;
 import java.util.Map;
 
 /**

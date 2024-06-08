@@ -1,6 +1,8 @@
 package mods.rml.api.world.function;
 
+import mods.rml.ResourceModLoader;
 import net.minecraft.advancements.FunctionManager;
+import net.minecraft.command.FunctionObject;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ResourceLocation;
@@ -8,6 +10,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 
 /**
  * @Project ResourceModLoader
@@ -17,15 +20,23 @@ import javax.annotation.Nullable;
 public class FunctionExecutor {
     public ResourceLocation function;
     public static final RMLCommandSender SENDER = new RMLCommandSender();
+    public static final HashSet<ResourceLocation> invalidFunctions = new HashSet<>();
     public FunctionExecutor(ResourceLocation function){
         this.function = function;
     }
     public static void execute(WorldServer worldServer, ResourceLocation resourceLocation){
-        FunctionManager manager = worldServer.getFunctionManager();
-        RMLCommandSender sender = SENDER;
-        sender.worldServer = worldServer;
-        manager.execute(manager.getFunction(resourceLocation), sender);
-        sender.worldServer = null;
+        if (!invalidFunctions.contains(resourceLocation)){
+            FunctionManager manager = worldServer.getFunctionManager();
+            RMLCommandSender sender = SENDER;
+            sender.worldServer = worldServer;
+            FunctionObject functionObject = manager.getFunction(resourceLocation);
+            if (functionObject != null)manager.execute(functionObject, sender);
+            else {
+                ResourceModLoader.LOGGER.error("Invalid FunctionExecutor for Invalid Function {}, PLZ report to resource-mod {} authors", resourceLocation, resourceLocation.getResourceDomain());
+                invalidFunctions.add(resourceLocation);
+            }
+            sender.worldServer = null;
+        }
     }
     public static class RMLCommandSender implements ICommandSender{
         public WorldServer worldServer = null;

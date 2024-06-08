@@ -1,33 +1,33 @@
 package mods.rml.deserialize;
 
 import mods.rml.ResourceModLoader;
+import mods.rml.api.RMLRegistries;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
-import mods.rml.api.function.FunctionExecutorFactory;
-import mods.rml.api.function.impl.FunctionExecutorGameLoop;
-import mods.rml.api.function.impl.FunctionExecutorLoad;
+import mods.rml.api.world.function.FunctionExecutorFactory;
+import mods.rml.api.world.function.impl.FunctionExecutorGameLoop;
+import mods.rml.api.world.function.impl.FunctionExecutorLoad;
 import mods.rml.api.mods.ContainerHolder;
-import mods.rml.api.text.ChangeMod;
-import mods.rml.api.villagers.LoadedVillage;
-import mods.rml.api.villagers.VillageReader;
-import mods.rml.api.villagers.trades.itrades.SlotRecipe;
-import mods.rml.api.villagers.trades.ranges.PriceRange;
-import mods.rml.api.villagers.trades.ranges.RangeConstant;
-import mods.rml.api.villagers.trades.ranges.RangeFactory;
-import mods.rml.api.villagers.trades.ranges.RangePoisson;
-import mods.rml.api.villagers.trades.trades.EmeraldForItems;
-import mods.rml.api.villagers.trades.trades.ItemAndEmeraldToItem;
-import mods.rml.api.villagers.trades.trades.ListItemForEmeralds;
-import mods.rml.api.villagers.villagers.VillageCancer;
-import mods.rml.api.villagers.villagers.VillageProfession;
+import mods.rml.api.world.text.ChangeMod;
+import mods.rml.api.world.villagers.LoadedVillage;
+import mods.rml.api.world.villagers.VillageReader;
+import mods.rml.api.world.villagers.trades.itrades.SlotRecipe;
+import mods.rml.api.world.villagers.trades.ranges.PriceRange;
+import mods.rml.api.world.villagers.trades.ranges.RangeConstant;
+import mods.rml.api.world.villagers.trades.ranges.RangeFactory;
+import mods.rml.api.world.villagers.trades.ranges.RangePoisson;
+import mods.rml.api.world.villagers.trades.trades.EmeraldForItems;
+import mods.rml.api.world.villagers.trades.trades.ItemAndEmeraldToItem;
+import mods.rml.api.world.villagers.trades.trades.ListItemForEmeralds;
+import mods.rml.api.world.villagers.villagers.VillageCancer;
+import mods.rml.api.world.villagers.villagers.VillageProfession;
 import mods.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import mods.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import mods.rml.deserialize.craft.recipe.SimpleBrewRecipe;
 import mods.rml.deserialize.craft.recipe.SmeltRecipe;
-import net.minecraft.command.FunctionObject;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.Style;
@@ -47,9 +47,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 
-import java.util.HashMap;
-import java.util.HashSet;
-
 /**
  * @Project ResourceModLoader
  * @Author Hileb
@@ -57,8 +54,19 @@ import java.util.HashSet;
  **/
 @PrivateAPI
 public class RMLForgeEventHandler {
+
     @SubscribeEvent
-    public static void onRegisterRecipeFactory(CraftingHelperInitEvent event){
+    public static void loadFunction(FunctionLoadEvent event){
+        RMLDeserializeLoader.Function.load(event);
+    }
+
+    @SubscribeEvent
+    public static void registerLootTable(LootTableRegistryEvent event){
+        RMLDeserializeLoader.LootTable.load(event);
+    }
+
+    @SubscribeEvent
+    public static void registerRecipeFactory(CraftingHelperInitEvent event){
         event.register(new ResourceLocation("rml","smelt"),new SmeltRecipe.Factory());
         event.register(new ResourceLocation("rml","brew"),new SimpleBrewRecipe.Factory());
         event.register(new ResourceLocation("rml","anvil"),new SimpleAnvilRecipe.Factory());
@@ -66,29 +74,19 @@ public class RMLForgeEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void afterRecipeRegister(RegistryEvent.Register<IRecipe> event){
-        if (NamedEmptyRecipeImpl.removeCaches!=null){
+        if (NamedEmptyRecipeImpl.removeCaches != null){
             ForgeRegistry<IRecipe> registry=(ForgeRegistry<IRecipe>) event.getRegistry();
             for(IRecipe recipe: NamedEmptyRecipeImpl.removeCaches){
                 registry.remove(recipe.getRegistryName());
             }
-            NamedEmptyRecipeImpl.removeCaches=null;
+            NamedEmptyRecipeImpl.removeCaches = null;
         }
     }
 
-    @SubscribeEvent
-    public static void onLoad(FunctionLoadEvent event){
-        RMLDeserializeLoader.Function.load(event);
-    }
-
-    @SubscribeEvent
-    public static void onRegisterLootTable(LootTableRegistryEvent event){
-        RMLDeserializeLoader.LootTable.load(event);
-    }
-
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public static void onRegister(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
+    public static void registerVillagerProfession(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
         IForgeRegistry<VillagerRegistry.VillagerProfession> forgeRegistry = event.getRegistry();
-        for(LoadedVillage village: RMLDeserializeLoader.CustomVillageLoader.load()){
+        for(LoadedVillage village : RMLDeserializeLoader.CustomVillageLoader.load()){
             village.run(forgeRegistry);
         }
     }
@@ -131,6 +129,7 @@ public class RMLForgeEventHandler {
     }
     public static void postInit(FMLPostInitializationEvent event){
         RMLDeserializeLoader.OreDic.load();
+        RMLRegistries.Names.FUNCTION_EXECUTOR_FACTORY.fire();
     }
 
     @SideOnly(Side.CLIENT)

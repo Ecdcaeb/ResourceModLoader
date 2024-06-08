@@ -2,6 +2,6 @@
   {
     "type":"rml:tick",
     "world":0,
-    "function":"example:test"
+    "function":"rml_example:test"
   }
 ]
