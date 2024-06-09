@@ -2,7 +2,30 @@
 // Licensed under the MIT license.
 package mods.rml.internal.com.mojang.serialization.codecs;
 
-public record XorCodec<F, S>(Codec<F> first, Codec<S> second) implements Codec<Either<F, S>> {
+import mods.rml.internal.com.mojang.datafixers.util.Either;
+import mods.rml.internal.com.mojang.datafixers.util.Pair;
+import mods.rml.internal.com.mojang.serialization.Codec;
+import mods.rml.internal.com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DynamicOps;
+
+import java.util.Optional;
+
+public class XorCodec<F, S> implements Codec<Either<F, S>> {
+    private final Codec<F> first;
+    private final Codec<S> second;
+    public XorCodec(Codec<F> first, Codec<S> second){
+        this.first = first;
+        this.second = second;
+    }
+
+    public Codec<F> first() {
+        return first;
+    }
+
+    public Codec<S> second() {
+        return second;
+    }
+
     @Override
     public <T> DataResult<Pair<Either<F, S>, T>> decode(final DynamicOps<T> ops, final T input) {
         final DataResult<Pair<Either<F, S>, T>> firstRead = first.decode(ops, input).map(vo -> vo.mapFirst(Either::left));

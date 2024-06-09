@@ -2,6 +2,7 @@ package mods.rml.internal.com.mojang.serialization;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import mods.rml.internal.com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.bytes.ByteList;
@@ -12,6 +13,7 @@ import it.unimi.dsi.fastutil.longs.LongList;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,43 +56,55 @@ public class JavaOps implements DynamicOps<Object> {
         if (input instanceof Map) {
             return convertMap(outOps, input);
         }
-        if (input instanceof final ByteList value) {
+        if (input instanceof ByteList) {
+            final ByteList value = (ByteList) input;
             return outOps.createByteList(ByteBuffer.wrap(value.toByteArray()));
         }
-        if (input instanceof final IntList value) {
-            return outOps.createIntList(value.intStream());
+        if (input instanceof IntList) {
+            final IntList value = (IntList) input;
+            return outOps.createIntList(IntStream.of(value.toArray(new int[0])));
         }
-        if (input instanceof final LongList value) {
-            return outOps.createLongList(value.longStream());
+        if (input instanceof LongList) {
+            final LongList value = (LongList) input;
+            return outOps.createLongList(LongStream.of(value.toArray(new long[0])));
         }
         if (input instanceof List) {
             return convertList(outOps, input);
         }
-        if (input instanceof final String value) {
+        if (input instanceof String) {
+            final String value = (String) input;
             return outOps.createString(value);
         }
-        if (input instanceof final Boolean value) {
+        if (input instanceof Boolean) {
+            final Boolean value = (Boolean) input;
             return outOps.createBoolean(value);
         }
-        if (input instanceof final Byte value) {
+        if (input instanceof Byte) {
+            final Byte value = (Byte) input;
             return outOps.createByte(value);
         }
-        if (input instanceof final Short value) {
+        if (input instanceof Short) {
+            final Short value = (Short) input;
             return outOps.createShort(value);
         }
-        if (input instanceof final Integer value) {
+        if (input instanceof Integer) {
+            final Integer value = (Integer) input;
             return outOps.createInt(value);
         }
-        if (input instanceof final Long value) {
+        if (input instanceof Long) {
+            final Long value = (Long) input;
             return outOps.createLong(value);
         }
-        if (input instanceof final Float value) {
+        if (input instanceof Float) {
+            final Float value = (Float) input;
             return outOps.createFloat(value);
         }
-        if (input instanceof final Double value) {
+        if (input instanceof Double) {
+            final Double value = (Double) input;
             return outOps.createDouble(value);
         }
-        if (input instanceof final Number value) {
+        if (input instanceof Number) {
+            final Number value = (Number) input;
             return outOps.createNumeric(value);
         }
         throw new IllegalStateException("Don't know how to convert " + input);
@@ -98,7 +112,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Number> getNumberValue(final Object input) {
-        if (input instanceof final Number value) {
+        if (input instanceof Number) {
+            final Number value = (Number) input;
             return DataResult.success(value);
         }
         return DataResult.error(() -> "Not a number: " + input);
@@ -141,7 +156,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Boolean> getBooleanValue(final Object input) {
-        if (input instanceof final Boolean value) {
+        if (input instanceof Boolean) {
+            final Boolean value = (Boolean) input;
             return DataResult.success(value);
         }
         return DataResult.error(() -> "Not a boolean: " + input);
@@ -154,7 +170,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<String> getStringValue(final Object input) {
-        if (input instanceof final String value) {
+        if (input instanceof String) {
+            final String value = (String) input;
             return DataResult.success(value);
         }
         return DataResult.error(() -> "Not a string: " + input);
@@ -168,11 +185,12 @@ public class JavaOps implements DynamicOps<Object> {
     @Override
     public DataResult<Object> mergeToList(final Object input, final Object value) {
         if (input == empty()) {
-            return DataResult.success(List.of(value));
+            return DataResult.success(Lists.newArrayList(value));
         }
-        if (input instanceof final List<?> list) {
+        if (input instanceof List) {
+            final List<?> list = (List<?>) input;
             if (list.isEmpty()) {
-                return DataResult.success(List.of(value));
+                return DataResult.success(Lists.newArrayList(value));
             }
             return DataResult.success(ImmutableList.builder().addAll(list).add(value).build());
         }
@@ -184,7 +202,8 @@ public class JavaOps implements DynamicOps<Object> {
         if (input == empty()) {
             return DataResult.success(values);
         }
-        if (input instanceof final List<?> list) {
+        if (input instanceof List) {
+            final List<?> list = (List<?>) input;
             if (list.isEmpty()) {
                 return DataResult.success(values);
             }
@@ -196,16 +215,22 @@ public class JavaOps implements DynamicOps<Object> {
     @Override
     public DataResult<Object> mergeToMap(final Object input, final Object key, final Object value) {
         if (input == empty()) {
-            return DataResult.success(Map.of(key, value));
+            final HashMap<Object, Object> map = new HashMap<>();
+            map.put(key, value);
+            return DataResult.success(map);
         }
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map<?, ?>) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             if (map.isEmpty()) {
-                return DataResult.success(Map.of(key, value));
+                final HashMap<Object, Object> map1 = new HashMap<>();
+                map1.put(key, value);
+                return DataResult.success(map1);
             }
-            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builderWithExpectedSize(map.size() + 1);
+
+            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builder();
             result.putAll(map);
             result.put(key, value);
-            return DataResult.success(result.buildKeepingLast());
+            return DataResult.success(result.build());
         }
         return DataResult.error(() -> "Not a map: " + input);
     }
@@ -215,14 +240,15 @@ public class JavaOps implements DynamicOps<Object> {
         if (input == empty()) {
             return DataResult.success(values);
         }
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             if (map.isEmpty()) {
                 return DataResult.success(values);
             }
-            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builderWithExpectedSize(map.size() + values.size());
+            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builder();
             result.putAll(map);
             result.putAll(values);
-            return DataResult.success(result.buildKeepingLast());
+            return DataResult.success(result.build());
         }
         return DataResult.error(() -> "Not a map: " + input);
     }
@@ -236,15 +262,16 @@ public class JavaOps implements DynamicOps<Object> {
         if (input == empty()) {
             return DataResult.success(mapLikeToMap(values));
         }
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             if (map.isEmpty()) {
                 return DataResult.success(mapLikeToMap(values));
             }
 
-            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builderWithExpectedSize(map.size());
+            final ImmutableMap.Builder<Object, Object> result = ImmutableMap.builder();
             result.putAll(map);
             values.entries().forEach(e -> result.put(e.getFirst(), e.getSecond()));
-            return DataResult.success(result.buildKeepingLast());
+            return DataResult.success(result.build());
         }
         return DataResult.error(() -> "Not a map: " + input);
     }
@@ -255,7 +282,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Stream<Pair<Object, Object>>> getMapValues(final Object input) {
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             return DataResult.success(getMapEntries(map));
         }
         return DataResult.error(() -> "Not a map: " + input);
@@ -263,7 +291,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Consumer<BiConsumer<Object, Object>>> getMapEntries(final Object input) {
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             return DataResult.success(map::forEach);
         }
         return DataResult.error(() -> "Not a map: " + input);
@@ -276,7 +305,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<MapLike<Object>> getMap(final Object input) {
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             return DataResult.success(
                 new MapLike<>() {
                     @Nullable
@@ -313,7 +343,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Stream<Object>> getStream(final Object input) {
-        if (input instanceof final List<?> list) {
+        if (input instanceof List) {
+            final List<?> list = (List<?>) input;
             return DataResult.success(list.stream().map(o -> o));
         }
         return DataResult.error(() -> "Not an list: " + input);
@@ -321,7 +352,8 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public DataResult<Consumer<Consumer<Object>>> getList(final Object input) {
-        if (input instanceof final List<?> list) {
+        if (input instanceof List) {
+            final List<?> list = (List<?>) input;
             return DataResult.success(list::forEach);
         }
         return DataResult.error(() -> "Not an list: " + input);
@@ -329,12 +361,13 @@ public class JavaOps implements DynamicOps<Object> {
 
     @Override
     public Object createList(final Stream<Object> input) {
-        return input.toList();
+        return Lists.newArrayList(input.iterator());
     }
 
     @Override
     public DataResult<ByteBuffer> getByteBuffer(final Object input) {
-        if (input instanceof final ByteList value) {
+        if (input instanceof ByteList) {
+            final ByteList value = (ByteList) input;
             return DataResult.success(ByteBuffer.wrap(value.toByteArray()));
         }
         return DataResult.error(() -> "Not a byte list: " + input);
@@ -343,45 +376,50 @@ public class JavaOps implements DynamicOps<Object> {
     @Override
     public Object createByteList(final ByteBuffer input) {
         // Set .limit to .capacity to match default method
-        final ByteBuffer wholeBuffer = input.duplicate().clear();
+        final ByteBuffer wholeBuffer = (ByteBuffer) input.duplicate().clear();
         final ByteArrayList result = new ByteArrayList();
         result.size(wholeBuffer.capacity());
-        wholeBuffer.get(0, result.elements(), 0, result.size());
+        wholeBuffer.get(result.elements());
         return result;
     }
 
     @Override
     public DataResult<IntStream> getIntStream(final Object input) {
-        if (input instanceof final IntList value) {
-            return DataResult.success(value.intStream());
+        if (input instanceof IntList) {
+            final IntList value = (IntList) input;
+            return DataResult.success(IntStream.of(value.toArray(new int[0])));
         }
         return DataResult.error(() -> "Not an int list: " + input);
     }
 
     @Override
     public Object createIntList(final IntStream input) {
-        return IntArrayList.toList(input);
+        return IntArrayList.wrap(input.toArray());
     }
 
     @Override
     public DataResult<LongStream> getLongStream(final Object input) {
-        if (input instanceof final LongList value) {
-            return DataResult.success(value.longStream());
+        if (input instanceof LongList) {
+            final LongList value = (LongList) input;
+            return DataResult.success(LongStream.of(value.toArray(new long[0])));
         }
         return DataResult.error(() -> "Not a long list: " + input);
     }
 
     @Override
     public Object createLongList(final LongStream input) {
-        return LongArrayList.toList(input);
+        return LongArrayList.wrap(input.toArray());
     }
 
     @Override
     public Object remove(final Object input, final String key) {
-        if (input instanceof final Map<?, ?> map) {
+        if (input instanceof Map) {
+            final Map<?, ?> map = (Map<?, ?>) input;
             final Map<Object, Object> result = new LinkedHashMap<>(map);
             result.remove(key);
-            return Map.copyOf(result);
+            HashMap<Object, Object> copyMap = new HashMap<>(result.size());
+            copyMap.putAll(result);
+            return copyMap;
         }
         return input;
     }
@@ -413,7 +451,7 @@ public class JavaOps implements DynamicOps<Object> {
 
         @Override
         protected DataResult<T> build(final ImmutableMap.Builder<T, T> builder, final T prefix) {
-            final ImmutableMap<T, T> result = builder.buildKeepingLast();
+            final ImmutableMap<T, T> result = builder.build();
             return ops().mergeToMap(prefix, result);
         }
     }

@@ -3,7 +3,6 @@
 package mods.rml.internal.com.mojang.serialization.codecs;
 
 import mods.rml.internal.com.mojang.datafixers.util.Either;
-import com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.MapCodec;
 import mods.rml.internal.com.mojang.serialization.MapLike;

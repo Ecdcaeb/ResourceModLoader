@@ -7,11 +7,10 @@ import com.google.common.collect.ImmutableMap;
 import mods.rml.internal.com.mojang.datafixers.util.Pair;
 import mods.rml.internal.com.mojang.datafixers.util.Unit;
 import mods.rml.internal.com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.Lifecycle;
 import mods.rml.internal.com.mojang.serialization.RecordBuilder;
-import mods.rml.internal.com.mojang.serialization.DataResult;
 
 import java.util.List;
 import java.util.Objects;
@@ -42,7 +41,7 @@ public final class CompoundListCodec<K, V> implements Codec<List<Pair<K, V>>> {
 
                 readEntry.error().ifPresent(e -> failed.put(key, value));
 
-                result.setPlain(result.getPlain().apply2stable((u, e) -> {
+                result.lazySet(result.get().apply2stable((u, e) -> {
                     read.add(e);
                     return u;
                 }, readEntry));
@@ -53,7 +52,7 @@ public final class CompoundListCodec<K, V> implements Codec<List<Pair<K, V>>> {
 
             final Pair<List<Pair<K, V>>, T> pair = Pair.of(elements, errors);
 
-            return result.getPlain().map(unit -> pair).setPartial(pair);
+            return result.get().map(unit -> pair).setPartial(pair);
         });
     }
 

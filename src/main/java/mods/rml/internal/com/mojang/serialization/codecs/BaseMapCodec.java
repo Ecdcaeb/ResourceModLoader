@@ -3,17 +3,16 @@
 package mods.rml.internal.com.mojang.serialization.codecs;
 
 import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import mods.rml.internal.com.mojang.datafixers.util.Pair;
 import mods.rml.internal.com.mojang.datafixers.util.Unit;
 import mods.rml.internal.com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.Lifecycle;
 import mods.rml.internal.com.mojang.serialization.MapLike;
 import mods.rml.internal.com.mojang.serialization.RecordBuilder;
-import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
-import mods.rml.internal.com.mojang.serialization.DataResult;
 
 import java.util.Map;
 import java.util.Optional;

@@ -8,7 +8,7 @@ import mods.rml.internal.com.mojang.datafixers.kinds.K1;
 import mods.rml.internal.com.mojang.datafixers.util.Function3;
 import mods.rml.internal.com.mojang.datafixers.util.Function4;
 import mods.rml.internal.com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.Decoder;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.Encoder;
@@ -18,7 +18,6 @@ import mods.rml.internal.com.mojang.serialization.MapDecoder;
 import mods.rml.internal.com.mojang.serialization.MapEncoder;
 import mods.rml.internal.com.mojang.serialization.MapLike;
 import mods.rml.internal.com.mojang.serialization.RecordBuilder;
-import mods.rml.internal.com.mojang.serialization.DataResult;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

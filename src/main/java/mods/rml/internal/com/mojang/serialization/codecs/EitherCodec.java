@@ -2,7 +2,28 @@
 // Licensed under the MIT license.
 package mods.rml.internal.com.mojang.serialization.codecs;
 
-public record EitherCodec<F, S>(Codec<F> first, Codec<S> second) implements Codec<Either<F, S>> {
+import mods.rml.internal.com.mojang.datafixers.util.Either;
+import mods.rml.internal.com.mojang.datafixers.util.Pair;
+import mods.rml.internal.com.mojang.serialization.Codec;
+import mods.rml.internal.com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DynamicOps;
+
+public class EitherCodec<F, S> implements Codec<Either<F, S>> {
+    private final Codec<F> first;
+    private final Codec<S> second;
+    public EitherCodec(Codec<F> first, Codec<S> second){
+        this.first = first;
+        this.second = second;
+    }
+
+    public Codec<F> first() {
+        return first;
+    }
+
+    public Codec<S> second() {
+        return second;
+    }
+
     @Override
     public <T> DataResult<Pair<Either<F, S>, T>> decode(final DynamicOps<T> ops, final T input) {
         final DataResult<Pair<Either<F, S>, T>> firstRead = first.decode(ops, input).map(vo -> vo.mapFirst(Either::left));
@@ -19,7 +40,7 @@ public record EitherCodec<F, S>(Codec<F> first, Codec<S> second) implements Code
         if (secondRead.hasResultOrPartial()) {
             return secondRead;
         }
-        return DataResult.error(() -> "Failed to parse either. First: " + firstRead.error().orElseThrow().message() + "; Second: " + secondRead.error().orElseThrow().message());
+        return DataResult.error(() -> "Failed to parse either. First: " + firstRead.error().orElseThrow(RuntimeException::new).message() + "; Second: " + secondRead.error().orElseThrow(RuntimeException::new).message());
     }
 
     @Override

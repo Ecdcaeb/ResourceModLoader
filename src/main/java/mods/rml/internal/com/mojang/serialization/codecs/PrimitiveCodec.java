@@ -4,9 +4,8 @@ package mods.rml.internal.com.mojang.serialization.codecs;
 
 import mods.rml.internal.com.mojang.datafixers.util.Pair;
 import mods.rml.internal.com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
-import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DynamicOps;
 
 public interface PrimitiveCodec<A> extends Codec<A> {
     <T> DataResult<A> read(final DynamicOps<T> ops, final T input);

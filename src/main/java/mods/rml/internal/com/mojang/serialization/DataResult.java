@@ -18,7 +18,7 @@ import java.util.function.UnaryOperator;
  * Represents either a successful operation, or a partial operation with an error message and a partial result (if available)
  * Also stores an additional lifecycle marker (monoidal)
  */
-public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits DataResult.Success, DataResult.Error {
+public interface DataResult<R> extends App<DataResult.Mu, R> {
     final class Mu implements K1 {}
 
     static <R> DataResult<R> unbox(final App<Mu, R> box) {
@@ -134,7 +134,22 @@ public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits Data
         return !isSuccess();
     }
 
-    record Success<R>(R value, Lifecycle lifecycle) implements DataResult<R> {
+    class Success<R> implements DataResult<R> {
+        private final R value;
+        private final Lifecycle lifecycle;
+
+        public R value(){
+            return this.value;
+        }
+
+        public Lifecycle lifecycle(){
+            return this.lifecycle;
+        }
+
+        public Success(R value, Lifecycle lifecycle){
+            this.value = value;
+            this.lifecycle = lifecycle;
+        }
         @Override
         public Optional<R> result() {
             return Optional.of(value);
@@ -204,9 +219,11 @@ public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits Data
         @Override
         public <R2> DataResult<R2> ap(final DataResult<Function<R, R2>> functionResult) {
             final Lifecycle combinedLifecycle = lifecycle.add(functionResult.lifecycle());
-            if (functionResult instanceof final Success<Function<R, R2>> funcSuccess) {
+            if (functionResult instanceof Success) {
+                final Success<Function<R, R2>> funcSuccess = (Success<Function<R, R2>>)functionResult;
                 return new Success<>(funcSuccess.value.apply(value), combinedLifecycle);
-            } else if (functionResult instanceof final Error<Function<R, R2>> funcError) {
+            } else if (functionResult instanceof Error) {
+                final Error<Function<R, R2>> funcError = (Error<Function<R, R2>>)functionResult;
                 return new Error<>(funcError.messageSupplier, funcError.partialValue.map(f -> f.apply(value)), combinedLifecycle);
             } else {
                 throw new UnsupportedOperationException();
@@ -247,11 +264,26 @@ public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits Data
         }
     }
 
-    record Error<R>(
-        Supplier<String> messageSupplier,
-        Optional<R> partialValue,
-        Lifecycle lifecycle
-    ) implements DataResult<R> {
+    class Error<R> implements DataResult<R> {
+        private final Supplier<String> messageSupplier;
+        private final Optional<R> partialValue;
+        private final Lifecycle lifecycle;
+
+        public Supplier<String> messageSupplier(){
+            return this.messageSupplier;
+        }
+        public final Optional<R> partialValue(){
+            return this.partialValue;
+        }
+        public final Lifecycle lifecycle(){
+            return this.lifecycle;
+        }
+
+        public Error(Supplier<String> messageSupplier, Optional<R> partialValue,Lifecycle lifecycle){
+            this.messageSupplier = messageSupplier;
+            this.partialValue = partialValue;
+            this.lifecycle = lifecycle;
+        }
         public String message() {
             return messageSupplier.get();
         }
@@ -334,9 +366,11 @@ public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits Data
             }
             final DataResult<R2> second = function.apply(partialValue.get());
             final Lifecycle combinedLifecycle = lifecycle.add(second.lifecycle());
-            if (second instanceof final Success<R2> secondSuccess) {
+            if (second instanceof Success) {
+                final Success<R2> secondSuccess = (Success<R2>)second;
                 return new Error<>(messageSupplier, Optional.of(secondSuccess.value), combinedLifecycle);
-            } else if (second instanceof final Error<R2> secondError) {
+            } else if (second instanceof Error) {
+                final Error<R2> secondError = (Error<R2>)second;
                 return new Error<>(() -> appendMessages(messageSupplier.get(), secondError.messageSupplier.get()), secondError.partialValue, combinedLifecycle);
             } else {
                 // TODO: Replace with record pattern matching in Java 21
@@ -347,9 +381,11 @@ public sealed interface DataResult<R> extends App<DataResult.Mu, R> permits Data
         @Override
         public <R2> Error<R2> ap(final DataResult<Function<R, R2>> functionResult) {
             final Lifecycle combinedLifecycle = lifecycle.add(functionResult.lifecycle());
-            if (functionResult instanceof final Success<Function<R, R2>> func) {
+            if (functionResult instanceof Success) {
+                Success<Function<R, R2>> func = (Success<Function<R, R2>>)functionResult;
                 return new Error<>(messageSupplier, partialValue.map(func.value), combinedLifecycle);
-            } else if (functionResult instanceof final Error<Function<R, R2>> funcError) {
+            } else if (functionResult instanceof Error) {
+                final Error<Function<R, R2>> funcError = (Error<Function<R, R2>>)functionResult;
                 return new Error<>(
                     () -> appendMessages(messageSupplier.get(), funcError.messageSupplier.get()),
                     partialValue.flatMap(a -> funcError.partialValue.map(f -> f.apply(a))),

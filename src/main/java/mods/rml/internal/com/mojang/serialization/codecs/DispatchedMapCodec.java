@@ -2,11 +2,20 @@
 // Licensed under the MIT license.
 package mods.rml.internal.com.mojang.serialization.codecs;
 
+import com.google.common.collect.ImmutableMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
+import mods.rml.internal.com.mojang.datafixers.util.Pair;
+import mods.rml.internal.com.mojang.datafixers.util.Unit;
 import mods.rml.internal.com.mojang.serialization.Codec;
 import mods.rml.internal.com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DynamicOps;
+import mods.rml.internal.com.mojang.serialization.Lifecycle;
+import mods.rml.internal.com.mojang.serialization.RecordBuilder;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class DispatchedMapCodec<K, V> implements Codec<Map<K, V>> {
     private final Codec<K> keyCodec;

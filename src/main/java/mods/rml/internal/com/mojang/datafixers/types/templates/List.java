@@ -5,10 +5,12 @@ package mods.rml.internal.com.mojang.datafixers.types.templates;
 import com.google.common.collect.ImmutableList;
 import mods.rml.internal.com.mojang.datafixers.DSL;
 import com.mojang.datafixers.RewriteResult;
+import mods.rml.internal.com.mojang.datafixers.FamilyOptic;
 import mods.rml.internal.com.mojang.datafixers.TypeRewriteRule;
 import com.mojang.datafixers.TypedOptic;
 import mods.rml.internal.com.mojang.datafixers.types.Type;
 import mods.rml.internal.com.mojang.datafixers.types.families.RecursiveTypeFamily;
+import mods.rml.internal.com.mojang.datafixers.types.families.TypeFamily;
 import mods.rml.internal.com.mojang.datafixers.util.Either;
 import mods.rml.internal.com.mojang.serialization.Codec;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
@@ -17,7 +19,16 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-public record List(TypeTemplate element) implements TypeTemplate {
+public abstract class List implements TypeTemplate {
+    private final TypeTemplate element;
+    public List(TypeTemplate element){
+        this.element = element;
+    }
+
+    public TypeTemplate element() {
+        return element;
+    }
+
     @Override
     public int size() {
         return element.size();

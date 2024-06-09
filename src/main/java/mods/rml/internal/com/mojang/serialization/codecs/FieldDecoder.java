@@ -2,12 +2,11 @@
 // Licensed under the MIT license.
 package mods.rml.internal.com.mojang.serialization.codecs;
 
-import com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.Decoder;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.MapDecoder;
 import mods.rml.internal.com.mojang.serialization.MapLike;
-import mods.rml.internal.com.mojang.serialization.DataResult;
 
 import java.util.Objects;
 import java.util.stream.Stream;

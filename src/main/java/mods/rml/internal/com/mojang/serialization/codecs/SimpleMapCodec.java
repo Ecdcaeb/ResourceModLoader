@@ -3,13 +3,12 @@
 package mods.rml.internal.com.mojang.serialization.codecs;
 
 import mods.rml.internal.com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
+import mods.rml.internal.com.mojang.serialization.DataResult;
 import mods.rml.internal.com.mojang.serialization.DynamicOps;
 import mods.rml.internal.com.mojang.serialization.Keyable;
 import mods.rml.internal.com.mojang.serialization.MapCodec;
 import mods.rml.internal.com.mojang.serialization.MapLike;
 import mods.rml.internal.com.mojang.serialization.RecordBuilder;
-import mods.rml.internal.com.mojang.serialization.DataResult;
 
 import java.util.Map;
 import java.util.Objects;
