@@ -167,7 +167,7 @@ public class RMLTransformer implements IClassTransformer {
                             if ("renderMainMenu".equals(mn.name) && "(Lnet/minecraft/client/gui/GuiMainMenu;Lnet/minecraft/client/gui/FontRenderer;IILjava/lang/String;)Ljava/lang/String;".equals(mn.desc)){
                                 ASMUtil.injectBefore(mn.instructions, ()->{
                                     InsnList hook = new InsnList();
-                                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
+                                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/deserialize/RMLLoaders$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                     return hook;
                                 }, (node)->node.getOpcode()==Opcodes.ARETURN);
                                 return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
@@ -272,7 +272,7 @@ public class RMLTransformer implements IClassTransformer {
                                     if (node.getOpcode() == Opcodes.INVOKESTATIC){
                                         MethodInsnNode methodInsnNode = (MethodInsnNode) node;
                                         if ("com/google/common/collect/Lists".equals(methodInsnNode.owner) && "newArrayList".equals(methodInsnNode.name) && "()Ljava/util/ArrayList;".equals(methodInsnNode.desc)){
-                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/deserialize/RMLDeserializeLoader$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
+                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "mods/rml/deserialize/RMLLoaders$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
                                             return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                                         }
                                     }

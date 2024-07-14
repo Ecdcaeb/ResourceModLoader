@@ -6,7 +6,7 @@ import mods.rml.api.world.villagers.LoadedVillage;
 import mods.rml.api.world.villagers.VillageReader;
 import mods.rml.api.world.villagers.trades.ranges.RangeBase;
 import mods.rml.api.world.villagers.trades.ranges.RangeFactory;
-import mods.rml.deserialize.RMLDeserializeLoader;
+import mods.rml.deserialize.RMLLoaders;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.item.Item;
@@ -92,7 +92,7 @@ public class TradeBase {
                 JsonElement element = json.get("nbt");
                 NBTTagCompound nbt;
                 if(element.isJsonObject())
-                    nbt = JsonToNBT.getTagFromJson(RMLDeserializeLoader.CustomVillageLoader.GSON.toJson(element));
+                    nbt = JsonToNBT.getTagFromJson(RMLLoaders.CustomVillageLoader.GSON.toJson(element));
                 else
                     nbt = JsonToNBT.getTagFromJson(element.getAsString());
 

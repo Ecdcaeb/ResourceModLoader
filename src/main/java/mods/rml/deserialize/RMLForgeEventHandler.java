@@ -50,10 +50,6 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.registries.ForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 /**
  * @Project ResourceModLoader
@@ -65,12 +61,12 @@ public class RMLForgeEventHandler {
 
     @SubscribeEvent
     public static void loadFunction(FunctionLoadEvent event){
-        RMLDeserializeLoader.Function.load(event);
+        RMLLoaders.Function.load(event);
     }
 
     @SubscribeEvent
     public static void registerLootTable(LootTableRegistryEvent event){
-        RMLDeserializeLoader.LootTable.load(event);
+        RMLLoaders.LootTable.load(event);
     }
 
     @SubscribeEvent
@@ -94,7 +90,7 @@ public class RMLForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void registerVillagerProfession(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
         IForgeRegistry<VillagerRegistry.VillagerProfession> forgeRegistry = event.getRegistry();
-        for(LoadedVillage village : RMLDeserializeLoader.CustomVillageLoader.load()){
+        for(LoadedVillage village : RMLLoaders.CustomVillageLoader.load()){
             village.run(forgeRegistry);
         }
     }
@@ -129,14 +125,14 @@ public class RMLForgeEventHandler {
     }
 
     public static void construct(FMLConstructionEvent event){
-        RMLDeserializeLoader.ConfigLoader.load();
+        RMLLoaders.ConfigLoader.load();
     }
 
     public static void preInit(FMLPreInitializationEvent event){
 
     }
     public static void postInit(FMLPostInitializationEvent event){
-        RMLDeserializeLoader.OreDic.load();
+        RMLLoaders.OreDic.load();
         RMLRegistries.Names.FUNCTION_EXECUTOR_FACTORY.fire();
     }
 

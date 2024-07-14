@@ -5,6 +5,7 @@ import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
 import mods.rml.ResourceModLoader;
+import mods.rml.api.announces.BeDiscovered;
 import mods.rml.api.announces.EarlyClass;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.announces.PublicAPI;
@@ -12,7 +13,7 @@ import mods.rml.api.RMLBus;
 import mods.rml.api.world.text.RMLTextEffects;
 import mods.rml.compat.crt.RMLCrTLoader;
 import mods.rml.compat.kubejs.RMKKubeJs;
-import mods.rml.deserialize.RMLDeserializeLoader;
+import mods.rml.deserialize.RMLLoaders;
 import mods.rml.deserialize.RMLForgeEventHandler;
 import mods.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import net.minecraft.launchwrapper.Launch;
@@ -123,6 +124,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Subscribe
         @SuppressWarnings("unused")
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
+            event.getAsmData().getAll(BeDiscovered.class.getCanonicalName()).forEach(clazz -> {try { Class.forName(clazz.getClassName()); } catch (ClassNotFoundException ignored) {}});
             MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
             MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
             if (FMLLaunchHandler.side() == Side.CLIENT){
@@ -135,7 +137,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
                 MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
             }
             RMLForgeEventHandler.preInit(event);
-            RMLDeserializeLoader.MissingRemap.load();
+            RMLLoaders.MissingRemap.load();
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
