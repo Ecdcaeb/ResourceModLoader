@@ -1,6 +1,7 @@
 package mods.rml.api.world.text;
 
 import dev.latvian.kubejs.documentation.T;
+import mods.rml.api.announces.RewriteWhenCleanroom;
 import mods.rml.api.event.client.gui.HandleComponentEvent;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import net.minecraft.util.text.ITextComponent;
@@ -21,6 +22,7 @@ import java.util.function.BiConsumer;
  **/
 
 //TODO if https://github.com/CleanroomMC/Cleanroom/pull/107 merged, we need to rewrite this to adapt Cleanroom.
+@RewriteWhenCleanroom
 public class TextEffectsHelper {
     private TextEffectsHelper(){}
     public static Map<String, HoverEvent.Action> hoverMapping = ReflectionHelper.getPrivateValue(HoverEvent.Action.class, null, "NAME_MAPPING", "field_150690_d");

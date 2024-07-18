@@ -9,6 +9,7 @@ import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.common.util.EnumHelper;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
@@ -58,10 +59,10 @@ public class RMLDeserializer {
 
     public static final AbstractDeserializer<ItemStack> ITEM_STACK_DEFAULT = Deserializer.named(ItemStack.class, new ResourceLocation("minecraft", "item"))
             .require(Item.class, "item")
-            .optionalWhen(int.class, "data", context -> context.get(Item.class, "item").getHasSubtypes())
+            .optionalWhen(Integer.class, "data", context -> context.get(Item.class, "item").getHasSubtypes())
             .check((context -> {if (!context.ifPresent("data")) context.put("data", 0); return null;}))
             .optional(NBTTagCompound.class, "nbt")
-            .optionalDefault(int.class, "count", 1)
+            .optionalDefault(Integer.class, "count", 1)
             .decode((context -> {
                 Item item = context.get(Item.class, "item");
                 int data = context.get(Integer.class, "data");
@@ -92,8 +93,21 @@ public class RMLDeserializer {
             .decode((context -> {
                 RMLLoaders.OreDic.TagOre tagOre = new RMLLoaders.OreDic.TagOre();
                 tagOre.ore = context.get(String.class, "ore");
-                tagOre.item = context.get(ItemStack.class, "ore");
+                tagOre.item = context.get(ItemStack.class, "item");
                 return tagOre;
             })).markDefault().build();
+
+    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))
+            .require(String.class, "name")
+            .decode((context -> {
+                Item.ToolMaterial material = null;
+                try{
+                    material = Item.ToolMaterial.valueOf(context.get(String.class, "name"));
+                }catch (IllegalArgumentException e){
+                    //material = EnumHelper.addToolMaterial()
+                }
+                return material;
+            })).markDefault().build();
+
 
 }
