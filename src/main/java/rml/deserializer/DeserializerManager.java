@@ -50,6 +50,7 @@ public class DeserializerManager {
                     }
                     return clazz.cast(array_to_return.toArray());
                 }else {
+                    //TODO : Cannot cast [Ljava.lang.Object; to [Lmods.rml.deserialize.RMLLoaders$OreDic$TagOre;
                     return clazz.cast(new Object[]{decode(clazzComponentType, jsonElement)});
                 }
             } else {
