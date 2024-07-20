@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 
-import java.util.ArrayList;
+import java.lang.reflect.Array;
 import java.util.HashMap;
 
 /**
@@ -39,19 +39,18 @@ public class DeserializerManager {
     public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializerException{
         try {
             if (clazz.isArray()){
-                @SuppressWarnings("rawtypes")
-                Class clazzComponentType = clazz.getComponentType();
+                Class<?> clazzComponentType = clazz.getComponentType();
                 if (jsonElement.isJsonArray()){
                     JsonArray array = jsonElement.getAsJsonArray();
-                    @SuppressWarnings("rawtypes")
-                    ArrayList array_to_return = new ArrayList(array.size());
-                    for(JsonElement element : array){
-                        array_to_return.add(decode(clazzComponentType, element));
+                    Object arrayToReturn = Array.newInstance(clazzComponentType, array.size());
+                    for(int index = 0 ; index < array.size() ; index++){
+                        Array.set(arrayToReturn, index, decode(clazzComponentType, array.get(index)));
                     }
-                    return clazz.cast(array_to_return.toArray());
+                    return clazz.cast(arrayToReturn);
                 }else {
-                    //TODO : Cannot cast [Ljava.lang.Object; to [Lmods.rml.deserialize.RMLLoaders$OreDic$TagOre;
-                    return clazz.cast(new Object[]{decode(clazzComponentType, jsonElement)});
+                    Object arrayToReturn = Array.newInstance(clazzComponentType, 1);
+                    Array.set(arrayToReturn, 1, decode(clazzComponentType, jsonElement));
+                    return clazz.cast(arrayToReturn);
                 }
             } else {
                 if (jsonElement.isJsonObject()){
