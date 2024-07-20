@@ -7,6 +7,7 @@ import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Array;
 import java.util.HashMap;
+import java.util.function.BooleanSupplier;
 
 /**
  * @Project ResourceModLoader
@@ -49,7 +50,7 @@ public class DeserializerManager {
                     return clazz.cast(arrayToReturn);
                 }else {
                     Object arrayToReturn = Array.newInstance(clazzComponentType, 1);
-                    Array.set(arrayToReturn, 1, decode(clazzComponentType, jsonElement));
+                    Array.set(arrayToReturn, 0, decode(clazzComponentType, jsonElement));
                     return clazz.cast(arrayToReturn);
                 }
             } else {
