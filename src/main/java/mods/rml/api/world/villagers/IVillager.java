@@ -10,6 +10,6 @@ import net.minecraftforge.registries.IForgeRegistry;
  * @Date 2023/8/16 10:19
  **/
 @PublicAPI
-public abstract class LoadedVillage {
-    public abstract void run(IForgeRegistry<VillagerRegistry.VillagerProfession> r);
+public interface IVillager {
+    void run(IForgeRegistry<VillagerRegistry.VillagerProfession> r);
 }

@@ -14,14 +14,7 @@ import mods.rml.api.world.function.impl.FunctionExecutorGameLoop;
 import mods.rml.api.world.function.impl.FunctionExecutorLoad;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.world.text.RMLTextEffects;
-import mods.rml.api.world.villagers.LoadedVillage;
-import mods.rml.api.world.villagers.VillageReader;
-import mods.rml.api.world.villagers.trades.itrades.SlotRecipe;
-import mods.rml.api.world.villagers.trades.trades.EmeraldForItems;
-import mods.rml.api.world.villagers.trades.trades.ItemAndEmeraldToItem;
-import mods.rml.api.world.villagers.trades.trades.ListItemForEmeralds;
-import mods.rml.api.world.villagers.villagers.VillageCancer;
-import mods.rml.api.world.villagers.villagers.VillageProfession;
+import mods.rml.api.world.villagers.IVillager;
 import mods.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import mods.rml.deserialize.craft.recipe.SimpleAnvilRecipe;
 import mods.rml.deserialize.craft.recipe.SimpleBrewRecipe;
@@ -86,23 +79,9 @@ public class RMLForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void registerVillagerProfession(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
         IForgeRegistry<VillagerRegistry.VillagerProfession> forgeRegistry = event.getRegistry();
-        for(LoadedVillage village : RMLLoaders.CustomVillageLoader.load()){
+        for(IVillager village : RMLLoaders.CustomVillageLoader.load()){
             village.run(forgeRegistry);
         }
-    }
-
-    @SubscribeEvent
-    public static void registerVillageReaders(RegistryEvent.Register<VillageReader> event){
-        IForgeRegistry<VillageReader> registry = event.getRegistry();
-        //trade loader
-        registry.register(new EmeraldForItems.Loader().setRegistryName(new ResourceLocation("minecraft","emerald_for_items")));
-        registry.register(new ItemAndEmeraldToItem.Loader().setRegistryName(new ResourceLocation("minecraft","item_and_emerald_to_item")));
-        registry.register(new ListItemForEmeralds.Loader().setRegistryName(new ResourceLocation("minecraft","list_item_for_emeralds")));
-        registry.register(new SlotRecipe.Loader().setRegistryName(new ResourceLocation("cvh","slots")));
-
-        //base loader
-        registry.register(new VillageProfession.Loader().setRegistryName(new ResourceLocation("minecraft","profession")));
-        registry.register(new VillageCancer.Loader().setRegistryName(new ResourceLocation("minecraft","cancer")));
     }
 
     @SubscribeEvent

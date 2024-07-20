@@ -1,10 +1,12 @@
 package mods.rml.deserialize;
 
 import mods.rml.api.announces.BeDiscovered;
+import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
+import rml.deserializer.MCDeserializers;
 
 /**
  * @Project ResourceModLoader
@@ -24,6 +26,18 @@ public class RMLDeserializer {
                 return tagOre;
             })).markDefault().build();
 
+    public static final AbstractDeserializer<ItemStack> ENCHANTED_ITEM = Deserializer.named(ItemStack.class, new ResourceLocation("rml", "enchantmented_item"))
+            .optional(EnchantmentData[].class, "enchantment")
+            .decode(context -> {
+                ItemStack stack = MCDeserializers.ITEM_STACK_DEFAULT.deserialize(context.getJsonObject());
+                if (context.ifPresent(EnchantmentData[].class, "enchantment")){
+                    for(EnchantmentData enchantmentData : context.get(EnchantmentData[].class, "enchantment")){
+                        stack.addEnchantment(enchantmentData.enchantment, enchantmentData.enchantmentLevel);
+                    }
+                }
+                return stack;
+            }).build();
+
 
 //    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))
 //            .require(String.class, "name")
@@ -37,7 +51,7 @@ public class RMLDeserializer {
 //                return material;
 //            })).markDefault().build();
 
-//    public static final AbstractDeserializer<RandomInt> PRICE_RANGE = Deserializer.named(RandomInt.class, new ResourceLocation("minecraft", "price"))
+//    public static final AbstractDeserializer<RandomIntSupplier> PRICE_RANGE = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("minecraft", "price"))
 //            .require(Integer.class, "min")
 //            .require(Integer.class, "max")
 //            .decode((context -> {

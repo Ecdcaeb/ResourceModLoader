@@ -24,11 +24,9 @@ import mods.rml.api.java.reflection.jvm.FieldAccessor;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.registry.remap.RemapCollection;
-import mods.rml.api.world.villagers.LoadedVillage;
+import mods.rml.api.world.villagers.IVillager;
 import mods.rml.api.world.villagers.VillageReader;
-import mods.rml.core.ASMUtil;
 import mods.rml.core.RMLFMLLoadingPlugin;
-import mods.rml.core.RMLTransformer;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.JsonUtils;
@@ -36,8 +34,6 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.JsonContext;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.oredict.OreDictionary;
@@ -221,10 +217,10 @@ public class RMLLoaders {
             RMLRegistries.Names.RANGE_FACTORIES.fire();
         }
 
-        public static List<LoadedVillage> load() {
+        public static List<IVillager> load() {
             initVillageRegistry();
 
-            final List<LoadedVillage> list = new ArrayList<>();
+            final List<IVillager> list = new ArrayList<>();
             ResourceModLoader.loadModuleFindAssets(ModuleType.CUSTOM_VILLAGERS, (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
@@ -242,9 +238,9 @@ public class RMLLoaders {
                     if (RMLRegistries.VILLAGE_READERS.containsKey(resourceLocation)) {
                         VillageReader villageReader = RMLRegistries.VILLAGE_READERS.getValue(resourceLocation);
                         try {
-                            LoadedVillage loadedVillage = villageReader.load(json);
+                            IVillager IVillager = villageReader.load(json);
                             RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
-                            list.add(loadedVillage);
+                            list.add(IVillager);
                         } catch (Exception e) {
                             RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at " + file.getFileName());
                             RMLFMLLoadingPlugin.Container.LOGGER.error(e);

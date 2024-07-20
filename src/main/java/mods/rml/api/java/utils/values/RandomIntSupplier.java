@@ -1,10 +1,12 @@
 package mods.rml.api.java.utils.values;
 
+import com.google.gson.JsonElement;
 import mods.rml.api.announces.BeDiscovered;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
+import rml.deserializer.JsonDeserializerException;
 import rml.deserializer.Record;
 
 import java.util.Random;
@@ -14,7 +16,10 @@ import java.util.Random;
  * @Author Hileb
  * @Date 2023/8/20 9:25
  **/
-public interface RandomInt {
+@BeDiscovered
+public interface RandomIntSupplier {
+    AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default_constant"), RandomIntSupplier.class,
+            jsonElement -> new RangeConstant(jsonElement.getAsInt())));
     int get(Random random);
 
     /**
@@ -23,8 +28,8 @@ public interface RandomInt {
      * @Date 2023/8/20 9:25
      **/
     @BeDiscovered
-    class RangePrice implements RandomInt {
-        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("minecraft","price"))
+    class RangePrice implements RandomIntSupplier {
+        public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("minecraft","price"))
                 .record(RangePrice.class).markDefault().build();
         EntityVillager.PriceInfo info;
 
@@ -45,9 +50,9 @@ public interface RandomInt {
      * @Date 2023/8/20 9:28
      **/
     @BeDiscovered
-    class RangeConstant implements RandomInt {
+    class RangeConstant implements RandomIntSupplier {
 
-        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("cvh","constant"))
+        public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","constant"))
                 .record(RangeConstant.class).markDefault().build();
         public static final RangeConstant ONE = new RangeConstant(1);
         final int a;
@@ -69,9 +74,9 @@ public interface RandomInt {
      * @Date 2023/8/20 10:16
      **/
     @BeDiscovered
-    class RangePoisson implements RandomInt {
+    class RangePoisson implements RandomIntSupplier {
 
-        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("cvh","poisson_distribution"))
+        public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","poisson_distribution"))
                 .record(RangePoisson.class).markDefault().build();
         public final int min;
         public final int max;

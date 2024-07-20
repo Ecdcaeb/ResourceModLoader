@@ -13,5 +13,5 @@ import net.minecraftforge.registries.IForgeRegistryEntry;
 public abstract class VillageReader extends IForgeRegistryEntry.Impl<VillageReader> {
     public VillageReader(){
     }
-    public abstract LoadedVillage load(JsonObject json);
+    public abstract IVillager load(JsonObject json);
 }

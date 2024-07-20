@@ -140,6 +140,7 @@ public class DeserializerManager {
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, JsonElement::getAsBigDecimal));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, JsonElement::getAsNumber));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, (jsonElement)->null));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, JsonElement::getAsJsonObject));
     }
 
     /**
