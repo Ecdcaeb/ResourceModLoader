@@ -3,10 +3,20 @@
  * SPDX-License-Identifier: LGPL-2.1-only
  */
 
-package mods.rml.api.java.optional;
+package rml.internal.net.minecraftforge.common.util;
 
+import mcp.MethodsReturnNonnullByDefault;
+import net.minecraftforge.common.capabilities.Capability;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -14,19 +24,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.annotation.ParametersAreNonnullByDefault;
-
-
-import net.minecraftforge.common.capabilities.Capability;
-import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * This object encapsulates a lazy value, with typical transformation operations
@@ -45,6 +42,7 @@ import org.apache.logging.log4j.Logger;
  * @param <T> The type of the optional value.
  */
 @ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
 public class LazyOptional<T> {
     private final Supplier<T> supplier;
     private final Object lock = new Object();
@@ -52,10 +50,11 @@ public class LazyOptional<T> {
     // non-null and contains non-null value -> resolved
     // non-null and contains null -> resolved, but supplier returned null (contract violation)
     private Mutable<T> resolved;
-    private Set<Consumer<LazyOptional<T>>> listeners = new HashSet<>();
+    private final Set<Consumer<LazyOptional<T>>> listeners = new HashSet<>();
     private boolean isValid = true;
 
-    private static final @Nonnull LazyOptional<Void> EMPTY = new LazyOptional<>(null);
+    @SuppressWarnings("all")
+    private static final LazyOptional<Void> EMPTY = new LazyOptional<>(null);
     private static final Logger LOGGER = LogManager.getLogger();
 
     /**
@@ -66,7 +65,7 @@ public class LazyOptional<T> {
      *                         null, but can be null itself. If null, this method
      *                         returns {@link #empty()}.
      */
-    public static <T> LazyOptional<T> of(final @Nonnull Supplier<T> instanceSupplier) {
+    public static <T> LazyOptional<T> of(final @Nullable Supplier<T> instanceSupplier) {
         return instanceSupplier == null ? empty() : new LazyOptional<>(instanceSupplier);
     }
 
@@ -79,8 +78,7 @@ public class LazyOptional<T> {
 
     /**
      * This method hides an unchecked cast to the inferred type. Only use this if
-     * you are sure the type should match. For capabilities, generally
-     * {@link Capability#orEmpty(Capability, LazyOptional)} should be used.
+     * you are sure the type should match.
      *
      * @return This {@link LazyOptional}, cast to the inferred generic type
      */
@@ -89,7 +87,7 @@ public class LazyOptional<T> {
         return (LazyOptional<X>)this;
     }
 
-    private LazyOptional(@Nonnull Supplier<T> instanceSupplier) {
+    private LazyOptional(@Nullable Supplier<T> instanceSupplier) {
         this.supplier = instanceSupplier;
     }
 
@@ -171,7 +169,7 @@ public class LazyOptional<T> {
      * {@link Optional#empty()}.
      *
      * @apiNote This method explicitly resolves the value of the {@link LazyOptional}.
-     *          For a non-resolving mapper that will lazily run the mapping, use {@link #lazyMap(Function)}.
+     *          For a non-resolving mapper that will lazily run the mapping, use {@link #lazyMap(NonNullFunction)}.
      *
      * @param mapper A mapping function to apply to the mod object, if present
      * @return An {@link Optional} describing the result of applying a mapping
