@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.trades;
 
-import mods.rml.api.world.villagers.trades.ranges.RangeBase;
+import mods.rml.api.java.utils.values.ranges.RangeBase;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.JsonUtils;

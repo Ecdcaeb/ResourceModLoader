@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.itrades;
 
-import mods.rml.api.world.villagers.trades.ranges.RangeBase;
+import mods.rml.api.java.utils.values.ranges.RangeBase;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.init.Items;

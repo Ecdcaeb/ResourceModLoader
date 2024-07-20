@@ -1,9 +1,9 @@
 package mods.rml.api.java.reflection.jvm;
 
-import mods.rml.api.java.optional.LazyOptional;
+
+import rml.internal.net.minecraftforge.common.util.LazyOptional;
 
 import java.lang.reflect.Field;
-import java.util.function.Supplier;
 
 /**
  * @Project ResourceModLoader

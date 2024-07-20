@@ -1,8 +1,7 @@
 package mods.rml.api.world.villagers.trades.itrades;
 
-import mods.rml.api.world.villagers.trades.ranges.RangeBase;
+import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.api.world.villagers.trades.trades.TradeBase;
-import mods.rml.api.world.villagers.trades.ranges.RangeConstant;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.passive.EntityVillager;
@@ -47,9 +46,9 @@ public class SlotRecipe implements EntityVillager.ITradeList {
             ItemStack s1=ItemStack.EMPTY;
             ItemStack s2=ItemStack.EMPTY;
             ItemStack s3=ItemStack.EMPTY;
-            RangeBase r1= RangeConstant.ONE;
-            RangeBase r2= RangeConstant.ONE;
-            RangeBase r3= RangeConstant.ONE;
+            RangeBase r1= RangeBase.RangeConstant.ONE;
+            RangeBase r2= RangeBase.RangeConstant.ONE;
+            RangeBase r3= RangeBase.RangeConstant.ONE;
 
             JsonObject from= JsonUtils.getJsonObject(trade,"from");
             JsonObject to=JsonUtils.getJsonObject(trade,"to");

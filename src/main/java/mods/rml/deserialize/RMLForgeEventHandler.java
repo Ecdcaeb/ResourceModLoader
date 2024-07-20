@@ -8,6 +8,7 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.rml.api.java.utils.ObjectHelper;
+import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.function.FunctionExecutorFactory;
 import mods.rml.api.world.function.impl.FunctionExecutorGameLoop;
@@ -17,10 +18,6 @@ import mods.rml.api.world.text.RMLTextEffects;
 import mods.rml.api.world.villagers.LoadedVillage;
 import mods.rml.api.world.villagers.VillageReader;
 import mods.rml.api.world.villagers.trades.itrades.SlotRecipe;
-import mods.rml.api.world.villagers.trades.ranges.PriceRange;
-import mods.rml.api.world.villagers.trades.ranges.RangeConstant;
-import mods.rml.api.world.villagers.trades.ranges.RangeFactory;
-import mods.rml.api.world.villagers.trades.ranges.RangePoisson;
 import mods.rml.api.world.villagers.trades.trades.EmeraldForItems;
 import mods.rml.api.world.villagers.trades.trades.ItemAndEmeraldToItem;
 import mods.rml.api.world.villagers.trades.trades.ListItemForEmeralds;
@@ -107,14 +104,6 @@ public class RMLForgeEventHandler {
         //base loader
         registry.register(new VillageProfession.Loader().setRegistryName(new ResourceLocation("minecraft","profession")));
         registry.register(new VillageCancer.Loader().setRegistryName(new ResourceLocation("minecraft","cancer")));
-    }
-
-    @SubscribeEvent
-    public static void registerRanges(RegistryEvent.Register<RangeFactory> event){
-        IForgeRegistry<RangeFactory> registry = event.getRegistry();
-        registry.register(new PriceRange.Factory().setRegistryName(new ResourceLocation("minecraft","price")));
-        registry.register(new RangeConstant.Factory().setRegistryName(new ResourceLocation("cvh","constant")));
-        registry.register(new RangePoisson.Factory().setRegistryName(new ResourceLocation("cvh","poisson_distribution")));
     }
 
     @SubscribeEvent

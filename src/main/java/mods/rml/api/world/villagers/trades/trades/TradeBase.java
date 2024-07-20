@@ -4,8 +4,7 @@ import com.google.gson.*;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.world.villagers.LoadedVillage;
 import mods.rml.api.world.villagers.VillageReader;
-import mods.rml.api.world.villagers.trades.ranges.RangeBase;
-import mods.rml.api.world.villagers.trades.ranges.RangeFactory;
+import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.deserialize.RMLLoaders;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.entity.passive.EntityVillager;
@@ -20,6 +19,8 @@ import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
+import rml.deserializer.Deserializer;
+import rml.deserializer.JsonDeserializerException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -152,6 +153,10 @@ public class TradeBase {
         return stack;
     }
     public static RangeBase loadPrice(JsonObject jsonObject){
-        return RangeFactory.getRange(jsonObject);
+        try {
+            return Deserializer.decode(RangeBase.class, jsonObject);
+        } catch (JsonDeserializerException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

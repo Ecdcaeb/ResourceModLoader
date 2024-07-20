@@ -30,7 +30,7 @@ public @interface Record {
     /**
      * @return the parameters list
      */
-    String[] parameters() default {};
+    Parameter[] parameters() default {};
 
     @EarlyClass
     @Documented
