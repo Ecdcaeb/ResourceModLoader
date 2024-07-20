@@ -1,5 +1,6 @@
 package rml.deserializer;
 
+import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import net.minecraft.util.ResourceLocation;
 
@@ -14,7 +15,7 @@ public class AbstractDeserializer<T>{
     private IDeserializer<T> function;
     public AbstractDeserializer(ResourceLocation registerName, Class<T> target, IDeserializer<T> function){
         this.resourceLocation = registerName;
-        this.target = target;
+        this.target = DeserializerBuilder.avoidPrimitive(target);
         this.function = function;
     }
     public Class<T> getResultTarget(){

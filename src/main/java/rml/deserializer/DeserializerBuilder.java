@@ -1,11 +1,12 @@
 package rml.deserializer;
 
+import com.google.common.primitives.Primitives;
 import com.google.gson.JsonObject;
+import mods.rml.api.java.optional.LazyOptional;
 import net.minecraft.util.ResourceLocation;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
@@ -17,17 +18,61 @@ public class DeserializerBuilder<T> {
     private DeserializerManager manager;
     private Class<T> clazz;
     private ResourceLocation resourceLocation;
-    private HashSet<Action> actions = new HashSet<>();
+    private HashSet<IAction> actions = new HashSet<>();
     private Function<Context, T> function = (context)->null;
     private boolean isDefault = false;
     public DeserializerBuilder(DeserializerManager manager, Class<T> clazz, ResourceLocation resourceLocation){
         this.manager = manager;
-        this.clazz = clazz;
+        this.clazz = DeserializerBuilder.avoidPrimitive(clazz);
         this.resourceLocation = resourceLocation;
     }
 
-    public DeserializerBuilder<T> require(Class<?> clazz, String name){
-        this.actions.add(new Action(name, clazz, (c)->false));
+    public DeserializerBuilder<T> action(IAction action){
+        this.actions.add(action);
+        return this;
+    }
+
+    public DeserializerBuilder<T> require(final Class<?> clazz, final String name){
+        final Class<?> clazz2 = DeserializerBuilder.avoidPrimitive(clazz);
+        this.actions.add((manager, jsonObject, context) -> {
+            if (jsonObject.has(name)){
+                try{
+                    Object obj = manager.decode(clazz2, jsonObject.get(name));
+                    context.put(name, obj);
+                }catch (JsonDeserializerException e){
+                    throw new JsonDeserializerException(jsonObject, "field " + name + " decoding error!", e);
+                }
+            }else {
+                throw new JsonDeserializerException(jsonObject, "field " + name +" is required");
+            }
+        });
+        return this;
+    }
+
+    public DeserializerBuilder<T> check(final Function<Context, JsonDeserializerException> function){
+        this.actions.add(((manager1, jsonObject, context) -> {
+            JsonDeserializerException exception = function.apply(context);
+            if (exception != null) throw exception;
+        }));
+        return this;
+    }
+
+    public DeserializerBuilder<T> optionalWhen(final Class<?> clazz,final String name,final Context.ToBooleanFunction isNotRequired){
+        final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
+        this.actions.add(((manager, jsonObject, context) -> {
+            if (jsonObject.has(name)){
+                try{
+                    Object obj = manager.decode(type, jsonObject.get(name));
+                    context.put(name, obj);
+                }catch (JsonDeserializerException e){
+                    if (!isNotRequired.apply(context)){
+                        throw new JsonDeserializerException(jsonObject, "field " + name + " decoding error!", e);
+                    }
+                }
+            }else if (!isNotRequired.apply(context)){
+                throw new JsonDeserializerException(jsonObject, "field " + name +" is required");
+            }
+        }));
         return this;
     }
 
@@ -35,22 +80,45 @@ public class DeserializerBuilder<T> {
         return optionalWhen(clazz, name, c->true);
     }
 
+    public <V> DeserializerBuilder<T> optionalDefaultWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final V defaultValue){
+        final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
+        this.actions.add(((manager, jsonObject, context) -> {
+            if (jsonObject.has(name)){
+                try{
+                    Object obj = manager.decode(type, jsonObject.get(name));
+                    context.put(name, obj);
+                }catch (JsonDeserializerException e){
+                    if (!isNotRequired.apply(context)){
+                        throw new JsonDeserializerException(jsonObject, "field " + name + " decoding error!", e);
+                    }
+                }
+            }else if (!isNotRequired.apply(context)){
+                context.put(name, defaultValue);
+            }
+        }));
+        return this;
+    }
+
     public <V> DeserializerBuilder<T> optionalDefault(Class<V> clazz, String name, V defaultValue){
         return optionalDefaultWhen(clazz, name, c->true, defaultValue);
     }
 
-    public DeserializerBuilder<T> optionalWhen(Class<?> clazz, String name, Context.ToBooleanFunction isNotRequired){
-        this.actions.add(new Action(name, clazz, isNotRequired));
-        return this;
-    }
-
-    public <V> DeserializerBuilder<T> optionalDefaultWhen(Class<V> clazz, String name,Context.ToBooleanFunction isNotRequired, V defaultValue){
-        this.actions.add(new ActionDefault(name, clazz, isNotRequired, defaultValue));
-        return this;
-    }
-
-    public DeserializerBuilder<T> check(Function<Context, JsonDeserializerException> function){
-        this.actions.add(new CheckAction(function));
+    public <V> DeserializerBuilder<T> optionalDefaultLazyWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final LazyOptional<V> defaultValue){
+        final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
+        this.actions.add(((manager, jsonObject, context) -> {
+            if (jsonObject.has(name)){
+                try{
+                    Object obj = manager.decode(type, jsonObject.get(name));
+                    context.put(name, obj);
+                }catch (JsonDeserializerException e){
+                    if (!isNotRequired.apply(context)){
+                        throw new JsonDeserializerException(jsonObject, "field " + name + " decoding error!", e);
+                    }
+                }
+            }else if (!isNotRequired.apply(context)){
+                context.put(name, defaultValue);
+            }
+        }));
         return this;
     }
 
@@ -127,6 +195,12 @@ public class DeserializerBuilder<T> {
 
     }
 
+
+    @FunctionalInterface
+    public interface IAction{
+        void execute(DeserializerManager manager, JsonObject jsonObject, Context context) throws JsonDeserializerException;
+    }
+
     private static class Action{
         public String name;
         public Class<?> type;
@@ -194,5 +268,8 @@ public class DeserializerBuilder<T> {
         }
     }
 
-
+    @SuppressWarnings("unchecked")
+    public static <T> Class<T> avoidPrimitive(Class<?> cls){
+        return cls.isPrimitive() ? (Class<T>) Primitives.wrap(cls) : (Class<T>) cls;
+    }
 }

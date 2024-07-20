@@ -3,9 +3,12 @@ package rml.deserializer;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.internal.Primitives;
 import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 
@@ -18,6 +21,15 @@ public class DeserializerManager {
     public final HashMap<Class<?>, AbstractDeserializer<?>> defaults = new HashMap<>();
     public final HashMap<Class<?>, HashMap<ResourceLocation, AbstractDeserializer<?>>> registry = new HashMap<>();
 
+
+    /**
+     * Add a deserializer
+     *
+     * @param abstractDeserializer the deserializer
+     * @param <T> type
+     *
+     * @return the deserializer you input.
+     */
     public <T> AbstractDeserializer<T> addEntry(AbstractDeserializer<T> abstractDeserializer){
         if (!registry.containsKey(abstractDeserializer.getResultTarget())){
             registry.put(abstractDeserializer.getResultTarget(), new HashMap<>());
@@ -26,18 +38,45 @@ public class DeserializerManager {
         return abstractDeserializer;
     }
 
+    /**
+     * make a deserializer default
+     *
+     * @param abstractDeserializer the deserializer
+     * @param <T> type
+     *
+     * @return the deserializer you input.
+     */
     public <T> AbstractDeserializer<T> markDefault(AbstractDeserializer<T> abstractDeserializer){
         defaults.put(abstractDeserializer.getResultTarget(), abstractDeserializer);
         return abstractDeserializer;
     }
 
+    /**
+     * Add a deserializer and mark it as default.
+     *
+     * @param abstractDeserializer the deserializer
+     * @param <T> type
+     *
+     * @return the deserializer you input.
+     */
     public <T> AbstractDeserializer<T>  addDefaultEntry(AbstractDeserializer<T> abstractDeserializer){
         addEntry(abstractDeserializer);
         markDefault(abstractDeserializer);
         return abstractDeserializer;
     }
 
+    /**
+     * @param clazz the class. Should not be primitive.
+     * @param jsonElement the json element.
+     * @param <T> the type.
+     *
+     * @return the value obj.
+     *
+     * @throws JsonDeserializerException the exception. Error format? Unexpected context?
+     */
     public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializerException{
+        clazz = DeserializerBuilder.avoidPrimitive(clazz);
+
         try {
             if (clazz.isArray()){
                 Class<?> clazzComponentType = clazz.getComponentType();
@@ -83,14 +122,11 @@ public class DeserializerManager {
         }
     }
 
+    /**
+     * Constructor, with build-in default deserializers.
+     */
     public DeserializerManager(){
         ResourceLocation GSON = new ResourceLocation("google", "primitive");
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, int.class, JsonElement::getAsInt));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, float.class, JsonElement::getAsFloat));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, double.class, JsonElement::getAsDouble));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, long.class, JsonElement::getAsLong));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, char.class, JsonElement::getAsCharacter));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, byte.class, JsonElement::getAsByte));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, JsonElement::getAsInt));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, JsonElement::getAsFloat));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Double.class, JsonElement::getAsDouble));
@@ -98,8 +134,21 @@ public class DeserializerManager {
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Character.class, JsonElement::getAsCharacter));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Byte.class, JsonElement::getAsByte));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, String.class, JsonElement::getAsString));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Boolean.class, JsonElement::getAsBoolean));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Short.class, JsonElement::getAsShort));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigInteger.class, JsonElement::getAsBigInteger));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, JsonElement::getAsBigDecimal));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, JsonElement::getAsNumber));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, (jsonElement)->null));
     }
 
+    /**
+     * @param clazz the class, you should not use primitive type, although it is supported by the auto-boxing by rml.
+     * @param name the register name of a named Deserializer
+     * @param <T> the type of decoded. Yes, it could not be primitive.
+     *
+     * @return the builder.
+     */
     public <T> DeserializerBuilder<T> named(Class<T> clazz, ResourceLocation name){
         return new DeserializerBuilder<>(this, clazz, name);
     }
