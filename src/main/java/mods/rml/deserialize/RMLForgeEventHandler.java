@@ -8,7 +8,6 @@ import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.rml.api.java.utils.ObjectHelper;
-import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.function.FunctionExecutorFactory;
 import mods.rml.api.world.function.impl.FunctionExecutorGameLoop;

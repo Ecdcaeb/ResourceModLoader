@@ -2,9 +2,9 @@ package mods.rml.api.world.villagers.trades.trades;
 
 import com.google.gson.*;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import mods.rml.api.java.utils.values.RandomInt;
 import mods.rml.api.world.villagers.LoadedVillage;
 import mods.rml.api.world.villagers.VillageReader;
-import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.deserialize.RMLLoaders;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.entity.passive.EntityVillager;
@@ -131,8 +131,8 @@ public class TradeBase {
                     if (p1.isJsonPrimitive() &&p1.getAsJsonPrimitive().isNumber()){
                         level=p1.getAsInt();
                     }else if (p1.isJsonObject()){
-                        RangeBase rangeBase=TradeBase.loadPrice(JsonUtils.getJsonObject(object,"level"));
-                        level=rangeBase.get(new Random());
+                        RandomInt randomInt =TradeBase.loadPrice(JsonUtils.getJsonObject(object,"level"));
+                        level= randomInt.get(new Random());
                     }
                 }
                 FMLLog.log.error("level : "+level);
@@ -152,9 +152,9 @@ public class TradeBase {
         }
         return stack;
     }
-    public static RangeBase loadPrice(JsonObject jsonObject){
+    public static RandomInt loadPrice(JsonObject jsonObject){
         try {
-            return Deserializer.decode(RangeBase.class, jsonObject);
+            return Deserializer.decode(RandomInt.class, jsonObject);
         } catch (JsonDeserializerException e) {
             throw new RuntimeException(e);
         }

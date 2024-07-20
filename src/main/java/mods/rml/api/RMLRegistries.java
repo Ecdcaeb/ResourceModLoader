@@ -1,6 +1,5 @@
 package mods.rml.api;
 
-import mods.rml.api.java.utils.values.ranges.RangeBase;
 import mods.rml.api.world.function.FunctionExecutorFactory;
 import mods.rml.api.world.villagers.VillageReader;
 import net.minecraft.util.ResourceLocation;

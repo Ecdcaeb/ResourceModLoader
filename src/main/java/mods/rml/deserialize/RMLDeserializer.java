@@ -37,7 +37,7 @@ public class RMLDeserializer {
 //                return material;
 //            })).markDefault().build();
 
-//    public static final AbstractDeserializer<RangeBase> PRICE_RANGE = Deserializer.named(RangeBase.class, new ResourceLocation("minecraft", "price"))
+//    public static final AbstractDeserializer<RandomInt> PRICE_RANGE = Deserializer.named(RandomInt.class, new ResourceLocation("minecraft", "price"))
 //            .require(Integer.class, "min")
 //            .require(Integer.class, "max")
 //            .decode((context -> {

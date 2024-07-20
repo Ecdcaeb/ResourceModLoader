@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.itrades;
 
-import mods.rml.api.java.utils.values.ranges.RangeBase;
+import mods.rml.api.java.utils.values.RandomInt;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.init.Items;
@@ -23,11 +23,11 @@ public class ItemAndEmeraldToItem implements EntityVillager.ITradeList{
      */
     public ItemStack buyingItemStack;
     /** The price info defining the amount of the buying item required with 1 emerald to match the selling item. */
-    public RangeBase buyingPriceInfo;
-    public RangeBase buyingPriceInfo2;
+    public RandomInt buyingPriceInfo;
+    public RandomInt buyingPriceInfo2;
     /** The itemstack to sell. The item and damage value are used only, any tag data is not retained. */
     public ItemStack sellingItemstack;
-    public RangeBase sellingPriceInfo;
+    public RandomInt sellingPriceInfo;
 
 
     public ItemAndEmeraldToItem(){}

@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.trades;
 
-import mods.rml.api.java.utils.values.ranges.RangeBase;
+import mods.rml.api.java.utils.values.RandomInt;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.JsonUtils;
@@ -18,10 +18,10 @@ public class ItemAndEmeraldToItem {
         @Override
         public EntityVillager.ITradeList loadTrade(JsonObject trade) {
             JsonObject from= JsonUtils.getJsonObject(trade,"from");
-            RangeBase p1=TradeBase.loadPrice(JsonUtils.getJsonObject(from,"price"));
-            RangeBase c1=TradeBase.loadPrice(JsonUtils.getJsonObject(from,"count"));
+            RandomInt p1=TradeBase.loadPrice(JsonUtils.getJsonObject(from,"price"));
+            RandomInt c1=TradeBase.loadPrice(JsonUtils.getJsonObject(from,"count"));
             JsonObject to=JsonUtils.getJsonObject(trade,"to");
-            RangeBase c2=TradeBase.loadPrice(JsonUtils.getJsonObject(to,"count"));
+            RandomInt c2=TradeBase.loadPrice(JsonUtils.getJsonObject(to,"count"));
             JsonObject item1=JsonUtils.getJsonObject(from,"item");
             JsonObject item2=JsonUtils.getJsonObject(to,"item");
             mods.rml.api.world.villagers.trades.itrades.ItemAndEmeraldToItem t=new mods.rml.api.world.villagers.trades.itrades.ItemAndEmeraldToItem();

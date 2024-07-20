@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.itrades;
 
-import mods.rml.api.java.utils.values.ranges.RangeBase;
+import mods.rml.api.java.utils.values.RandomInt;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.init.Items;
@@ -25,8 +25,8 @@ public class ListItemForEmeralds implements EntityVillager.ITradeList {
      * The price info for the amount of emeralds to sell for, or if negative, the amount of the item to buy for
      * an emerald.
      */
-    public RangeBase priceInfo;
-    public ListItemForEmeralds(ItemStack stack, RangeBase priceInfo) {
+    public RandomInt priceInfo;
+    public ListItemForEmeralds(ItemStack stack, RandomInt priceInfo) {
         this.itemToBuy = stack;
         this.priceInfo = priceInfo;
     }

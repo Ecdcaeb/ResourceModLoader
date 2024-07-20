@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers.trades.itrades;
 
-import mods.rml.api.java.utils.values.ranges.RangeBase;
+import mods.rml.api.java.utils.values.RandomInt;
 import mods.rml.api.world.villagers.trades.trades.TradeBase;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.IMerchant;
@@ -18,9 +18,9 @@ import java.util.Random;
  * @Date 2023/8/20 10:27
  **/
 public class SlotRecipe implements EntityVillager.ITradeList {
-    public RangeBase range1;
-    public RangeBase range2;
-    public RangeBase range3;
+    public RandomInt range1;
+    public RandomInt range2;
+    public RandomInt range3;
 
     public ItemStack stack1;
     public ItemStack stack2;
@@ -46,9 +46,9 @@ public class SlotRecipe implements EntityVillager.ITradeList {
             ItemStack s1=ItemStack.EMPTY;
             ItemStack s2=ItemStack.EMPTY;
             ItemStack s3=ItemStack.EMPTY;
-            RangeBase r1= RangeBase.RangeConstant.ONE;
-            RangeBase r2= RangeBase.RangeConstant.ONE;
-            RangeBase r3= RangeBase.RangeConstant.ONE;
+            RandomInt r1= RandomInt.RangeConstant.ONE;
+            RandomInt r2= RandomInt.RangeConstant.ONE;
+            RandomInt r3= RandomInt.RangeConstant.ONE;
 
             JsonObject from= JsonUtils.getJsonObject(trade,"from");
             JsonObject to=JsonUtils.getJsonObject(trade,"to");

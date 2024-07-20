@@ -1,16 +1,10 @@
-package mods.rml.api.java.utils.values.ranges;
+package mods.rml.api.java.utils.values;
 
-import com.google.gson.JsonObject;
-import mods.rml.api.RMLRegistries;
 import mods.rml.api.announces.BeDiscovered;
-import mods.rml.api.java.utils.values.ranges.utils.PoissonDistribution;
 import net.minecraft.entity.passive.EntityVillager;
-import net.minecraft.util.JsonUtils;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.registries.IForgeRegistryEntry;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
-import rml.deserializer.JsonDeserializerException;
 import rml.deserializer.Record;
 
 import java.util.Random;
@@ -20,9 +14,8 @@ import java.util.Random;
  * @Author Hileb
  * @Date 2023/8/20 9:25
  **/
-public abstract class RangeBase{
-    public RangeBase(){}
-    public abstract int get(Random random);
+public interface RandomInt {
+    int get(Random random);
 
     /**
      * @Project CustomVillage
@@ -30,8 +23,8 @@ public abstract class RangeBase{
      * @Date 2023/8/20 9:25
      **/
     @BeDiscovered
-    public static class RangePrice extends RangeBase {
-        public static final AbstractDeserializer<RangeBase> DESERIALIZER = Deserializer.named(RangeBase.class, new ResourceLocation("minecraft","price"))
+    class RangePrice implements RandomInt {
+        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("minecraft","price"))
                 .record(RangePrice.class).markDefault().build();
         EntityVillager.PriceInfo info;
 
@@ -52,9 +45,9 @@ public abstract class RangeBase{
      * @Date 2023/8/20 9:28
      **/
     @BeDiscovered
-    public static class RangeConstant extends RangeBase {
+    class RangeConstant implements RandomInt {
 
-        public static final AbstractDeserializer<RangeBase> DESERIALIZER = Deserializer.named(RangeBase.class, new ResourceLocation("cvh","constant"))
+        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("cvh","constant"))
                 .record(RangeConstant.class).markDefault().build();
         public static final RangeConstant ONE = new RangeConstant(1);
         final int a;
@@ -76,9 +69,9 @@ public abstract class RangeBase{
      * @Date 2023/8/20 10:16
      **/
     @BeDiscovered
-    public static class RangePoisson extends RangeBase {
+    class RangePoisson implements RandomInt {
 
-        public static final AbstractDeserializer<RangeBase> DESERIALIZER = Deserializer.named(RangeBase.class, new ResourceLocation("cvh","poisson_distribution"))
+        public static final AbstractDeserializer<RandomInt> DESERIALIZER = Deserializer.named(RandomInt.class, new ResourceLocation("cvh","poisson_distribution"))
                 .record(RangePoisson.class).markDefault().build();
         public final int min;
         public final int max;
