@@ -1,5 +1,5 @@
 {
-  "ore": "oreDiamond",
+  "ore": "gemDiamond",
   "item": {
     "item": "minecraft:dirt",
     "count": 1,
