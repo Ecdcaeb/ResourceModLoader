@@ -97,17 +97,18 @@ public class RMLDeserializer {
                 return tagOre;
             })).markDefault().build();
 
-    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))
-            .require(String.class, "name")
-            .decode((context -> {
-                Item.ToolMaterial material = null;
-                try{
-                    material = Item.ToolMaterial.valueOf(context.get(String.class, "name"));
-                }catch (IllegalArgumentException e){
-                    //material = EnumHelper.addToolMaterial()
-                }
-                return material;
-            })).markDefault().build();
+
+//    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))
+//            .require(String.class, "name")
+//            .decode((context -> {
+//                Item.ToolMaterial material = null;
+//                try{
+//                    material = Item.ToolMaterial.valueOf(context.get(String.class, "name"));
+//                }catch (IllegalArgumentException e){
+//                    //material = EnumHelper.addToolMaterial()
+//                }
+//                return material;
+//            })).markDefault().build();
 
 
 }
