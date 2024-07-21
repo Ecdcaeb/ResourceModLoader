@@ -10,6 +10,8 @@ import java.io.IOException;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/5/12 10:28
+ *
+ * A demo Config Factory using .cfg.
  **/
 public class ConfigFactory {
     public static final File canonicalConfigDir;

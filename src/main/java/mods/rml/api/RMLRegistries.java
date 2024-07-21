@@ -13,10 +13,6 @@ import net.minecraftforge.registries.RegistryBuilder;
  * @Date 2024/4/5 14:57
  **/
 public class RMLRegistries {
-    public static final IForgeRegistry<VillageReader> VILLAGE_READERS = new RegistryBuilder<VillageReader>()
-            .setName(Names.VILLAGE_READERS)
-            .setType(VillageReader.class)
-            .setMaxID(4095).create();
 
     public static final IForgeRegistry<FunctionExecutorFactory> FUNCTION_EXECUTORS = new RegistryBuilder<FunctionExecutorFactory>()
             .setName(Names.FUNCTION_EXECUTOR_FACTORY)
@@ -27,8 +23,6 @@ public class RMLRegistries {
 
     public static class Names extends ResourceLocation{
 
-        public static final Names RANGE_FACTORIES = new Names("rml", "range_factory");
-        public static final Names VILLAGE_READERS = new Names("rml", "village_reader");
         public static final Names FUNCTION_EXECUTOR_FACTORY = new Names("rml", "function_executor_factory");
 
         public Names(String resourceDomainIn, String resourcePathIn) {

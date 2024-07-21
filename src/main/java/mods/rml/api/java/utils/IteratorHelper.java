@@ -1,9 +1,9 @@
 package mods.rml.api.java.utils;
 
-import com.google.common.collect.Lists;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PublicAPI;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.stream.Stream;
@@ -13,6 +13,9 @@ import java.util.stream.Stream;
  * @Author Hileb
  * @Date 2024/5/25 16:44
  **/
+
+@PublicAPI
+@EarlyClass
 public class IteratorHelper {
     public static <T> Collection<T> getAll(Iterator<T> iterator){
         LinkedList<T> list = new LinkedList<>();

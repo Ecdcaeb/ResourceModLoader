@@ -17,6 +17,8 @@ import static java.lang.annotation.ElementType.TYPE;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/7/18 13:39
+ *
+ * A private api to notice hileb to rewrite this part when port to cleanroom
  **/
 @EarlyClass
 @Documented

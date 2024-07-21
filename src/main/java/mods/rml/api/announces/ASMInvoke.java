@@ -11,7 +11,10 @@ import static java.lang.annotation.ElementType.*;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/5/11 17:07
+ *
+ * A class to node a class that referenced in ASM codes.
  **/
+@PublicAPI
 @EarlyClass
 @Documented
 @Retention(RetentionPolicy.SOURCE)

@@ -51,6 +51,8 @@ import java.util.regex.Pattern;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/5/11 13:10
+ *
+ * Patch the configs
  **/
 public abstract class ConfigPatcher {
     public static final HashMap<Configuration, String> OWNED_CONFIGS = new HashMap<>();

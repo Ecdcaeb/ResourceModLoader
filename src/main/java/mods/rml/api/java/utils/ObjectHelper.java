@@ -1,12 +1,16 @@
 package mods.rml.api.java.utils;
 
-import dev.latvian.kubejs.documentation.O;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/5/12 11:17
  **/
+
+@EarlyClass
+@PublicAPI
 public class ObjectHelper {
     public static <T> T orDefault(T t, T defaultValue){
         return t == null ? defaultValue : t;

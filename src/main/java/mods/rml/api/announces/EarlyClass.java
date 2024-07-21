@@ -12,8 +12,9 @@ import static java.lang.annotation.ElementType.*;
  * @Author Hileb
  * @Date 2024/2/7 1:00
  *
- * This announces is for the early class. You can call it early.
+ * This announces is for the early class. You can call it early. Before the game real bootstrap.
  **/
+@PublicAPI
 @EarlyClass
 @Documented
 @Retention(RetentionPolicy.SOURCE)

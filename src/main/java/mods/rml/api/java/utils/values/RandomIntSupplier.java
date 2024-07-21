@@ -1,12 +1,11 @@
 package mods.rml.api.java.utils.values;
 
-import com.google.gson.JsonElement;
 import mods.rml.api.announces.BeDiscovered;
+import mods.rml.api.announces.PublicAPI;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
-import rml.deserializer.JsonDeserializerException;
 import rml.deserializer.Record;
 
 import java.util.Random;
@@ -16,6 +15,7 @@ import java.util.Random;
  * @Author Hileb
  * @Date 2023/8/20 9:25
  **/
+@PublicAPI
 @BeDiscovered
 public interface RandomIntSupplier {
     AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default_constant"), RandomIntSupplier.class,
@@ -28,6 +28,7 @@ public interface RandomIntSupplier {
      * @Date 2023/8/20 9:25
      **/
     @BeDiscovered
+    @Record
     class RangePrice implements RandomIntSupplier {
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("minecraft","price"))
                 .record(RangePrice.class).markDefault().build();
@@ -50,6 +51,7 @@ public interface RandomIntSupplier {
      * @Date 2023/8/20 9:28
      **/
     @BeDiscovered
+    @Record
     class RangeConstant implements RandomIntSupplier {
 
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","constant"))
@@ -74,6 +76,7 @@ public interface RandomIntSupplier {
      * @Date 2023/8/20 10:16
      **/
     @BeDiscovered
+    @Record
     class RangePoisson implements RandomIntSupplier {
 
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","poisson_distribution"))

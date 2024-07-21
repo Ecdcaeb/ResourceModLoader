@@ -1,6 +1,8 @@
 package mods.rml.api.java.progress;
 
 import it.unimi.dsi.fastutil.objects.Object2BooleanArrayMap;
+import mods.rml.api.announces.EarlyClass;
+import mods.rml.api.announces.PublicAPI;
 
 import java.util.Map;
 
@@ -8,7 +10,11 @@ import java.util.Map;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/3/31 9:24
+ *
+ * A task list. Used for check if the tasks completed.
  **/
+@PublicAPI
+@EarlyClass
 public class Tasks {
     public Object2BooleanArrayMap<String> tasks;
     public Tasks(String[] tasks){
@@ -26,6 +32,10 @@ public class Tasks {
             if (!b) return false;
         }
         return true;
+    }
+
+    public boolean isCompleted(String value){
+        return this.tasks.containsKey(value) && this.tasks.getBoolean(value);
     }
 
     public String[] getCompleted(){

@@ -11,6 +11,8 @@ import static java.lang.annotation.ElementType.TYPE;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/7/14 17:50
+ *
+ * A class could be discovered, loaded and initialized in pre-init.
  **/
 @EarlyClass
 @Documented

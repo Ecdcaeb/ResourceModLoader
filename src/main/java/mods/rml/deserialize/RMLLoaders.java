@@ -210,15 +210,8 @@ public class RMLLoaders {
      * @Date 2023/8/16 10:18
      **/
     public static class CustomVillageLoader {
-        public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-
-        public static void initVillageRegistry() {
-            RMLRegistries.Names.VILLAGE_READERS.fire();
-            RMLRegistries.Names.RANGE_FACTORIES.fire();
-        }
 
         public static List<IVillager> load() {
-            initVillageRegistry();
 
             final List<IVillager> list = new ArrayList<>();
             ResourceModLoader.loadModuleFindAssets(ModuleType.CUSTOM_VILLAGERS, (containerHolder, root, file) -> {
@@ -232,27 +225,19 @@ public class RMLLoaders {
                 BufferedReader reader = null;
                 try {
                     reader = Files.newBufferedReader(file);
-                    JsonObject json = JsonHelper.getJson(reader);
-                    String s = JsonUtils.getString(json, "type");
-                    ResourceLocation resourceLocation = new ResourceLocation(s);
-                    if (RMLRegistries.VILLAGE_READERS.containsKey(resourceLocation)) {
-                        VillageReader villageReader = RMLRegistries.VILLAGE_READERS.getValue(resourceLocation);
-                        try {
-                            IVillager IVillager = villageReader.load(json);
-                            RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
-                            list.add(IVillager);
-                        } catch (Exception e) {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at " + file.getFileName());
-                            RMLFMLLoadingPlugin.Container.LOGGER.error(e);
-                        }
-
-                    } else {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("type: " + s + " not found!");
+                    JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(reader);
+                    try {
+                        IVillager IVillager = Deserializer.decode(mods.rml.api.world.villagers.IVillager.class, jsonElement)
+                        RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
+                        list.add(IVillager);
+                    } catch (Exception e) {
+                        RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at " + file.getFileName());
+                        RMLFMLLoadingPlugin.Container.LOGGER.error(e);
                     }
                 } catch (JsonParseException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading replacement {}", key, e);
+                    RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading villager {}", key, e);
                 } catch (IOException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read replacement {} from {}", key, file, e);
+                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read villager {} from {}", key, file, e);
                 } finally {
                     IOUtils.closeQuietly(reader);
                 }
