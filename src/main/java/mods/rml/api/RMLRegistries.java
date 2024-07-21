@@ -1,12 +1,5 @@
 package mods.rml.api;
 
-import mods.rml.api.world.function.FunctionExecutorFactory;
-import mods.rml.api.world.villagers.VillageReader;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.registries.GameData;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.RegistryBuilder;
-
 /**
  * @Project ResourceModLoader
  * @Author Hileb
@@ -14,27 +7,4 @@ import net.minecraftforge.registries.RegistryBuilder;
  **/
 public class RMLRegistries {
 
-    public static final IForgeRegistry<FunctionExecutorFactory> FUNCTION_EXECUTORS = new RegistryBuilder<FunctionExecutorFactory>()
-            .setName(Names.FUNCTION_EXECUTOR_FACTORY)
-            .setType(FunctionExecutorFactory.class)
-            .setMaxID(4095).create();
-
-    public static void call(){}
-
-    public static class Names extends ResourceLocation{
-
-        public static final Names FUNCTION_EXECUTOR_FACTORY = new Names("rml", "function_executor_factory");
-
-        public Names(String resourceDomainIn, String resourcePathIn) {
-            super(resourceDomainIn, resourcePathIn);
-        }
-
-        public void fire(){
-            GameData.fireRegistryEvents(this::equals);
-        }
-
-        static {
-            RMLRegistries.call();
-        }
-    }
 }

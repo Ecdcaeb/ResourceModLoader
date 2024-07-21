@@ -1,18 +1,14 @@
 package mods.rml.deserialize;
 
 import mods.rml.ResourceModLoader;
-import mods.rml.api.RMLRegistries;
 import mods.rml.api.announces.PrivateAPI;
 import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.rml.api.java.utils.ObjectHelper;
-import mods.rml.api.mods.module.ModuleType;
-import mods.rml.api.world.function.FunctionExecutorFactory;
-import mods.rml.api.world.function.executors.FunctionExecutorGameLoop;
-import mods.rml.api.world.function.executors.FunctionExecutorWorldLoad;
 import mods.rml.api.mods.ContainerHolder;
+import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.text.RMLTextEffects;
 import mods.rml.api.world.villagers.IVillager;
 import mods.rml.deserialize.craft.recipe.NamedEmptyRecipeImpl;
@@ -93,7 +89,6 @@ public class RMLForgeEventHandler {
     }
     public static void postInit(FMLPostInitializationEvent event){
         RMLLoaders.OreDic.load();
-        RMLRegistries.Names.FUNCTION_EXECUTOR_FACTORY.fire();
     }
 
     @SideOnly(Side.CLIENT)
