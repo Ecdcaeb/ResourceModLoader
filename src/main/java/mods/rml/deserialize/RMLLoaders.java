@@ -225,7 +225,7 @@ public class RMLLoaders {
                     reader = Files.newBufferedReader(file);
                     JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(reader);
                     try {
-                        IVillager IVillager = Deserializer.decode(mods.rml.api.world.villagers.IVillager.class, jsonElement)
+                        IVillager IVillager = Deserializer.decode(mods.rml.api.world.villagers.IVillager.class, jsonElement);
                         RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
                         list.add(IVillager);
                     } catch (Exception e) {
