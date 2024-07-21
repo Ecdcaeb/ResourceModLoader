@@ -10,8 +10,8 @@ import mods.rml.api.event.client.gui.ModMenuInfoEvent;
 import mods.rml.api.java.utils.ObjectHelper;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.function.FunctionExecutorFactory;
-import mods.rml.api.world.function.impl.FunctionExecutorGameLoop;
-import mods.rml.api.world.function.impl.FunctionExecutorLoad;
+import mods.rml.api.world.function.executors.FunctionExecutorGameLoop;
+import mods.rml.api.world.function.executors.FunctionExecutorWorldLoad;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.world.text.RMLTextEffects;
 import mods.rml.api.world.villagers.IVillager;
@@ -82,13 +82,6 @@ public class RMLForgeEventHandler {
         for(IVillager village : RMLLoaders.CustomVillageLoader.load()){
             village.run(forgeRegistry);
         }
-    }
-
-    @SubscribeEvent
-    public static void registerFunctionExecutorFactories(RegistryEvent.Register<FunctionExecutorFactory> event){
-        IForgeRegistry<FunctionExecutorFactory> registry = event.getRegistry();
-        registry.register(new FunctionExecutorGameLoop().setRegistryName(new ResourceLocation("rml", "tick")));
-        registry.register(new FunctionExecutorLoad().setRegistryName(new ResourceLocation("rml", "load")));
     }
 
     public static void construct(FMLConstructionEvent event){

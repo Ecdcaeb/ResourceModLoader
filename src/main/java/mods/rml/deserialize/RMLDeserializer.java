@@ -1,5 +1,7 @@
 package mods.rml.deserialize;
 
+import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import mods.rml.api.announces.BeDiscovered;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.item.ItemStack;
@@ -37,6 +39,8 @@ public class RMLDeserializer {
                 }
                 return stack;
             }).build();
+
+    public static final AbstractDeserializer<IntArrayList> INT_ARRAY_LIST = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("iu", "ints"), IntArrayList.class, jsonElement -> new IntArrayList(Lists.newArrayList(Deserializer.decode(Integer[].class, jsonElement)))));
 
 
 //    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))

@@ -23,6 +23,7 @@ import mods.rml.api.file.JsonHelper;
 import mods.rml.api.java.reflection.jvm.FieldAccessor;
 import mods.rml.api.java.reflection.jvm.ReflectionHelper;
 import mods.rml.api.mods.module.ModuleType;
+import mods.rml.api.world.function.FunctionExecutor;
 import mods.rml.api.world.registry.remap.RemapCollection;
 import mods.rml.api.world.villagers.IVillager;
 import mods.rml.api.world.villagers.VillageReader;
@@ -165,12 +166,13 @@ public class RMLLoaders {
                         String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                         ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
                         try {
-                            JsonArray array = JsonHelper.getArray(Files.newBufferedReader(file));
-                            for(JsonObject object : JsonHelper.getJsonObjectArray(array)){
-                                RMLRegistries.FUNCTION_EXECUTORS.getValue(new ResourceLocation(object.get("type").getAsString())).apply(object); //TODO caches?
-                            }
+                            JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file));
+                            Deserializer.decode(FunctionExecutor[].class, jsonElement);
                         } catch (IOException e) {
                             RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function executor {} from {}", key, file, e);
+                        } catch (JsonDeserializerException e) {
+                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't load function executor {} from {}", key, file, e);
+                            e.printStackTrace();
                         }
                         break;
                     default:
