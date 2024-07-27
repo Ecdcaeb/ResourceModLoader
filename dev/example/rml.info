@@ -17,52 +17,52 @@
       {
         "type":"CONFIG_OVERRIDE",
         "location":"mods/forge/config/override",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"CONFIG_REDEFAULT",
         "location":"mods/forge/config/redefault",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
-              "type":"CONFIG_DEFINE",
-              "location":"mods/forge/config/define",
-              "forceLoaded":false
-            },
+         "type":"CONFIG_DEFINE",
+         "location":"mods/forge/config/define",
+         "forceLoaded":true
+      },
       {
         "type":"MOD_CRT",
         "location":"mods/crt/scripts",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"FUNCTIONS",
         "location":"mods/minecraft/functions",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"MOD_KUBEJS",
         "location":"mods/kubejs/scripts",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"LOOT_TABLES",
         "location":"mods/minecraft/loot_tables",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"ORE_DIC",
         "location":"mods/forge/ore_dic",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"REGISTRY_REMAP",
         "location":"mods/forge/registry/remap",
-        "forceLoaded":false
+        "forceLoaded":true
       },
       {
         "type":"SPLASH_TEXT",
         "location":"mods/minecraft/text/splash_text.txt",
-        "forceLoaded":false
+        "forceLoaded":true
       }
     ]
   },

@@ -27,7 +27,7 @@ public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,Reso
                     collection.map(new ResourceLocation(entry.getKey()), entry.getValue());
                 }
                 return collection;
-            }).build();
+            }).markDefault().build();
     public final HashMap<ResourceLocation, ResourceLocation> remap = new HashMap<>();
     public final HashMap<ResourceLocation, ResourceLocation> demap = new HashMap<>();
     public final ResourceLocation registry;
