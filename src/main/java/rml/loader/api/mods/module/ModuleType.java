@@ -2,14 +2,12 @@ package rml.loader.api.mods.module;
 
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
-import rml.deserializer.AbstractDeserializer;
-import rml.loader.deserialize.Deserializer;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
-import rml.jrx.registry.NamedRegistry;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * @Project ResourceModLoader
@@ -19,7 +17,7 @@ import java.util.Arrays;
 
 @PublicAPI
 public class ModuleType implements IModuleType {
-    public static final NamedRegistry<ModuleType> REGISTRY = new NamedRegistry<>();
+    public static final HashMap<ResourceLocation, ModuleType> REGISTRY = new HashMap<>();
     public static final ModuleType CONFIG_OVERRIDE = register("CONFIG_OVERRIDE ","config/override", false);
     public static final ModuleType CONFIG_REDEFAULT = register("CONFIG_REDEFAULT","config/redefault", false);
     public static final ModuleType CONFIG_DEFINE = register("CONFIG_DEFINE","config/define", false);
@@ -48,7 +46,7 @@ public class ModuleType implements IModuleType {
         this.name = name;
         this.defaultLocation = defaultLocationIn;
         this.isFile = isFileIn;
-        REGISTRY.register(name, this);
+        REGISTRY.put(name, this);
     }
 
     public ModuleType(IModuleType iModuleType) {
@@ -89,7 +87,7 @@ public class ModuleType implements IModuleType {
     }
 
     public static ModuleType[] values(){
-        return REGISTRY.keys().stream().map(REGISTRY::get).toArray(ModuleType[]::new);
+        return REGISTRY.values().toArray(new ModuleType[0]);
     }
 
     @PrivateAPI
