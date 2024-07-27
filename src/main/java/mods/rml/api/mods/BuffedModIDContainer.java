@@ -1,7 +1,7 @@
 package mods.rml.api.mods;
 
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
 import mods.rml.api.mods.module.Module;
 import mods.rml.api.mods.module.ModuleType;
 import net.minecraftforge.fml.common.Loader;

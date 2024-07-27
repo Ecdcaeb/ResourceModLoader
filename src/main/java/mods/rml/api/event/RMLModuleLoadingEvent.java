@@ -1,8 +1,8 @@
 package mods.rml.api.event;
 
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
-import mods.rml.api.file.FileHelper;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
+import rml.jrx.utils.file.FileHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.mods.module.ModuleType;
 import net.minecraftforge.common.MinecraftForge;

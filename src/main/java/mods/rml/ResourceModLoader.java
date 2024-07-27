@@ -1,9 +1,9 @@
 package mods.rml;
 
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
 import mods.rml.api.event.RMLModuleLoadingEvent;
-import mods.rml.api.file.FileHelper;
+import rml.jrx.utils.file.FileHelper;
 import mods.rml.api.mods.BuffedModIDContainer;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.mods.module.Module;

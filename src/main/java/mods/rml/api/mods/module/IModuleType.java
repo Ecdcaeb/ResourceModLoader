@@ -1,7 +1,7 @@
 package mods.rml.api.mods.module;
 
-import mods.rml.api.announces.EarlyClass;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader

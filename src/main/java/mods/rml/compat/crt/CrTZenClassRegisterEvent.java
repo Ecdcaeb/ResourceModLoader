@@ -1,9 +1,9 @@
 package mods.rml.compat.crt;
 
 import crafttweaker.CraftTweakerAPI;
-import mods.rml.api.announces.EarlyClass;
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
 import mods.rml.api.RMLBus;
 
 /**

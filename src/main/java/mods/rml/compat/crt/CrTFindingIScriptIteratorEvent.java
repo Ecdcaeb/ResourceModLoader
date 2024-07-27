@@ -2,7 +2,7 @@ package mods.rml.compat.crt;
 
 import crafttweaker.runtime.IScriptIterator;
 import crafttweaker.runtime.IScriptProvider;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PublicAPI;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 import java.util.Iterator;

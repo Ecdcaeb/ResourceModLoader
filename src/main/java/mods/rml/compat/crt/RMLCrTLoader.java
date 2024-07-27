@@ -2,8 +2,8 @@ package mods.rml.compat.crt;
 
 import crafttweaker.runtime.IScriptProvider;
 import mods.rml.ResourceModLoader;
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.file.FileHelper;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.utils.file.FileHelper;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;

@@ -3,13 +3,12 @@ package mods.rml.api.mods.module;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import mods.rml.api.announces.BeDiscovered;
-import mods.rml.api.announces.PublicAPI;
-import mods.rml.api.mods.ContainerHolder;
+import rml.jrx.announces.BeDiscovered;
+import rml.jrx.announces.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Deserializer;
-import rml.deserializer.JsonDeserializerException;
+import rml.deserializer.JsonDeserializeException;
 
 /**
  * @Project ResourceModLoader
@@ -38,12 +37,12 @@ public class Module {
     public static Module decode(JsonElement jsonElement) {
         try {
             return Deserializer.decode(Module.class, jsonElement);
-        } catch (JsonDeserializerException e) {
+        } catch (JsonDeserializeException e) {
             throw new RuntimeException("Could not decode a module.", e);
         }
     }
 
-    public static Module decode0(JsonElement jsonElement) throws JsonDeserializerException{
+    public static Module decode0(JsonElement jsonElement) throws JsonDeserializeException {
         try {
             if (jsonElement instanceof JsonPrimitive) {
                 JsonPrimitive jsonPrimitive = (JsonPrimitive) jsonElement;
@@ -63,7 +62,7 @@ public class Module {
                 return new Module(moduleType, location, forceLoaded);
             } else throw new IllegalArgumentException("unable to setup a module for " + jsonElement);
         }catch (Exception e){
-            throw new JsonDeserializerException(jsonElement, e);
+            throw new JsonDeserializeException(jsonElement, e);
         }
     }
 

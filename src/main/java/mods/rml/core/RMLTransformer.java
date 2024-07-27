@@ -1,10 +1,10 @@
 package mods.rml.core;
 
 import crafttweaker.mc1120.CraftTweaker;
-import mods.rml.api.announces.EarlyClass;
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.asm.MethodName;
-import mods.rml.api.java.progress.Tasks;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.asm.MethodName;
+import rml.jrx.utils.Tasks;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;

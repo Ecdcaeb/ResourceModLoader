@@ -7,19 +7,18 @@ import com.google.common.io.LineProcessor;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import mods.rml.ResourceModLoader;
-import mods.rml.api.announces.PrivateAPI;
+import rml.jrx.announces.PrivateAPI;
 import mods.rml.api.config.ConfigFactory;
 import mods.rml.api.config.ConfigPatcher;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
-import mods.rml.api.file.FileHelper;
-import mods.rml.api.file.JsonHelper;
-import mods.rml.api.java.reflection.jvm.FieldAccessor;
-import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import rml.jrx.utils.file.FileHelper;
+import rml.jrx.reflection.jvm.FieldAccessor;
+import rml.jrx.reflection.jvm.ReflectionHelper;
+import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.function.FunctionExecutor;
 import mods.rml.api.world.registry.remap.RemapCollection;
@@ -36,14 +35,16 @@ import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.oredict.OreDictionary;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.message.FormattedMessage;
 import rml.deserializer.Deserializer;
-import rml.deserializer.JsonDeserializerException;
+import rml.deserializer.JsonDeserializeException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,19 @@ import java.util.Map;
 @PrivateAPI
 public class RMLLoaders {
     public static final JsonParser JSON_PARSER = new JsonParser();
+
+    public static void runThrow(Throwable throwable, String msg, Object... args){
+        throw new RuntimeException(new FormattedMessage(msg, args).getFormattedMessage(), throwable);
+    }
+
+    public static boolean isForced(ContainerHolder containerHolder, ModuleType moduleType){
+        return containerHolder.hasModule(moduleType) && containerHolder.getModules().get(moduleType).forceLoaded;
+    }
+
+    public static void error(ModuleType moduleType, ContainerHolder containerHolder, Throwable throwable, String msg, Object... args){
+        if (isForced(containerHolder, moduleType)) runThrow(throwable, msg, args);
+        else RMLFMLLoadingPlugin.LOGGER.error(new FormattedMessage(msg, args).getFormattedMessage(), throwable);
+    }
     /**
      * @Project ResourceModLoader
      * @Author Hileb
@@ -76,16 +90,15 @@ public class RMLLoaders {
                     reader = Files.newBufferedReader(file);
                     for(TagOre tagOre : Deserializer.decode(TagOre[].class, JSON_PARSER.parse(reader))){
                         OreDictionary.registerOre(tagOre.ore, tagOre.item);
-                        if (RMLFMLLoadingPlugin.isDebug) RMLFMLLoadingPlugin.LOGGER.info("Loading Ore Tag {}, {}", tagOre.ore, tagOre.item.toString());
                     }
                 }
-                catch (JsonParseException e)
+                catch (JsonParseException | JsonDeserializeException e)
                 {
-                    FMLLog.log.error("Parsing error loading Ore dic {}", key, e);
+                    error(ModuleType.ORE_DIC, containerHolder, e, "Parsing error loading Ore dic {}", key);
                 }
-                catch (IOException | JsonDeserializerException e)
+                catch (IOException e)
                 {
-                    FMLLog.log.error("Couldn't read ore dic {} from {}", key, file, e);
+                    error(ModuleType.ORE_DIC, containerHolder, e, "Couldn't read ore dic {} from {}", key, file);
                 }finally
                 {
                     IOUtils.closeQuietly(reader);
@@ -143,7 +156,7 @@ public class RMLLoaders {
                             );
                             event.register(key, functionObject);
                         } catch (IOException e) {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function {} from {}", key, file, e);
+                            error(ModuleType.FUNCTIONS, containerHolder, e,"Couldn't read function {} from {}", key, file);
                         }
                         break;
                     default:
@@ -165,10 +178,9 @@ public class RMLLoaders {
                             JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file));
                             Deserializer.decode(FunctionExecutor[].class, jsonElement);
                         } catch (IOException e) {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read function executor {} from {}", key, file, e);
-                        } catch (JsonDeserializerException e) {
-                            RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't load function executor {} from {}", key, file, e);
-                            e.printStackTrace();
+                            error(ModuleType.FUNCTIONS, containerHolder, e,"Couldn't read function executor {} from {}", key, file);
+                        } catch (JsonDeserializeException e) {
+                            error(ModuleType.FUNCTIONS, containerHolder, e, "Couldn't read function executor {} from {}", key, file);
                         }
                         break;
                     default:
@@ -184,20 +196,12 @@ public class RMLLoaders {
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
                 try {
-                    JsonObject json = JsonHelper.getJson(FileHelper.getCachedFile(file));
-                    if (json.has("registry")) {
-                        ResourceLocation registry = new ResourceLocation(JsonHelper.getString(json.get("registry")));
-                        if (json.has("mapping")) {
-                            JsonObject mapping = json.get("mapping").getAsJsonObject();
-                            RemapCollection collection = new RemapCollection(registry);
-                            for (Map.Entry<String, JsonElement> entry : mapping.entrySet()) {
-                                collection.map(new ResourceLocation(entry.getKey()), new ResourceLocation(entry.getValue().getAsString()));
-                            }
-                            RemapCollection.Manager.merge(collection);
-                        }
-                    }
+                    JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(FileHelper.getCachedFile(file));
+                    Arrays.stream(Deserializer.decode(RemapCollection[].class, jsonElement)).forEach(RemapCollection.Manager::merge);
                 } catch (IOException e) {
-                    throw new RuntimeException("Could not cache the file " + file, e);
+                    error(ModuleType.REGISTRY_REMAP, containerHolder, e, "Could not cache the file {} ", file);
+                } catch (JsonDeserializeException e) {
+                    error(ModuleType.REGISTRY_REMAP, containerHolder, e, "Could not deserialize registry_remap {}", file);
                 }
             });
         }
@@ -226,16 +230,14 @@ public class RMLLoaders {
                     JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(reader);
                     try {
                         IVillager IVillager = Deserializer.decode(mods.rml.api.world.villagers.IVillager.class, jsonElement);
-                        RMLFMLLoadingPlugin.Container.LOGGER.info("load village :" + file.getFileName());
                         list.add(IVillager);
                     } catch (Exception e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Error load village at " + file.getFileName());
-                        RMLFMLLoadingPlugin.Container.LOGGER.error(e);
+                        error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Error load village at {}", file);
                     }
                 } catch (JsonParseException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading villager {}", key, e);
+                    error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Parsing error loading villager {}", key);
                 } catch (IOException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read villager {} from {}", key, file, e);
+                    error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Couldn't read villager {} from {}", key, file);
                 } finally {
                     IOUtils.closeQuietly(reader);
                 }

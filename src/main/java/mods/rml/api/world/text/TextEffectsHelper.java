@@ -1,15 +1,13 @@
 package mods.rml.api.world.text;
 
-import dev.latvian.kubejs.documentation.T;
-import mods.rml.api.announces.RewriteWhenCleanroom;
+import rml.jrx.announces.RewriteWhenCleanroom;
 import mods.rml.api.event.client.gui.HandleComponentEvent;
-import mods.rml.api.java.reflection.jvm.ReflectionHelper;
+import rml.jrx.reflection.jvm.ReflectionHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.EnumHelper;
-import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.Map;

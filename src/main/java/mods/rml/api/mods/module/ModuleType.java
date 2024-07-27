@@ -1,6 +1,6 @@
 package mods.rml.api.mods.module;
 
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PublicAPI;
 import mods.rml.api.mods.module.plugin.ICustomModulePlugin;
 import net.minecraftforge.common.util.EnumHelper;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;

@@ -2,7 +2,7 @@ package mods.rml.deserialize;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import mods.rml.api.announces.BeDiscovered;
+import rml.jrx.announces.BeDiscovered;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;

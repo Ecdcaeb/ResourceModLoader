@@ -1,11 +1,14 @@
 package mods.rml.api.world.registry.remap;
 
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import rml.deserializer.AbstractDeserializer;
+import rml.deserializer.Argument;
+import rml.deserializer.Deserializer;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -13,8 +16,20 @@ import java.util.Map;
 
 @PublicAPI
 public class RemapCollection implements Iterable<Map.Entry<ResourceLocation,ResourceLocation>>{
-    public final HashMap<ResourceLocation,ResourceLocation> remap = new HashMap<>();
-    public final HashMap<ResourceLocation,ResourceLocation> demap = new HashMap<>();
+    public static final Argument<Map<String, ResourceLocation>> ARG_MAP = Argument.map("mapping", ResourceLocation.class);
+
+    public static final AbstractDeserializer<RemapCollection> DESERIALIZER = Deserializer.named(RemapCollection.class, new ResourceLocation("rml", "remap"))
+            .require(ResourceLocation.class, "registry")
+            .require(ARG_MAP)
+            .decode(context -> {
+                RemapCollection collection = new RemapCollection(context.get(ResourceLocation.class, "registry"));
+                for (Map.Entry<String, ResourceLocation> entry : ARG_MAP.cast(context).entrySet()) {
+                    collection.map(new ResourceLocation(entry.getKey()), entry.getValue());
+                }
+                return collection;
+            }).build();
+    public final HashMap<ResourceLocation, ResourceLocation> remap = new HashMap<>();
+    public final HashMap<ResourceLocation, ResourceLocation> demap = new HashMap<>();
     public final ResourceLocation registry;
     public RemapCollection(ResourceLocation registry){
         this.registry = registry;

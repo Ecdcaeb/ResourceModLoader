@@ -1,6 +1,6 @@
 package rml.deserializer;
 
-import mods.rml.api.announces.EarlyClass;
+import rml.jrx.announces.EarlyClass;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -8,7 +8,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.CONSTRUCTOR;
-import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.ElementType.TYPE;
 
 /**
@@ -30,21 +29,5 @@ public @interface Record {
     /**
      * @return the parameters list
      */
-    Parameter[] parameters() default {};
-
-    @EarlyClass
-    @Documented
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target(value={PARAMETER})
-    @interface Parameter{
-        /**
-         * @return the real type, could be primitive
-         */
-        Class<?> type();
-
-        /**
-         * @return the name of this parameter
-         */
-        String name();
-    }
+    String[] value() default {};
 }

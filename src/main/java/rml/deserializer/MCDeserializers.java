@@ -3,9 +3,9 @@ package rml.deserializer;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
-import mods.rml.api.announces.BeDiscovered;
-import mods.rml.api.java.utils.RandomHolder;
-import mods.rml.api.java.utils.values.RandomIntSupplier;
+import rml.jrx.announces.BeDiscovered;
+import rml.jrx.utils.RandomHolder;
+import rml.jrx.utils.values.RandomIntSupplier;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.item.Item;
@@ -34,7 +34,7 @@ public class MCDeserializers {
                         try {
                             return new ResourceLocation(element.getAsString());
                         }catch (Throwable e){
-                            throw new JsonDeserializerException(element, "Could not read as ResourceLocation", e);
+                            throw new JsonDeserializeException(element, "Could not read as ResourceLocation", e);
                         }
                     })
     );
@@ -43,7 +43,7 @@ public class MCDeserializers {
             new AbstractDeserializer<>(new ResourceLocation("forge", "item"), Item.class,
                     element -> {
                         Item item =  ForgeRegistries.ITEMS.getValue(new ResourceLocation(element.getAsString()));
-                        if(item == null) throw new JsonDeserializerException(element, "Could not found such an item");
+                        if(item == null) throw new JsonDeserializeException(element, "Could not found such an item");
                         else return item;
                     })
     );
@@ -57,7 +57,7 @@ public class MCDeserializers {
                             else
                                 return JsonToNBT.getTagFromJson(element.getAsString());
                         }catch (NBTException e){
-                            throw new JsonDeserializerException(element, e);
+                            throw new JsonDeserializeException(element, e);
                         }
                     })
     );
@@ -93,11 +93,11 @@ public class MCDeserializers {
             })).markDefault().build();
     public static final AbstractDeserializer<Enchantment> ENCHANTMENT = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "enchantment"), Enchantment.class, new AbstractDeserializer.IDeserializer<Enchantment>() {
         @Override
-        public Enchantment apply(JsonElement jsonElement) throws JsonDeserializerException {
+        public Enchantment apply(JsonElement jsonElement) throws JsonDeserializeException {
             ResourceLocation resourceLocation = Deserializer.decode(ResourceLocation.class, jsonElement);
             Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(resourceLocation);
             if (enchantment != null) return enchantment;
-            else throw new JsonDeserializerException(jsonElement, "No such enchantment " + resourceLocation);
+            else throw new JsonDeserializeException(jsonElement, "No such enchantment " + resourceLocation);
         }
     }));
 

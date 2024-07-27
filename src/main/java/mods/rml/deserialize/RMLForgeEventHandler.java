@@ -1,12 +1,12 @@
 package mods.rml.deserialize;
 
 import mods.rml.ResourceModLoader;
-import mods.rml.api.announces.PrivateAPI;
+import rml.jrx.announces.PrivateAPI;
 import mods.rml.api.event.CraftingHelperInitEvent;
 import mods.rml.api.event.FunctionLoadEvent;
 import mods.rml.api.event.LootTableRegistryEvent;
 import mods.rml.api.event.client.gui.ModMenuInfoEvent;
-import mods.rml.api.java.utils.ObjectHelper;
+import rml.jrx.utils.ObjectHelper;
 import mods.rml.api.mods.ContainerHolder;
 import mods.rml.api.mods.module.ModuleType;
 import mods.rml.api.world.text.RMLTextEffects;

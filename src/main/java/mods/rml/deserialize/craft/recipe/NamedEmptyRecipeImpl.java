@@ -1,6 +1,6 @@
 package mods.rml.deserialize.craft.recipe;
 
-import mods.rml.api.announces.PrivateAPI;
+import rml.jrx.announces.PrivateAPI;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;

@@ -1,6 +1,6 @@
 package mods.rml.api.mods.module.plugin;
 
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PublicAPI;
 import mods.rml.api.mods.module.IModuleType;
 
 /**

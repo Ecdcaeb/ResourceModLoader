@@ -1,7 +1,7 @@
 package mods.rml.api.event;
 
-import mods.rml.api.announces.PrivateAPI;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
 import net.minecraft.advancements.FunctionManager;
 import net.minecraft.command.FunctionObject;
 import net.minecraft.util.ResourceLocation;

@@ -1,8 +1,8 @@
 package mods.rml.api;
 
 import com.google.common.eventbus.EventBus;
-import mods.rml.api.announces.EarlyClass;
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader

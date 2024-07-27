@@ -1,6 +1,5 @@
 package rml.deserializer;
 
-import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import net.minecraft.util.ResourceLocation;
 
@@ -21,7 +20,7 @@ public class AbstractDeserializer<T>{
     public Class<T> getResultTarget(){
         return this.target;
     }
-    public T deserialize(JsonElement json) throws JsonDeserializerException{
+    public T deserialize(JsonElement json) throws JsonDeserializeException {
         return this.function.apply(json);
     }
 
@@ -31,6 +30,6 @@ public class AbstractDeserializer<T>{
 
     @FunctionalInterface
     public interface IDeserializer<V>{
-        V apply(JsonElement jsonElement) throws JsonDeserializerException;
+        V apply(JsonElement jsonElement) throws JsonDeserializeException;
     }
 }

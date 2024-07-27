@@ -1,6 +1,6 @@
 package mods.rml.api.world.villagers;
 
-import mods.rml.api.announces.PublicAPI;
+import rml.jrx.announces.PublicAPI;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 

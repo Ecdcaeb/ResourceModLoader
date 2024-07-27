@@ -2,7 +2,7 @@ package mods.rml.compat.kubejs;
 
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptPack;
-import mods.rml.api.announces.PrivateAPI;
+import rml.jrx.announces.PrivateAPI;
 
 import java.io.CharArrayReader;
 

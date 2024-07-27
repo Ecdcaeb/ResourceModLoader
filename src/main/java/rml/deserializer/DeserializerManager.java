@@ -3,14 +3,14 @@ package rml.deserializer;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.internal.Primitives;
 import net.minecraft.util.ResourceLocation;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.rmi.UnexpectedException;
 import java.util.HashMap;
-import java.util.function.BooleanSupplier;
+import java.util.IllegalFormatException;
 
 /**
  * @Project ResourceModLoader
@@ -72,9 +72,9 @@ public class DeserializerManager {
      *
      * @return the value obj.
      *
-     * @throws JsonDeserializerException the exception. Error format? Unexpected context?
+     * @throws JsonDeserializeException the exception. Error format? Unexpected context?
      */
-    public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializerException{
+    public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializeException {
         clazz = DeserializerBuilder.avoidPrimitive(clazz);
 
         try {
@@ -97,30 +97,43 @@ public class DeserializerManager {
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
                     if (jsonObject.has("type")){
                         ResourceLocation decoderName = new ResourceLocation(jsonObject.get("type").getAsString());
-                        if (!registry.containsKey(clazz)) throw new JsonDeserializerException(jsonObject, "Deserializer for " + clazz +" , is not registered.");
+                        if (!registry.containsKey(clazz)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" , is not registered.");
                         HashMap<ResourceLocation, AbstractDeserializer<?>> typedRegistry = registry.get(clazz);
-                        if (!typedRegistry.containsKey(decoderName)) throw new JsonDeserializerException(jsonObject, "Deserializer for " + clazz +" named " + decoderName + " could not be found.");
+                        if (!typedRegistry.containsKey(decoderName)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" named " + decoderName + " could not be found.");
                         return clazz.cast(typedRegistry.get(decoderName).deserialize(jsonObject));
                     }else {
                         if (defaults.containsKey(clazz)){
                             return clazz.cast(defaults.get(clazz).deserialize(jsonObject));
                         }else {
-                            throw new JsonDeserializerException(jsonObject, "Required Field \"type\" is not found in such a JsonObject. No default founded for Type " + clazz + ".");
+                            throw new JsonDeserializeException(jsonObject, "Required Field \"type\" is not found in such a JsonObject. No default founded for Type " + clazz + ".");
                         }
                     }
                 }else {
                     if (defaults.containsKey(clazz)){
                         return clazz.cast(defaults.get(clazz).deserialize(jsonElement));
                     }else {
-                        throw new JsonDeserializerException(jsonElement, "Required Field \"type\" is not found in such a JsonObject. No default founded for Type " + clazz + ".");
+                        throw new JsonDeserializeException(jsonElement, "Required Field \"type\" is not found in such a JsonObject. No default founded for Type " + clazz + ".");
                     }
                 }
             }
         }catch (Throwable throwable){
-            if (throwable instanceof JsonDeserializerException) throw throwable;
-            else throw new JsonDeserializerException(jsonElement, "unexpected Exception when decoding json, ", throwable);
+            if (throwable instanceof JsonDeserializeException) throw throwable;
+            else throw new JsonDeserializeException(jsonElement, "unexpected Exception when decoding json, ", throwable);
         }
     }
+
+
+    public <T> T decodeSilently(Class<T> clazz, JsonElement jsonElement){
+        JsonDeserializeException exception = null;
+        try {
+            return decode(clazz, jsonElement);
+        } catch (JsonDeserializeException e) {
+            exception = e;
+        }
+        throw new UnsupportedOperationException(exception);
+    }
+
+
 
     /**
      * Constructor, with build-in default deserializers.
