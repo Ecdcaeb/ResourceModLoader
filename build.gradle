@@ -12,7 +12,7 @@ apply plugin: "net.minecraftforge.gradle.forge"
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
 version = project.mod_version
-group = "mods.rml" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
+group = "rml" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "ResourceModLoader"
 
 sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
@@ -105,7 +105,7 @@ jar {
                 'Specification-Title': "rml",
                 'Specification-Vendor': "Hileb",
                 'Specification-Version': '1', // We are version 1 of ourselves
-                'FMLCorePlugin': 'mods.rml.core.RMLFMLLoadingPlugin',
+                'FMLCorePlugin': 'rml.loader.core.RMLFMLLoadingPlugin',
                 'FMLAT': 'rml_at.cfg',
                 'Implementation-Title': "ResourceModLoader",
                 'Implementation-Version': mod_version,

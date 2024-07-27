@@ -18,6 +18,7 @@ import java.util.IllegalFormatException;
  * @Date 2024/7/14 10:03
  **/
 public class DeserializerManager {
+    public final String defaultDomain;
     public final HashMap<Class<?>, AbstractDeserializer<?>> defaults = new HashMap<>();
     public final HashMap<Class<?>, HashMap<ResourceLocation, AbstractDeserializer<?>>> registry = new HashMap<>();
 
@@ -96,7 +97,7 @@ public class DeserializerManager {
                 if (jsonElement.isJsonObject()){
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
                     if (jsonObject.has("type")){
-                        ResourceLocation decoderName = new ResourceLocation(jsonObject.get("type").getAsString());
+                        ResourceLocation decoderName = parseLocation(jsonObject.get("type").getAsString());
                         if (!registry.containsKey(clazz)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" , is not registered.");
                         HashMap<ResourceLocation, AbstractDeserializer<?>> typedRegistry = registry.get(clazz);
                         if (!typedRegistry.containsKey(decoderName)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" named " + decoderName + " could not be found.");
@@ -136,9 +137,12 @@ public class DeserializerManager {
 
 
     /**
+     * @param defaultDomain the default domain of one deserializer manager
+     *
      * Constructor, with build-in default deserializers.
      */
-    public DeserializerManager(){
+    public DeserializerManager(String defaultDomain){
+        this.defaultDomain = defaultDomain;
         ResourceLocation GSON = new ResourceLocation("google", "primitive");
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, JsonElement::getAsInt));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, JsonElement::getAsFloat));
@@ -155,6 +159,29 @@ public class DeserializerManager {
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, (jsonElement)->null));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, JsonElement::getAsJsonObject));
     }
+
+    public DeserializerManager(){
+        this("minecraft");
+    }
+
+    public ResourceLocation parseLocation(String toSplit)
+    {
+        String[] astring = new String[] {defaultDomain, toSplit};
+        int i = toSplit.indexOf(':');
+
+        if (i >= 0)
+        {
+            astring[1] = toSplit.substring(i + 1);
+
+            if (i > 1)
+            {
+                astring[0] = toSplit.substring(0, i);
+            }
+        }
+
+        return new ResourceLocation(astring[0], astring[1]);
+    }
+
 
     /**
      * @param clazz the class, you should not use primitive type, although it is supported by the auto-boxing by rml.

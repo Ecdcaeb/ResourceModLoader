@@ -5,7 +5,7 @@ import rml.jrx.announces.PublicAPI;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
-import rml.deserializer.Deserializer;
+import rml.loader.deserialize.Deserializer;
 import rml.deserializer.Record;
 
 import java.util.Random;

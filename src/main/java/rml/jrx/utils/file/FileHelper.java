@@ -4,9 +4,9 @@ import com.google.common.io.ByteSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import rml.jrx.announces.PublicAPI;
-import mods.rml.api.mods.ContainerHolder;
-import mods.rml.api.mods.module.Module;
-import mods.rml.core.RMLFMLLoadingPlugin;
+import rml.loader.api.mods.ContainerHolder;
+import rml.loader.api.mods.module.Module;
+import rml.loader.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
 

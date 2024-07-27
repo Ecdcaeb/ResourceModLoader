@@ -70,6 +70,17 @@ public class LazyOptional<T> {
     }
 
     /**
+     * Construct a new {@link LazyOptional} that wraps the given
+     * instance
+     *
+     * @param instance The instance. If null, this method
+     *                         returns {@link #empty()}.
+     */
+    public static <T> LazyOptional<T> of(final T instance) {
+        return instance == null ? empty() : new LazyOptional<>(()->instance);
+    }
+
+    /**
      * @return The singleton empty instance
      */
     public static <T> LazyOptional<T> empty() {
