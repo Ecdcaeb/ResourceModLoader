@@ -19,6 +19,7 @@ import rml.deserializer.JsonDeserializeException;
 @PublicAPI
 @BeDiscovered
 public class Module {
+    public static final AbstractDeserializer<Module> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default"), Module.class, Module::decode0));
     public final ModuleType moduleType;
     public final String location;
     public final boolean forceLoaded;
@@ -33,14 +34,6 @@ public class Module {
         this(moduleType, moduleType.defaultLocation, false);
     }
 
-    public static Module decode(JsonElement jsonElement) {
-        try {
-            return decode0(jsonElement);
-        } catch (JsonDeserializeException e) {
-            throw new RuntimeException("Could not decode a module.", e);
-        }
-    }
-
     public static Module decode0(JsonElement jsonElement) throws JsonDeserializeException {
         try {
             if (jsonElement instanceof JsonPrimitive) {
@@ -49,7 +42,7 @@ public class Module {
                 return new Module(moduleType);
             } else if (jsonElement instanceof JsonObject) {
                 JsonObject jsonObject = (JsonObject) jsonElement;
-                ModuleType moduleType = ModuleType.valueOf(jsonObject.get("type").getAsString());
+                ModuleType moduleType = ModuleType.valueOf(jsonObject.get("name").getAsString());
                 String location;
                 boolean forceLoaded;
                 if (jsonObject.has("location")) {

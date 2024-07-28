@@ -119,8 +119,14 @@ public class RMLForgeEventHandler {
                                     )
                     );
                 }
-            }else if (ResourceModLoader.enabledModContainers.stream().map(ContainerHolder::getContainer).anyMatch((container)->container == event.getMod())){
-                event.getTextComponents().add(new TextComponentTranslation("rml.gui.modmenu.enablerml").setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true).setClickEvent(RMLTextEffects.ChangeModClickAction.CHANGE_MOD.makeEvent("rml"))));
+            }else {
+                ContainerHolder containerHolder = ResourceModLoader.of(event.getMod());
+                if (containerHolder != null) {
+                    event.getTextComponents().add(new TextComponentTranslation("rml.gui.modmenu.enablerml").setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true).setClickEvent(RMLTextEffects.ChangeModClickAction.CHANGE_MOD.makeEvent("rml"))));
+                    if (containerHolder.packVersion < ResourceModLoader.PACK_VERSION) {
+                        event.getTextComponents().add(new TextComponentTranslation("rml.legacy.pack.warn").setStyle(new Style().setColor(TextFormatting.RED)));
+                    }
+                }
             }
         }
     }

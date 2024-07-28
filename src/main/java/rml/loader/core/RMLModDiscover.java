@@ -5,24 +5,26 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import rml.loader.RMLModContainer;
-import rml.loader.ResourceModLoader;
-import rml.jrx.announces.ASMInvoke;
-import rml.jrx.announces.PrivateAPI;
-import rml.loader.api.RMLBus;
-import rml.loader.api.config.ConfigPatcher;
-import rml.loader.api.event.RMLAfterInjectEvent;
-import rml.jrx.utils.file.JsonHelper;
-import rml.loader.api.mods.ContainerHolder;
-import rml.loader.api.mods.module.Module;
-import rml.loader.api.mods.module.ModuleType;
 import net.minecraft.launchwrapper.Launch;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.MetadataCollection;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.VersionParser;
+import rml.deserializer.JsonDeserializeException;
+import rml.jrx.announces.ASMInvoke;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.utils.file.JsonHelper;
+import rml.loader.RMLModContainer;
+import rml.loader.ResourceModLoader;
+import rml.loader.api.RMLBus;
+import rml.loader.api.config.ConfigPatcher;
+import rml.loader.api.event.RMLAfterInjectEvent;
+import rml.loader.api.mods.ContainerHolder;
+import rml.loader.api.mods.module.Module;
+import rml.loader.api.mods.module.ModuleType;
+import rml.loader.deserialize.Deserializer;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,8 +51,8 @@ public class RMLModDiscover {
     @PrivateAPI
     public static void inject(List<ModContainer> modContainers){
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
-
-        File modRoots=new File(Launch.minecraftHome,"mods");
+        Module.DESERIALIZER.getResultTarget(); // Force to init the class for register.
+        File modRoots = new File(Launch.minecraftHome,"mods");
 
         for (File modFile : Objects.requireNonNull(modRoots.listFiles(), "Directory `mods/` is not exist")) {
             if(modFile.isFile()){
@@ -96,27 +98,37 @@ public class RMLModDiscover {
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){
         ModMetadata metadata = decodeMetaData(jsonObject);
+        int pack_version = jsonObject.has("pack_version") ? jsonObject.get("pack_version").getAsInt() : 2;
+        boolean shouldTransform = pack_version < 3;
         Module[] modules;
         if (jsonObject.has("modules")){
             JsonArray array = jsonObject.getAsJsonArray("modules");
             int size = array.size();
             modules = new Module[size];
-            try{
-                for(int i=0; i < size; i++) {
-                    modules[i] = Module.decode(array.get(i));
-                }
-            }catch (NullPointerException e){
-                throw new RuntimeException("illegal modules opinion for " + jsonObject.get("modid").getAsString(), e);
+            if (shouldTransform){
+                array.forEach((jsonElement -> {
+                    if (jsonElement.isJsonObject()){
+                        JsonObject obj = jsonElement.getAsJsonObject();
+                        obj.add("name", obj.get("type"));
+                        obj.remove("type");
+                    }
+                }));
+            }
+            try {
+                modules = Deserializer.decode(Module[].class, array);
+            } catch (JsonDeserializeException e) {
+                throw new RuntimeException("Could not decode modules", e);
             }
         }else {
             modules = ModuleType.getAllForDefault();
         }
 
-        return new ContainerHolder(new RMLModContainer(metadata, modFile), modules);
+        return new ContainerHolder(new RMLModContainer(metadata, modFile), modules, pack_version);
     }
 
     @SuppressWarnings("all")
-    public static ModMetadata decodeMetaData(JsonObject json){
+    public static ModMetadata decodeMetaData(JsonElement jsonElement){
+        JsonObject json = jsonElement.getAsJsonObject();
         ModMetadata metadata = new ModMetadata();
 
         //basic message
@@ -165,7 +177,7 @@ public class RMLModDiscover {
         }else metadata.screenshots = new String[0];
         if (json.has("updateUrl")){ // this field is out of date
             metadata.updateUrl = json.get("updateUrl").getAsString();
-            FMLLog.log.warn("{} is using a deprecated field 'updateUrl' in mcmod.info. Never really used for anything and format is undefined. See updateJSON for replacement.", metadata.modId);
+            RMLFMLLoadingPlugin.LOGGER.warn("{} is using a deprecated field 'updateUrl' in mcmod.info. Never really used for anything and format is undefined. See updateJSON for replacement.", metadata.modId);
         }
 
         return metadata;

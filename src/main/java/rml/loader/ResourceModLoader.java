@@ -1,5 +1,6 @@
 package rml.loader;
 
+import dev.latvian.kubejs.documentation.P;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
 import rml.loader.api.event.RMLModuleLoadingEvent;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  **/
 @PublicAPI
 public class ResourceModLoader {
+    @PublicAPI public static final int PACK_VERSION = 3;
     @PublicAPI public static final String MODID = "rml";
     @PublicAPI public static final String VERSION = "1.1.1";
     @PrivateAPI private static final BuffedModIDContainer buffedModIDContainer = new BuffedModIDContainer();
