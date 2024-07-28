@@ -9,9 +9,9 @@ import net.minecraft.util.ResourceLocation;
  * @Date 2024/7/14 9:57
  **/
 public class AbstractDeserializer<T>{
-    private ResourceLocation resourceLocation;
-    private Class<T> target;
-    private IDeserializer<T> function;
+    private final ResourceLocation resourceLocation;
+    private final Class<T> target;
+    private final IDeserializer<T> function;
     public AbstractDeserializer(ResourceLocation registerName, Class<T> target, IDeserializer<T> function){
         this.resourceLocation = registerName;
         this.target = DeserializerBuilder.avoidPrimitive(target);
