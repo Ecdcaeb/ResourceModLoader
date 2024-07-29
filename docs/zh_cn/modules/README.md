@@ -9,7 +9,7 @@
 模块在`rml.info`中`modules`定义，是一个关于 JsonObject 的数组，每个元素如下：
 ```json
 {
-  "type":"CONFIG_OVERRIDE",
+  "name":"CONFIG_OVERRIDE",
   "location":"mods/forge/config/override",
   "forceLoaded":false
 }

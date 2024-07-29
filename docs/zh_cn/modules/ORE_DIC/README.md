@@ -8,19 +8,19 @@ sort: 5
 
 格式:
 
-`ore`,String, 矿词名称.
-`item`, 物品表达式，类似于配方中的产物.
+[TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/TagOre) 的数组。
 
 例子:
 
 ```json
-{
-  "ore": "oreDiamond",
-  "item": {
-    "item": "minecraft:dirt",
-    "count": 1,
-    "data": 0
+[
+  {
+    "ore": "oreDiamond",
+    "item": {
+      "item": "minecraft:dirt",
+      "count": 1,
+      "data": 0
+    }
   }
-
-}
+]
 ```

@@ -29,20 +29,20 @@ public class TradeBase {
                 .optionalDefault(Integer.class, "level", 1)
                 .require(ResourceLocation.class, "profession")
                 .require(String.class, "career")
-                .require(EntityVillager.ITradeList.class, "trade")
-                .decode(new DeserializerBuilder.IJsonObjectFunction<IVillager>() {
-                    @Override
-                    public IVillager apply(DeserializerBuilder.Context context) throws JsonDeserializeException {
-                        return new TradeHandlers(context.get(ResourceLocation.class, "profession"), context.get(String.class, "career"), context.get(Integer.class, "level"), context.get(EntityVillager.ITradeList.class, "trade"));
-                    }
-                }).build();
+                .require(EntityVillager.ITradeList[].class, "trade")
+                .decode((context)-> new TradeHandlers(
+                                context.get(ResourceLocation.class, "profession"),
+                                context.get(String.class, "career"),
+                                context.get(Integer.class, "level"),
+                                context.get(EntityVillager.ITradeList[].class, "trade")))
+                .build();
 
         public ResourceLocation profession;
         public String career;
-        public EntityVillager.ITradeList list;
+        public EntityVillager.ITradeList[] list;
         public int level;
 
-        public TradeHandlers(ResourceLocation professionIn, String careerIn, int levelIn, EntityVillager.ITradeList listIn){
+        public TradeHandlers(ResourceLocation professionIn, String careerIn, int levelIn, EntityVillager.ITradeList[] listIn){
             profession = professionIn;
             list = listIn;
             level = levelIn;

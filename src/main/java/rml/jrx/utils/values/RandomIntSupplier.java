@@ -19,7 +19,7 @@ import java.util.Random;
 @BeDiscovered
 public interface RandomIntSupplier {
     AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default_constant"), RandomIntSupplier.class,
-            jsonElement -> new RangeConstant(jsonElement.getAsInt())));
+            jsonElement -> new RangeConstant(Deserializer.decode(Integer.class, jsonElement))));
     int get(Random random);
 
     /**

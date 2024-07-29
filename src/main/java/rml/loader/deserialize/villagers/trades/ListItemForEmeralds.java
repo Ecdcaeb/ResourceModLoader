@@ -29,7 +29,7 @@ public class ListItemForEmeralds implements EntityVillager.ITradeList {
     public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.MANAGER.addEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "item_and_emerald_to_item"), EntityVillager.ITradeList.class,
             jsonElement -> {
                 JsonObject trade = jsonElement.getAsJsonObject();
-                JsonObject from= JsonUtils.getJsonObject(trade,"from");
+                JsonObject from = JsonUtils.getJsonObject(trade,"from");
                 JsonObject price = JsonUtils.getJsonObject(from,"price");
                 JsonObject to = JsonUtils.getJsonObject(trade,"to");
                 JsonObject item = JsonUtils.getJsonObject(to,"item");

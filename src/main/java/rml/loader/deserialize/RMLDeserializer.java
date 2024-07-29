@@ -2,11 +2,13 @@ package rml.loader.deserialize;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import rml.jrx.announces.BeDiscovered;
 import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
+import rml.jrx.announces.BeDiscovered;
+import rml.jrx.utils.RandomHolder;
+import rml.jrx.utils.values.RandomIntSupplier;
 
 /**
  * @Project ResourceModLoader
@@ -27,9 +29,10 @@ public class RMLDeserializer {
             })).markDefault().build();
 
     public static final AbstractDeserializer<ItemStack> ENCHANTED_ITEM = Deserializer.named(ItemStack.class, new ResourceLocation("rml", "enchantmented_item"))
+            .require(ItemStack.class, "item")
             .optional(EnchantmentData[].class, "enchantment")
             .decode(context -> {
-                ItemStack stack = MCDeserializers.ITEM_STACK_DEFAULT.deserialize(context.getJsonObject());
+                ItemStack stack = context.get(ItemStack.class, "item");
                 if (context.ifPresent(EnchantmentData[].class, "enchantment")){
                     for(EnchantmentData enchantmentData : context.get(EnchantmentData[].class, "enchantment")){
                         stack.addEnchantment(enchantmentData.enchantment, enchantmentData.enchantmentLevel);
@@ -40,6 +43,10 @@ public class RMLDeserializer {
 
     public static final AbstractDeserializer<IntArrayList> INT_ARRAY_LIST = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("iu", "ints"), IntArrayList.class, jsonElement -> new IntArrayList(Lists.newArrayList(Deserializer.decode(Integer[].class, jsonElement)))));
 
+    public static final AbstractDeserializer<Integer> RANDOM_INT = Deserializer.named(Integer.class, new ResourceLocation("rml", "random_int"))
+            .require(RandomIntSupplier.class, "random")
+            .decode(context -> context.get(RandomIntSupplier.class, "random").get(RandomHolder.RANDOM))
+            .build();
 
 //    public static final AbstractDeserializer<Item.ToolMaterial> TOOL_MATERIAL = Deserializer.named(Item.ToolMaterial.class, new ResourceLocation("minecraft","tool_material"))
 //            .require(String.class, "name")
