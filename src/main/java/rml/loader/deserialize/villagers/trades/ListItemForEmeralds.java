@@ -1,6 +1,8 @@
 package rml.loader.deserialize.villagers.trades;
 
 import com.google.gson.JsonObject;
+import rml.deserializer.DeserializerBuilder;
+import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.BeDiscovered;
 import rml.jrx.utils.values.RandomIntSupplier;
 import rml.loader.api.world.villagers.TradeBase;
@@ -26,16 +28,11 @@ import java.util.Random;
 
 @BeDiscovered
 public class ListItemForEmeralds implements EntityVillager.ITradeList {
-    public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.MANAGER.addEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "item_and_emerald_to_item"), EntityVillager.ITradeList.class,
-            jsonElement -> {
-                JsonObject trade = jsonElement.getAsJsonObject();
-                JsonObject from = JsonUtils.getJsonObject(trade,"from");
-                JsonObject price = JsonUtils.getJsonObject(from,"price");
-                JsonObject to = JsonUtils.getJsonObject(trade,"to");
-                JsonObject item = JsonUtils.getJsonObject(to,"item");
-                ItemStack stack = Deserializer.decode(ItemStack.class, item);
-                return new ListItemForEmeralds(stack, TradeBase.loadPrice(price));
-            }));
+    public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class, new ResourceLocation("minecraft", "item_and_emerald_to_item"))
+            .require(ItemStack.class, "to.item")
+            .require(RandomIntSupplier.class, "from.price")
+            .decode(context -> new ListItemForEmeralds(context.get(ItemStack.class, "to.item"), context.get(RandomIntSupplier.class, "from.price")))
+            .build();
     /**
      * The item that is being bought for emeralds
      */

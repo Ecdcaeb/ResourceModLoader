@@ -102,17 +102,18 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @PublicAPI public static final Logger LOGGER = RMLFMLLoadingPlugin.LOGGER;
         @PrivateAPI public Container(){
             super(new ModMetadata());
-            ModMetadata metadata=this.getMetadata();
-            metadata.modId=ResourceModLoader.MODID;
-            metadata.name="Resource Mod Loader";
+            ModMetadata metadata = this.getMetadata();
+            metadata.modId = ResourceModLoader.MODID;
+            metadata.name = "Resource Mod Loader";
             metadata.authorList.add("Hileb");
-            metadata.version=ResourceModLoader.VERSION;
-            metadata.credits="\n" +
+            metadata.version = ResourceModLoader.VERSION;
+            metadata.credits = "\n" +
                     "       Idealland - they provided this framework for enviroment.\n" +
                     "       zfms4188  - support the RML at CraftTweaker compat! \n";
-            metadata.description="a modloader which load mods from resource packs.(in mods/)";
-            metadata.url="https://github.com/Ecdcaeb/ResourceModLoader";
-            metadata.logoFile="assets/rml/icon.png";
+            metadata.description = "a modloader which load mods from resource packs.(in mods/)";
+            metadata.url = "https://github.com/Ecdcaeb/ResourceModLoader";
+            metadata.updateJSON = "https://raw.githubusercontent.com/Ecdcaeb/ResourceModLoader/main/docs/updates.json";
+            metadata.logoFile ="assets/rml/icon.png";
             INSTANCE = this;
         }
         @Override

@@ -7,6 +7,8 @@ import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.BeDiscovered;
 import net.minecraft.util.ResourceLocation;
 
+import java.util.function.Function;
+
 /**
  * @Project ResourceModLoader
  * @Author Hileb

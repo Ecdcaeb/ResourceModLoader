@@ -1,6 +1,7 @@
 package rml.loader.deserialize.villagers.trades;
 
 import com.google.gson.JsonObject;
+import rml.deserializer.Record;
 import rml.jrx.announces.BeDiscovered;
 import rml.jrx.utils.values.RandomIntSupplier;
 import rml.loader.api.world.villagers.TradeBase;
@@ -26,25 +27,9 @@ import java.util.Random;
 @BeDiscovered
 public class ItemAndEmeraldToItem implements EntityVillager.ITradeList{
 
-    public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.MANAGER.addEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft","list_item_for_emeralds"), EntityVillager.ITradeList.class,
-            jsonElement -> {
-                JsonObject trade = jsonElement.getAsJsonObject();
-                JsonObject from = JsonUtils.getJsonObject(trade,"from");
-                RandomIntSupplier p1 = TradeBase.loadPrice(JsonUtils.getJsonObject(from,"price"));
-                RandomIntSupplier c1 = TradeBase.loadPrice(JsonUtils.getJsonObject(from,"count"));
-                JsonObject to = JsonUtils.getJsonObject(trade,"to");
-                RandomIntSupplier c2 = TradeBase.loadPrice(JsonUtils.getJsonObject(to,"count"));
-                JsonObject item1 = JsonUtils.getJsonObject(from,"item");
-                JsonObject item2 = JsonUtils.getJsonObject(to,"item");
-                ItemAndEmeraldToItem t = new ItemAndEmeraldToItem();
-                t.buyingPriceInfo = c1;
-                t.buyingPriceInfo2 = p1;
-                t.sellingPriceInfo = c2;
-                t.buyingItemStack = TradeBase.loadItemStack(item1);
-                t.sellingItemstack = TradeBase.loadItemStack(item2);
+    public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class,new ResourceLocation("minecraft","list_item_for_emeralds"))
+            .record(ItemAndEmeraldToItem.class).build();
 
-                return t;
-            }));
     /**
      * The itemstack to buy with an emerald. The Item and damage value is used only, any tag data is not
      * retained.
@@ -58,7 +43,14 @@ public class ItemAndEmeraldToItem implements EntityVillager.ITradeList{
     public RandomIntSupplier sellingPriceInfo;
 
 
-    public ItemAndEmeraldToItem(){}
+    @Record({"from.item", "from.price", "from.count", "to.item", "to.count"})
+    public ItemAndEmeraldToItem(ItemStack buyingItemStack, RandomIntSupplier buyingPriceInfo2, RandomIntSupplier buyingPriceInfo, ItemStack sellingItemstack, RandomIntSupplier sellingPriceInfo){
+        this.buyingItemStack = buyingItemStack;
+        this.buyingPriceInfo2 = buyingPriceInfo2;
+        this.buyingPriceInfo = buyingPriceInfo;
+        this.sellingItemstack = sellingItemstack;
+        this.sellingPriceInfo = sellingPriceInfo;
+    }
     public void addMerchantRecipe(IMerchant merchant, MerchantRecipeList recipeList, Random random)
     {
         int i = this.buyingPriceInfo.get(random);

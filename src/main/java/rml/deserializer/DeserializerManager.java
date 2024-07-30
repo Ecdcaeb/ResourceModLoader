@@ -11,6 +11,7 @@ import java.math.BigInteger;
 import java.rmi.UnexpectedException;
 import java.util.HashMap;
 import java.util.IllegalFormatException;
+import java.util.function.Function;
 
 /**
  * @Project ResourceModLoader
@@ -180,6 +181,23 @@ public class DeserializerManager {
         }
 
         return new ResourceLocation(astring[0], astring[1]);
+    }
+
+    public <T, F> AbstractDeserializer<T> map(final Class<T> tClass, final Class<F> fClass, final ResourceLocation resourceLocation, final Function<F, T> function){
+        return new AbstractDeserializer<T>(resourceLocation, tClass, jsonElement -> function.apply(DeserializerManager.this.decode(fClass, jsonElement)));
+    }
+
+    public static JsonElement getFromPath(JsonObject jsonObject, String path){
+        int i = path.indexOf('.');
+        if (i == -1){
+            return jsonObject.get(path);
+        }else {
+            String first = path.substring(0, i-1);
+            JsonElement element1 = jsonObject.get(first);
+            if (element1 instanceof JsonObject){
+                return getFromPath((JsonObject)element1, path.substring(i+1));
+            }else return null;
+        }
     }
 
 

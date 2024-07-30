@@ -1,9 +1,7 @@
 package rml.deserializer;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Primitives;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 import rml.internal.net.minecraftforge.common.util.LazyOptional;
@@ -12,8 +10,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -57,9 +53,10 @@ public class DeserializerBuilder<T> {
     public DeserializerBuilder<T> optionalWhen(final Class<?> clazz,final String name,final Context.ToBooleanFunction isNotRequired){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            if (jsonObject.has(name)){
+            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            if (element != null){
                 try{
-                    Object obj = manager.decode(type, jsonObject.get(name));
+                    Object obj = manager.decode(type, element);
                     context.put(name, obj);
                 }catch (JsonDeserializeException e){
                     if (!isNotRequired.apply(context)){
@@ -91,9 +88,10 @@ public class DeserializerBuilder<T> {
     public <V> DeserializerBuilder<T> optionalDefaultWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final V defaultValue){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            if (jsonObject.has(name)){
+            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            if (element != null){
                 try{
-                    Object obj = manager.decode(type, jsonObject.get(name));
+                    Object obj = manager.decode(type, element);
                     context.put(name, obj);
                 }catch (JsonDeserializeException e){
                     if (!isNotRequired.apply(context)){
@@ -113,9 +111,10 @@ public class DeserializerBuilder<T> {
     public <V> DeserializerBuilder<T> optionalDefaultLazyWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final LazyOptional<V> defaultValue){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            if (jsonObject.has(name)){
+            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            if (element != null){
                 try{
-                    Object obj = manager.decode(type, jsonObject.get(name));
+                    Object obj = manager.decode(type, element);
                     context.put(name, obj);
                 }catch (JsonDeserializeException e){
                     if (!isNotRequired.apply(context)){
