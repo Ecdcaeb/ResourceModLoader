@@ -3,6 +3,7 @@ package rml.deserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.lang.annotation.Annotation;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -158,6 +159,5 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
             }
         };
     }
-
 
 }

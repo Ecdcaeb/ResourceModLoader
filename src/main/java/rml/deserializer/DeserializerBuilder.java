@@ -4,8 +4,11 @@ import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
+import org.apache.commons.lang3.AnnotationUtils;
 import rml.internal.net.minecraftforge.common.util.LazyOptional;
+import sun.reflect.annotation.AnnotationType;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -138,16 +141,17 @@ public class DeserializerBuilder<T> {
     }
 
     public DeserializerBuilder<T> record(Class<? extends T> clazzIn){
-        for(Constructor<?> method : clazzIn.getConstructors()){
-            if (method.isAnnotationPresent(Record.class)){
+        for (Constructor<?> method : clazzIn.getConstructors()) {
+            if (method.isAnnotationPresent(Record.class)) {
                 Record record = method.getAnnotation(Record.class);
-                if (record.value().length != method.getParameters().length) throw new IllegalArgumentException("args list length not fit.");
+                if (record.value().length != method.getParameters().length)
+                    throw new IllegalArgumentException("args list length not fit.");
                 final String[] names = record.value();
                 final Class<?>[] types = method.getParameterTypes();
 
                 this.decode((context) -> {
                     Object[] toParameters = new Object[types.length];
-                    for(int index = 0 ; index <types.length ; index++){
+                    for (int index = 0; index < types.length; index++) {
                         toParameters[index] = context.get(types[index], names[index]);
                     }
                     try {

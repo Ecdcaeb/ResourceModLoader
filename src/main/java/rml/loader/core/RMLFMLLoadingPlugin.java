@@ -4,6 +4,8 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
+import net.minecraftforge.common.config.Config;
+import net.minecraftforge.common.config.ConfigManager;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.BeDiscovered;
 import rml.jrx.announces.EarlyClass;
@@ -143,6 +145,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
             RMLForgeEventHandler.construct(event);
+            ConfigManager.sync("rml", Config.Type.INSTANCE);
         }
         @Subscribe
         @SuppressWarnings("unused")
