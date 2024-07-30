@@ -1,19 +1,20 @@
-package rml.loader.compat.kubejs;
+package rml.layer.compat.kubejs;
 
 import dev.latvian.kubejs.KubeJS;
 import dev.latvian.kubejs.script.BindingsEvent;
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
-import rml.loader.ResourceModLoader;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.reflection.jvm.MethodAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
-import rml.loader.api.mods.module.ModuleType;
-import rml.loader.core.RMLFMLLoadingPlugin;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.reflection.jvm.MethodAccessor;
+import rml.jrx.reflection.jvm.ReflectionHelper;
+import rml.loader.ResourceModLoader;
+import rml.loader.api.mods.module.ModuleType;
+import rml.loader.core.RMLFMLLoadingPlugin;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,7 +32,7 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        ResourceModLoader.loadModuleFindAssets(ModuleType.MOD_KUBEJS,
+        ResourceModLoader.loadModuleFindAssets(KubeJSModule.TYPE,
                 (module, containerHolder) -> {
                     if (!packs.containsKey(containerHolder.getContainer().getModId())) {
                      packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));
@@ -70,8 +71,19 @@ public class RMKKubeJs {
     }
     @PrivateAPI public static final MethodAccessor<ScriptPack, ScriptManager> newPack = ReflectionHelper.getMethodAccessor(ScriptManager.class, "newPack", null, String.class);
     @PrivateAPI public static final Map<String, ScriptPack> packs;
+
     static {
         packs = ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
+    }
+
+    /**
+     * @Project ResourceModLoader
+     * @Author Hileb
+     * @Date 2024/7/30 10:16
+     **/
+    public static class KubeJSModule{
+
+        public static ModuleType TYPE = new ModuleType(new ResourceLocation("rml", "MOD_KUBEJS"), "kubejs", false);
     }
 }
 

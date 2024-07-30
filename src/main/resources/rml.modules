@@ -1,0 +1,5 @@
+[
+    "rml.layer.compat.crt.RMLCrTLoader$CrTModule",
+    "rml.layer.compat.kubejs.RMKKubeJs$KubeJSModule"
+    "rml.layer.compat.groovyscripts.RMLGsLoader$Module"
+]

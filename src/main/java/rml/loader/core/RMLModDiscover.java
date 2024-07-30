@@ -9,11 +9,15 @@ import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.MetadataCollection;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
+import net.minecraftforge.fml.common.discovery.ASMDataTable;
+import net.minecraftforge.fml.common.discovery.asm.ModAnnotation;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.VersionParser;
 import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.ASMInvoke;
+import rml.jrx.announces.BeDiscovered;
 import rml.jrx.announces.PrivateAPI;
+import rml.jrx.utils.ClassHelper;
 import rml.jrx.utils.file.JsonHelper;
 import rml.loader.RMLModContainer;
 import rml.loader.ResourceModLoader;
@@ -49,6 +53,7 @@ public class RMLModDiscover {
     public static final Gson GSON = new GsonBuilder().registerTypeAdapter(ArtifactVersion.class, new MetadataCollection.ArtifactVersionAdapter()).create();
     @PrivateAPI
     public static void inject(List<ModContainer> modContainers){
+
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
         Module.DESERIALIZER.getResultTarget(); // Force to init the class for register.
         File modRoots = new File(Launch.minecraftHome,"mods");
@@ -56,8 +61,17 @@ public class RMLModDiscover {
         for (File modFile : Objects.requireNonNull(modRoots.listFiles(), "Directory `mods/` is not exist")) {
             if(modFile.isFile()){
                 try(ZipFile zipFile = new ZipFile(modFile)) {
-                    ZipEntry info = zipFile.getEntry("rml.info");
-                    if (info!=null){
+                    ZipEntry info = zipFile.getEntry("rml.modules");
+                    if (info != null){
+                        InputStream inputStream = zipFile.getInputStream(info);
+                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+
+                        for(int i = 0, size = jsonArray.size(); i<size ; i++){
+                            Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
+                        }
+                    }
+                    info = zipFile.getEntry("rml.info");
+                    if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
                         JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
@@ -68,13 +82,31 @@ public class RMLModDiscover {
                 } catch (IOException e) {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
                     e.printStackTrace();
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("Could not load Module", e);
                 }
             }else if (modFile.isDirectory()){
-                File[] files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));
-                if (files!=null && files.length==1){
+                File[] files = modFile.listFiles(pathname -> pathname.isFile() && "rml.modules".equals(pathname.getName()));
+                if (files != null && files.length==1){
                     try {
                         InputStream inputStream = Files.newInputStream(files[0].toPath());
-                        JsonArray jsonArray = GSON.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), JsonArray.class);
+                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+
+                        for(int i = 0, size = jsonArray.size(); i<size ; i++){
+                            Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
+                        }
+                    } catch (IOException e) {
+                        RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
+                        e.printStackTrace();
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException("Could not load Module", e);
+                    }
+                }
+                files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));
+                if (files != null && files.length==1){
+                    try {
+                        InputStream inputStream = Files.newInputStream(files[0].toPath());
+                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
                         for(int i = 0, size = jsonArray.size(); i<size ; i++){
                             modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
@@ -180,5 +212,18 @@ public class RMLModDiscover {
         }
 
         return metadata;
+    }
+
+
+    public static void discover(ASMDataTable asmDataTable, BeDiscovered.Time time){
+        asmDataTable.getAll(BeDiscovered.class.getName()).stream()
+                .filter((data)->time.name().equals(((ModAnnotation.EnumHolder)data.getAnnotationInfo().get("value")).getValue()))
+                .forEach((data)-> {
+                    try {
+                        ClassHelper.forceInit(Class.forName(data.getClassName(), true, Launch.classLoader));
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 }

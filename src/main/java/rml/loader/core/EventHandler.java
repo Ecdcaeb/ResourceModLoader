@@ -1,10 +1,11 @@
 package rml.loader.core;
 
 import com.google.common.eventbus.Subscribe;
+import rml.jrx.announces.BeDiscovered;
 import rml.loader.api.config.ConfigPatcher;
 import rml.loader.api.event.early.FMLBeforeStageEvent;
 import rml.loader.api.mods.module.ModuleType;
-import rml.loader.compat.crt.CrTZenClassRegisterEvent;
+import rml.layer.compat.crt.CrTZenClassRegisterEvent;
 import net.minecraftforge.fml.common.LoaderState;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 
@@ -31,7 +32,6 @@ public enum EventHandler {
     public void beforeConstruction(FMLBeforeStageEvent event){
         if (event.stage == LoaderState.CONSTRUCTING){
             RMLTransformer.Transformers.Late.initModTransformers(event.event);
-            ModuleType.loadPlugins((ASMDataTable) event.event[1]);
         }
     }
 }

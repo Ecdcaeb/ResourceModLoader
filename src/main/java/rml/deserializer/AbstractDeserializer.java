@@ -2,6 +2,7 @@ package rml.deserializer;
 
 import com.google.gson.JsonElement;
 import net.minecraft.util.ResourceLocation;
+import rml.jrx.utils.ClassHelper;
 
 /**
  * @Project ResourceModLoader

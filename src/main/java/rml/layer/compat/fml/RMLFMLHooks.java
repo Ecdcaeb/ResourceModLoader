@@ -1,4 +1,4 @@
-package rml.loader.compat.fml;
+package rml.layer.compat.fml;
 
 import rml.loader.api.RMLBus;
 import rml.loader.api.event.early.FMLBeforeStageEvent;

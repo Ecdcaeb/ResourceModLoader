@@ -249,7 +249,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,0));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,1));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,2));
-                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
                                 mn.instructions.insertBefore(mn.instructions.get(0),hook);
                                 return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                             }
@@ -352,7 +352,7 @@ public class RMLTransformer implements IClassTransformer {
                                      * **/
                                     if ("onPreInitialization".equals(mn.name)){
                                         InsnList hook = new InsnList();
-                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
+                                        hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
                                         mn.instructions.insertBefore(mn.instructions.get(0), hook);
                                         return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                                     }
@@ -368,7 +368,7 @@ public class RMLTransformer implements IClassTransformer {
                                         if ("setScriptProvider".equals(mn.name)) {
                                             InsnList list = new InsnList();
                                             list.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                            list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
+                                            list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
                                             list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
                                             mn.instructions.insertBefore(mn.instructions.get(0), list);
                                             return ClassWriter.COMPUTE_MAXS;

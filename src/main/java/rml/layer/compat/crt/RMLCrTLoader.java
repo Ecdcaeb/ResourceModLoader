@@ -1,14 +1,14 @@
-package rml.loader.compat.crt;
+package rml.layer.compat.crt;
 
 import crafttweaker.runtime.IScriptProvider;
-import rml.loader.ResourceModLoader;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.utils.file.FileHelper;
-import rml.loader.api.mods.module.ModuleType;
-import rml.loader.core.RMLFMLLoadingPlugin;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.utils.file.FileHelper;
+import rml.loader.ResourceModLoader;
+import rml.loader.api.mods.module.ModuleType;
+import rml.loader.core.RMLFMLLoadingPlugin;
 
 import java.io.IOException;
 
@@ -36,7 +36,7 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModuleFindAssets(ModuleType.MOD_CRT, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(CrTModule.TYPE, (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                 return;
@@ -60,5 +60,15 @@ public class RMLCrTLoader {
     @SubscribeEvent
     @PrivateAPI public static void inject(CrTFindingIScriptIteratorEvent event){
         event.load(getScriptProviders());
+    }
+
+    /**
+     * @Project ResourceModLoader
+     * @Author Hileb
+     * @Date 2024/7/30 10:15
+     **/
+    public static class CrTModule{
+
+        public static ModuleType TYPE = new ModuleType(new ResourceLocation("rml", "mod_crt"), "crt", false);
     }
 }

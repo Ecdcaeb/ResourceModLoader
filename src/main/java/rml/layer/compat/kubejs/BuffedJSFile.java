@@ -1,4 +1,4 @@
-package rml.loader.compat.kubejs;
+package rml.layer.compat.kubejs;
 
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptPack;

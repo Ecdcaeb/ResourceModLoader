@@ -4,13 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
+import rml.jrx.utils.ClassHelper;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.rmi.UnexpectedException;
 import java.util.HashMap;
-import java.util.IllegalFormatException;
 import java.util.function.Function;
 
 /**
@@ -77,6 +76,7 @@ public class DeserializerManager {
      * @throws JsonDeserializeException the exception. Error format? Unexpected context?
      */
     public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializeException {
+        ClassHelper.forceInitAll(clazz);
         clazz = DeserializerBuilder.avoidPrimitive(clazz);
 
         try {

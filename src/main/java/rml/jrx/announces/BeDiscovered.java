@@ -1,5 +1,7 @@
 package rml.jrx.announces;
 
+import net.minecraftforge.fml.common.LoaderState;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -20,4 +22,9 @@ import static java.lang.annotation.ElementType.TYPE;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value={TYPE})
 public @interface BeDiscovered {
+    Time value() default Time.PRE_INIT;
+    enum Time{
+        MOD_LOADING,
+        PRE_INIT
+    }
 }
