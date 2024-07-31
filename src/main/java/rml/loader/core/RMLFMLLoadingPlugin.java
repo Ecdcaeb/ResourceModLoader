@@ -6,6 +6,9 @@ import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
+import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
+import org.lwjgl.Sys;
 import rml.jrx.utils.ClassHelper;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.BeDiscovered;
@@ -42,6 +45,7 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * @Project ResourceModLoader
@@ -53,6 +57,7 @@ import java.util.Map;
 @IFMLLoadingPlugin.Name(ResourceModLoader.MODID)
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
+    private static boolean isTestingLaunching = false;
     public static File source;
     public static boolean isDebug;
     @PublicAPI public static final Logger LOGGER = LogManager.getLogger(ResourceModLoader.MODID);
@@ -89,11 +94,17 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         makeFMLCorePluginContainsFMLMod(source);
         //start args>>
         //read the args :
+        @SuppressWarnings("unchecked")
         Map<String,String> arguments = (Map<String,String>) Launch.blackboard.get("launchArgs");
-        if (arguments.containsKey("rml.debug")){
+        if (arguments.containsKey("--rml.debug")){
             isDebug = Boolean.parseBoolean(arguments.get("--rml.debug"));
         }
-
+        if (arguments.containsKey("--rml.debug")){
+            isTestingLaunching = arguments.containsKey("rml.debug")
+        }
+        if (isDebug){
+            arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
+        }
         ASMUtil.saveTransformedClass = isDebug;
     }
     @Override
@@ -154,6 +165,12 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @SuppressWarnings("unused")
         @PrivateAPI public void postInit(FMLPostInitializationEvent event){
             RMLForgeEventHandler.postInit(event);
+        }
+
+        @Subscribe
+        @SuppressWarnings("unused")
+        @PrivateAPI public void postInit(FMLLoadCompleteEvent event){
+            if (isTestingLaunching) FMLCommonHandler.instance().exitJava(0 ,false);
         }
         @Override
         public File getSource() {
