@@ -14,14 +14,15 @@ import java.lang.reflect.Method;
 
 @PublicAPI
 @EarlyClass
-public class MethodAccessor<T, E> {
+public class MethodAccessor<RETURN, INSTANCE> {
     private final Method method;
     public MethodAccessor(Method method){
         method.setAccessible(true);
         this.method = method;
     }
 
-    public T invoke(E instance, Object... args){
+    @SuppressWarnings("unchecked")
+    public RETURN invoke(INSTANCE instance, Object... args){
         if (method.getReturnType()==void.class){
             try {
                 method.invoke(instance, args);
@@ -31,7 +32,7 @@ public class MethodAccessor<T, E> {
             return null;
         }else {
             try {
-                return (T) method.invoke(instance, args);
+                return (RETURN) method.invoke(instance, args);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(e);
             }

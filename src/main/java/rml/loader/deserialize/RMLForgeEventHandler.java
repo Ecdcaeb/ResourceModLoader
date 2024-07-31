@@ -1,5 +1,8 @@
 package rml.loader.deserialize;
 
+import com.cleanroommc.groovyscript.GroovyScript;
+import net.minecraftforge.fml.common.Loader;
+import rml.layer.compat.groovyscripts.RMLGrsLoader;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.PrivateAPI;
 import rml.loader.api.event.CraftingHelperInitEvent;
@@ -82,6 +85,9 @@ public class RMLForgeEventHandler {
 
     public static void construct(FMLConstructionEvent event){
         RMLLoaders.ConfigLoader.load();
+        if (Loader.isModLoaded(GroovyScript.ID)){
+            RMLGrsLoader.load();
+        }
     }
 
     public static void preInit(FMLPreInitializationEvent event){

@@ -28,6 +28,7 @@ import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.deserialize.Deserializer;
+import rml.loader.deserialize.RMLLoaders;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,19 +65,23 @@ public class RMLModDiscover {
                     ZipEntry info = zipFile.getEntry("rml.modules");
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
-                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-
-                        for(int i = 0, size = jsonArray.size(); i<size ; i++){
-                            Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
+                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        if (element.isJsonArray()) {
+                            JsonArray jsonArray = element.getAsJsonArray();
+                            for (int i = 0, size = jsonArray.size(); i < size; i++) {
+                                Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
+                            }
                         }
                     }
                     info = zipFile.getEntry("rml.info");
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
-                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-
-                        for(int i = 0, size = jsonArray.size(); i<size ; i++){
-                            modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
+                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        if (element.isJsonArray()) {
+                            JsonArray jsonArray = element.getAsJsonArray();
+                            for (int i = 0, size = jsonArray.size(); i < size; i++) {
+                                modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
+                            }
                         }
                     }
                 } catch (IOException e) {

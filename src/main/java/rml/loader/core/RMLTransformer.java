@@ -129,7 +129,7 @@ public class RMLTransformer implements IClassTransformer {
                                 InsnList injectList=new InsnList();
                                 injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
                                 injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/core/RMLModDiscover","inject","(Ljava/util/List;)V",false));
-                                mn.instructions.insertBefore(mn.instructions.get(0),injectList);
+                                mn.instructions.insert(injectList);
                                 return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                             }
                         }
@@ -250,7 +250,7 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,1));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
-                                mn.instructions.insertBefore(mn.instructions.get(0),hook);
+                                mn.instructions.insert(hook);
                                 return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                             }
                         }
@@ -336,6 +336,22 @@ public class RMLTransformer implements IClassTransformer {
                             throw new RuntimeException("RML Cannot Transform Class Correctly. Unhandled Works:" + bar.getFailsString());
                         }
                     });
+            transformers.put("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
+                    (cn)->{
+                        for(MethodNode mn : cn.methods){
+                            if ("load".equals(mn.name) && "(Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V".equals(mn.desc)){
+                                InsnList hook = new InsnList();
+                                hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                                hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                                hook.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                                hook.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                                hook.add(new VarInsnNode(Opcodes.ILOAD, 4));
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/groovyscripts/RMLGroovySandBox", "load", "(Lcom/cleanroommc/groovyscript/sandbox/GroovySandbox;Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V", false));
+                                mn.instructions.insert(hook);
+                            }
+                        }
+                        return 0;
+                    });
         }
         public static class Late{
             public static void initModTransformers(Object[] objects){
@@ -353,7 +369,7 @@ public class RMLTransformer implements IClassTransformer {
                                     if ("onPreInitialization".equals(mn.name)){
                                         InsnList hook = new InsnList();
                                         hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
-                                        mn.instructions.insertBefore(mn.instructions.get(0), hook);
+                                        mn.instructions.insert(hook);
                                         return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                                     }
                                 }
@@ -370,7 +386,7 @@ public class RMLTransformer implements IClassTransformer {
                                             list.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                             list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
                                             list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
-                                            mn.instructions.insertBefore(mn.instructions.get(0), list);
+                                            mn.instructions.insert(list);
                                             return ClassWriter.COMPUTE_MAXS;
                                         }
                                     }
@@ -378,6 +394,7 @@ public class RMLTransformer implements IClassTransformer {
                                 });
                     }
                 }
+
             }
         }
 

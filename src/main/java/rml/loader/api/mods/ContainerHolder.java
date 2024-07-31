@@ -1,5 +1,6 @@
 package rml.loader.api.mods;
 
+import net.minecraftforge.fml.common.FMLContainerHolder;
 import rml.jrx.announces.PublicAPI;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.mods.module.Module;
@@ -9,7 +10,7 @@ import net.minecraftforge.fml.common.ModContainer;
 import java.util.HashMap;
 
 @PublicAPI
-public class ContainerHolder {
+public class ContainerHolder implements FMLContainerHolder {
     public final ModContainer container;
     public final HashMap<ModuleType, Module> modules;
     public final int packVersion;
@@ -40,6 +41,11 @@ public class ContainerHolder {
 
     public ContainerHolder(ModContainer container){
         this(container, ModuleType.getAllForDefault());
+    }
+
+    @Override
+    public ModContainer getFMLContainer() {
+        return getContainer();
     }
 
     @FunctionalInterface

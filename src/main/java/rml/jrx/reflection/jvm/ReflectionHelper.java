@@ -257,12 +257,12 @@ public class ReflectionHelper {
         return constructor;
     }
 
-    public static<T,E> MethodAccessor<T,E> getMethodAccessor(@Nonnull Class<?> clazz, @Nonnull String methodName, @Nullable String methodObfName, Class<?>... parameterTypes) {
+    public static<R, I> MethodAccessor<R, I> getMethodAccessor(@Nonnull Class<?> clazz, @Nonnull String methodName, @Nullable String methodObfName, Class<?>... parameterTypes) {
         Method method = findMethod(clazz, methodName, methodObfName, parameterTypes);
         return new MethodAccessor<>(method);
     }
 
-    public static<T,E> FieldAccessor<T,E> getFieldAccessor(Class<? extends E> clazz, String... fieldNames){
+    public static<T,E> FieldAccessor<T,E> getFieldAccessor(Class<?> clazz, String... fieldNames){
         Field field = findField(clazz, fieldNames);
         return new FieldAccessor<>(field);
     }

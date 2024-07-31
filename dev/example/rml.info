@@ -1,5 +1,6 @@
 [
   {
+    "pack_version":3,
     "modid": "rml_example",
     "name": "RML Example Mod",
     "description": "The Example Mod for RML!",
@@ -15,55 +16,60 @@
     ],
     "modules":[
       {
-        "type":"CONFIG_OVERRIDE",
+        "name":"rml:CONFIG_OVERRIDE",
         "location":"mods/forge/config/override",
         "forceLoaded":true
       },
       {
-        "type":"CONFIG_REDEFAULT",
+        "name":"rml:CONFIG_REDEFAULT",
         "location":"mods/forge/config/redefault",
         "forceLoaded":true
       },
       {
-         "type":"CONFIG_DEFINE",
+         "name":"rml:CONFIG_DEFINE",
          "location":"mods/forge/config/define",
          "forceLoaded":true
       },
       {
-        "type":"MOD_CRT",
+        "name":"rml:MOD_CRT",
         "location":"mods/crt/scripts",
         "forceLoaded":true
       },
       {
-        "type":"FUNCTIONS",
+        "name":"rml:FUNCTIONS",
         "location":"mods/minecraft/functions",
         "forceLoaded":true
       },
       {
-        "type":"MOD_KUBEJS",
+        "name":"rml:MOD_KUBEJS",
         "location":"mods/kubejs/scripts",
         "forceLoaded":true
       },
       {
-        "type":"LOOT_TABLES",
+        "name":"rml:LOOT_TABLES",
         "location":"mods/minecraft/loot_tables",
         "forceLoaded":true
       },
       {
-        "type":"ORE_DIC",
+        "name":"rml:ORE_DIC",
         "location":"mods/forge/ore_dic",
         "forceLoaded":true
       },
       {
-        "type":"REGISTRY_REMAP",
+        "name":"rml:REGISTRY_REMAP",
         "location":"mods/forge/registry/remap",
         "forceLoaded":true
       },
       {
-        "type":"SPLASH_TEXT",
+        "name":"rml:SPLASH_TEXT",
         "location":"mods/minecraft/text/splash_text.txt",
         "forceLoaded":true
-      }
+      },
+      {
+         "name":"rml:MOD_GROOVY_SCRIPT",
+         "location":"mods/groovy_script/run_config.json",
+         "forceLoaded":true
+       }
     ]
   },
   {

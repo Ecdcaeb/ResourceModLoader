@@ -1,9 +1,13 @@
 package rml.deserializer;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -29,10 +33,11 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<E>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                if (jsonObject.has(name)) {
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
                     try {
                         final Class<?> clazz2 = DeserializerBuilder.avoidPrimitive(clazz);
-                        Object obj = manager.decode(clazz2, jsonObject.get(name));
+                        Object obj = manager.decode(clazz2, element);
                         context.put(name, obj);
                     } catch (JsonDeserializeException e) {
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
@@ -48,10 +53,11 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<Integer>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                if (jsonObject.has(name)) {
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
                     Integer obj = null;
                     try {
-                        obj = manager.decode(Integer.class, jsonObject.get(name));
+                        obj = manager.decode(Integer.class, element);
                     } catch (JsonDeserializeException e) {
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     } finally {
@@ -84,10 +90,11 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<Float>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                if (jsonObject.has(name)){
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
                     Float obj = null;
                     try{
-                        obj = manager.decode(Float.class, jsonObject.get(name));
+                        obj = manager.decode(Float.class, element);
                     }catch (JsonDeserializeException e){
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }finally {
@@ -120,10 +127,11 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<Boolean>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                if (jsonObject.has(name)){
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
                     Boolean obj = null;
                     try{
-                        obj = manager.decode(Boolean.class, jsonObject.get(name));
+                        obj = manager.decode(Boolean.class, element);
                     }catch (JsonDeserializeException e){
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }finally {
@@ -144,14 +152,35 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<Map<String, T>>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                if (jsonObject.has(name)){
-                    JsonElement jsonElement = jsonObject.get(name);
-                    if (!jsonElement.isJsonObject()) throw new JsonDeserializeException(jsonObject, "field" + name + "is required be json object.");
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
+                    if (!element.isJsonObject()) throw new JsonDeserializeException(jsonObject, "field" + name + "is required be json object.");
                     try {
-                        Map<String, T> map = jsonElement.getAsJsonObject().entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> manager.decodeSilently(clazz, entry.getValue())));
+                        Map<String, T> map = element.getAsJsonObject().entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> manager.decodeSilently(clazz, entry.getValue())));
                         context.put(name, map);
                     }catch (Exception e){
-                        throw new JsonDeserializeException(jsonElement, e);
+                        throw new JsonDeserializeException(element, e);
+                    }
+                }else {
+                    throw new JsonDeserializeException(jsonObject, "field " + name +" is required");
+                }
+            }
+        };
+    }
+
+    public static<T> Argument<List<T>> list(String name, final Class<T> clazz){
+        return new Argument<List<T>>(name) {
+            @Override
+            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                if (element != null){
+                    try {
+                        Class<?> arrayCls = Array.newInstance(clazz, 0).getClass();
+                        @SuppressWarnings("unchecked")
+                        List<T> list = Lists.newArrayList((T[])manager.decode(arrayCls, element));
+                        context.put(name, list);
+                    }catch (Exception e){
+                        throw new JsonDeserializeException(element, e);
                     }
                 }else {
                     throw new JsonDeserializeException(jsonObject, "field " + name +" is required");

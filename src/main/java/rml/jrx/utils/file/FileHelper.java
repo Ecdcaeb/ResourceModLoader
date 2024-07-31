@@ -13,6 +13,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -145,10 +146,57 @@ public class FileHelper {
             processor.accept(containerHolder, path, path);
         }
     }
+
+    @PublicAPI
+    public static byte[] findFile(ModContainer containerHolder, String base) {
+        File source = containerHolder.getSource();
+        if ("minecraft".equals(containerHolder.getModId()))
+        {
+            return null;
+        }
+        if (source.isFile())
+        {
+            try
+            {
+                FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
+                Path path;
+                byte[] toReturn;
+                try{
+                    path = fs.getPath("/" + base);
+                    toReturn = getBytes(path);
+                }catch (InvalidPathException e){
+                    toReturn = null;
+                }
+                IOUtils.closeQuietly(fs);
+                return toReturn;
+            }
+            catch (IOException e) {
+                RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+            }
+        }
+        else if (source.isDirectory())
+        {
+            Path path;
+            try{
+                path = source.toPath().resolve(base);
+                return getBytes(path);
+            } catch (InvalidPathException | IOException e){
+                return null;
+            }
+        }
+        return null;
+    }
+
+    @PublicAPI
+    public static CharArrayReader getCachedFile(byte[] path) throws IOException {
+        return new CharArrayReader(IOUtils.toCharArray(ByteSource.wrap(path).openBufferedStream(), StandardCharsets.UTF_8));
+    }
+
     @PublicAPI
     public static CharArrayReader getCachedFile(Path path) throws IOException {
         return new CharArrayReader(IOUtils.toCharArray(Files.newBufferedReader(path)));
     }
+
     @PublicAPI
     public static ByteSource getByteSource(Path path, Charset charset) throws IOException {
         return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), charset));
@@ -157,6 +205,16 @@ public class FileHelper {
     @PublicAPI
     public static ByteSource getByteSource(Path path) throws IOException {
         return ByteSource.wrap(IOUtils.toByteArray(Files.newBufferedReader(path), StandardCharsets.UTF_8));
+    }
+
+    @PublicAPI
+    public static byte[] getBytes(Path path, Charset charset) throws IOException {
+        return IOUtils.toByteArray(Files.newBufferedReader(path), charset);
+    }
+
+    @PublicAPI
+    public static byte[] getBytes(Path path) throws IOException {
+        return getBytes(path, StandardCharsets.UTF_8);
     }
 
     @FunctionalInterface
