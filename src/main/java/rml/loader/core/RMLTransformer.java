@@ -1,6 +1,7 @@
 package rml.loader.core;
 
 import crafttweaker.mc1120.CraftTweaker;
+import org.objectweb.asm.commons.Remapper;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.asm.MethodName;
@@ -54,6 +55,7 @@ public class RMLTransformer implements IClassTransformer {
     static {
         Transformers.initMinecraftTransformers();
         Transformers.initForgeTransformers();
+        Transformers.initGroovyScriptTransformer();
     }
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
@@ -336,6 +338,9 @@ public class RMLTransformer implements IClassTransformer {
                             throw new RuntimeException("RML Cannot Transform Class Correctly. Unhandled Works:" + bar.getFailsString());
                         }
                     });
+        }
+
+        public static void initGroovyScriptTransformer(){
             transformers.put("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
                     (cn)->{
                         for(MethodNode mn : cn.methods){

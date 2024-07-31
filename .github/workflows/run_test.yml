@@ -38,7 +38,7 @@ jobs:
             uses: gradle/gradle-build-action@v2
             with:
               arguments: buildExample
-          - name: Build
+          - name: testServer
             uses: gradle/gradle-build-action@v2
             with:
-              arguments: runClient
+              arguments: runServer --rml.test

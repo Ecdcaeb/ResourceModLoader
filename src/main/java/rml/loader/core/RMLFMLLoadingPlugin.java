@@ -1,5 +1,6 @@
 package rml.loader.core;
 
+import com.cleanroommc.groovyscript.GroovyScript;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
@@ -99,15 +100,15 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         if (arguments.containsKey("--rml.debug")){
             isDebug = Boolean.parseBoolean(arguments.get("--rml.debug"));
         }
-        if (arguments.containsKey("--rml.debug")){
-            isTestingLaunching = arguments.containsKey("rml.debug");
+        if (arguments.containsKey("--rml.test")){
+            isTestingLaunching = arguments.containsKey("--rml.test");
         }
         if (isDebug){
             arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
         }
         ASMUtil.saveTransformedClass = isDebug;
     }
-    
+
     @Override
     public String getAccessTransformerClass() {
         return null;
@@ -158,6 +159,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
+            if (Loader.isModLoaded(GroovyScript.ID)){
+                Launch.classLoader.registerTransformer("rml.loader.core.InvokerHelperTransformer");
+            }
             RMLForgeEventHandler.construct(event);
             ClassHelper.forceInit(RMLDeserializer.class);
             ClassHelper.forceInit(MCDeserializers.class);
