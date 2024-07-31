@@ -107,6 +107,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         ASMUtil.saveTransformedClass = isDebug;
     }
+    
     @Override
     public String getAccessTransformerClass() {
         return null;
