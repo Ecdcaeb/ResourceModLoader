@@ -100,7 +100,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             isDebug = Boolean.parseBoolean(arguments.get("--rml.debug"));
         }
         if (arguments.containsKey("--rml.debug")){
-            isTestingLaunching = arguments.containsKey("rml.debug")
+            isTestingLaunching = arguments.containsKey("rml.debug");
         }
         if (isDebug){
             arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
