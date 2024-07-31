@@ -2,7 +2,7 @@
 # Simple workflow with ignoring condition to prevent unneccessary build
 # To download artifact check on job task
 
-name: Build Test Artifact
+name: Build Test
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build and Upload Artifact
+    name: Build Test
     runs-on: ubuntu-latest
 
     steps:
