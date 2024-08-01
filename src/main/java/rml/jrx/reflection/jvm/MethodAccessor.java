@@ -3,6 +3,7 @@ package rml.jrx.reflection.jvm;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 

@@ -2,7 +2,6 @@ package rml.layer.compat.groovyscripts;
 
 import com.google.common.collect.HashBiMap;
 import net.minecraft.util.ResourceLocation;
-import org.apache.commons.io.IOUtils;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Argument;
 import rml.jrx.announces.RewriteWhenCleanroom;
@@ -13,7 +12,6 @@ import rml.loader.api.mods.module.ModuleType;
 import rml.loader.deserialize.Deserializer;
 import rml.loader.deserialize.RMLLoaders;
 
-import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.util.Map;
 
@@ -28,13 +26,10 @@ public class RMLGrsLoader {
     public static void load(){
         ClassHelper.forceInit(RunConfig.class);
         ResourceModLoader.loadModuleFindAssets(Module.TYPE, (containerHolder, root, file) -> {
-            BufferedReader bufferedreader = null;
             try {
                 RunConfig config = Deserializer.decode(RunConfig.class, RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file)));
                 MOD.put(containerHolder, config);
             } catch (Exception ignored) {
-            } finally {
-                IOUtils.closeQuietly(bufferedreader);
             }
         });
     }

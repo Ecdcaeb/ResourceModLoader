@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class ResourceModLoader {
     @PublicAPI public static final int PACK_VERSION = 3;
     @PublicAPI public static final String MODID = "rml";
-    @PublicAPI public static final String VERSION = "1.1.1";
+    @PublicAPI public static final String VERSION = "1.1.2";
     @PrivateAPI private static final BuffedModIDContainer buffedModIDContainer = new BuffedModIDContainer();
     @PrivateAPI public static final HashSet<ContainerHolder> enabledModContainers = new HashSet<>();
 

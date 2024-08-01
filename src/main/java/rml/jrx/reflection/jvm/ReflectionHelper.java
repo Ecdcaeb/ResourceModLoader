@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 @PublicAPI
 @EarlyClass
 public class ReflectionHelper {
+
     public static class UnableToFindMethodException extends RuntimeException
     {
         private static final long serialVersionUID = 1L;

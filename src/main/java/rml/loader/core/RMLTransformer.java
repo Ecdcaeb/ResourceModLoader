@@ -193,7 +193,7 @@ public class RMLTransformer implements IClassTransformer {
                                             iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                             iterator.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
                                             iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/client/gui/ModMenuInfoEvent", "post", "(Ljava/util/List;Ljava/lang/Object;Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;)Ljava/util/List;", false));
-                                            return ClassWriter.COMPUTE_MAXS;
+                                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                                         }
                                     }
                                 }
@@ -333,7 +333,7 @@ public class RMLTransformer implements IClassTransformer {
                                 bar.complete("hover");
                             }
                         }
-                        if (bar.isCompleted()) return ClassWriter.COMPUTE_MAXS;
+                        if (bar.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         else{
                             throw new RuntimeException("RML Cannot Transform Class Correctly. Unhandled Works:" + bar.getFailsString());
                         }
@@ -355,7 +355,7 @@ public class RMLTransformer implements IClassTransformer {
                                 mn.instructions.insert(hook);
                             }
                         }
-                        return 0;
+                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                     });
         }
         public static class Late{
@@ -395,7 +395,7 @@ public class RMLTransformer implements IClassTransformer {
                                             return ClassWriter.COMPUTE_MAXS;
                                         }
                                     }
-                                    return 0;
+                                    return -1;
                                 });
                     }
                 }

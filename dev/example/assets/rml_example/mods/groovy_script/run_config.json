@@ -1,4 +1,8 @@
 {
   "classes": {
+    "preInit": [
+      "classes/example/item.groovy",
+      "no_op.groovy"
+    ]
   }
 }
