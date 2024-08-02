@@ -1,39 +1,20 @@
 package rml.loader.core;
 
-import com.cleanroommc.groovyscript.GroovyScript;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
-import org.lwjgl.Sys;
-import rml.jrx.utils.ClassHelper;
-import rml.loader.ResourceModLoader;
-import rml.jrx.announces.BeDiscovered;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
-import rml.loader.api.RMLBus;
-import rml.loader.api.world.text.RMLTextEffects;
-import rml.layer.compat.crt.RMLCrTLoader;
-import rml.layer.compat.kubejs.RMKKubeJs;
-import rml.loader.deserialize.MCDeserializers;
-import rml.loader.deserialize.RMLDeserializer;
-import rml.loader.deserialize.RMLLoaders;
-import rml.loader.deserialize.RMLForgeEventHandler;
-import rml.loader.deserialize.craft.recipe.SimpleAnvilRecipe;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.DummyModContainer;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
+import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.CoreModManager;
@@ -42,11 +23,24 @@ import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import net.minecraftforge.fml.relauncher.Side;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.announces.PublicAPI;
+import rml.jrx.utils.ClassHelper;
+import rml.layer.compat.crt.RMLCrTLoader;
+import rml.layer.compat.kubejs.RMKKubeJs;
+import rml.loader.ResourceModLoader;
+import rml.loader.api.RMLBus;
+import rml.loader.api.world.text.RMLTextEffects;
+import rml.loader.deserialize.MCDeserializers;
+import rml.loader.deserialize.RMLDeserializer;
+import rml.loader.deserialize.RMLForgeEventHandler;
+import rml.loader.deserialize.RMLLoaders;
+import rml.loader.deserialize.craft.recipe.SimpleAnvilRecipe;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Map;
-import java.util.function.Consumer;
 
 /**
  * @Project ResourceModLoader

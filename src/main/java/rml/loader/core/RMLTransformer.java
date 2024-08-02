@@ -1,19 +1,32 @@
 package rml.loader.core;
 
 import crafttweaker.mc1120.CraftTweaker;
-import org.objectweb.asm.commons.Remapper;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.asm.MethodName;
-import rml.jrx.utils.Tasks;
 import net.minecraft.launchwrapper.IClassTransformer;
+import net.minecraft.launchwrapper.Launch;
+import net.minecraft.launchwrapper.LaunchClassLoader;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.*;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PrivateAPI;
+import rml.jrx.asm.MethodName;
+import rml.jrx.utils.Tasks;
+import rml.layer.cleanroom.LaunchClassLoaderUtil;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -79,7 +92,7 @@ public class RMLTransformer implements IClassTransformer {
                     }
                     if (!isTarget) return basicClass;
                     else {
-                        ClassWriter classWriter = new ClassWriter(classReader, flags);
+                        ClassWriter classWriter = new LaunchClassWriter(classReader, flags);
                         cn.accept(classWriter);
                         return ASMUtil.push(transformedName, classWriter.toByteArray());
                     }
@@ -90,6 +103,55 @@ public class RMLTransformer implements IClassTransformer {
             }
         }
         return basicClass;
+    }
+    public static class LaunchClassWriter extends ClassWriter{
+
+        public LaunchClassWriter(ClassReader classReader, int flags) {
+            super(classReader, flags);
+        }
+
+        @Override
+        protected String getCommonSuperClass(String type1, String type2) {
+            return getCommonSuperClass0(type1, type2);
+        }
+
+        public static String getCommonSuperClass0(final String type1, final String type2) {
+            ClassLoader classLoader = LaunchClassLoader.class.getClassLoader();
+            Class<?> class1;
+            try {
+                class1 = Class.forName(type1.replace('/', '.'), false, classLoader);
+            } catch (ClassNotFoundException e) {
+                try {
+                    class1 = Class.forName(type1.replace('/', '.'), false, Launch.classLoader);
+                } catch (ClassNotFoundException e1) {
+                    throw new TypeNotPresentException(type1, e1);
+                }
+            }
+            Class<?> class2;
+            try {
+                class2 = Class.forName(type2.replace('/', '.'), false, classLoader);
+            } catch (ClassNotFoundException e) {
+                try {
+                    class2 = Class.forName(type2.replace('/', '.'), false, Launch.classLoader);
+                } catch (ClassNotFoundException e2) {
+                    throw new TypeNotPresentException(type2, e2);
+                }
+            }
+            if (class1.isAssignableFrom(class2)) {
+                return type1;
+            }
+            if (class2.isAssignableFrom(class1)) {
+                return type2;
+            }
+            if (class1.isInterface() || class2.isInterface()) {
+                return "java/lang/Object";
+            } else {
+                do {
+                    class1 = class1.getSuperclass();
+                } while (!class1.isAssignableFrom(class2));
+                return class1.getName().replace('.', '/');
+            }
+        }
     }
 
     /**
@@ -392,7 +454,7 @@ public class RMLTransformer implements IClassTransformer {
                                             list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
                                             list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
                                             mn.instructions.insert(list);
-                                            return ClassWriter.COMPUTE_MAXS;
+                                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                                         }
                                     }
                                     return -1;
