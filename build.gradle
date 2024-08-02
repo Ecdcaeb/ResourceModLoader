@@ -73,7 +73,7 @@ repositories {
 
 
 dependencies {
-    compileOnly 'com.cleanroommc:groovyscript:1.1.2'
+    compile 'com.cleanroommc:groovyscript:1.1.2'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
     compile 'zone.rong:mixinbooter:9.1'
     compile files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')

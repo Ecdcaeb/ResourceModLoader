@@ -5,14 +5,11 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
-import net.minecraft.launchwrapper.LaunchClassLoader;
 import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import org.lwjgl.Sys;
-import rml.jrx.reflection.jvm.FieldAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
 import rml.jrx.utils.ClassHelper;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.BeDiscovered;
@@ -48,8 +45,6 @@ import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.sql.Ref;
-import java.util.Date;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -104,16 +99,11 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         Map<String,String> arguments = (Map<String,String>) Launch.blackboard.get("launchArgs");
         if (arguments.containsKey("--rml.debug")){
             isDebug = Boolean.parseBoolean(arguments.get("--rml.debug"));
-        }else isDebug  = false;
+        }
         if (arguments.containsKey("--rml.test")){
-            isTestingLaunching = arguments.containsKey("rml.test");
+            isTestingLaunching = arguments.containsKey("--rml.test");
         }
         if (isDebug){
-            ReflectionHelper.getFieldAccessor(LaunchClassLoader.class, "DEBUG").set(null, true);
-            ReflectionHelper.getFieldAccessor(LaunchClassLoader.class, "DEBUG_SAVE").set(null, true);
-            File dir = new File(Launch.minecraftHome, "CLASSLOADER_TEMP_"+ new Date().hashCode());
-            dir.mkdirs();
-            ReflectionHelper.setPrivateValue(LaunchClassLoader.class, null, dir, "tempFolder");
             arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
         }
         ASMUtil.saveTransformedClass = isDebug;
