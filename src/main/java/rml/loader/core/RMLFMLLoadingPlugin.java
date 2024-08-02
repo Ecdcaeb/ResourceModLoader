@@ -159,9 +159,6 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
-            if (Loader.isModLoaded(GroovyScript.ID)){
-                Launch.classLoader.registerTransformer("rml.loader.core.InvokerHelperTransformer");
-            }
             RMLForgeEventHandler.construct(event);
             ClassHelper.forceInit(RMLDeserializer.class);
             ClassHelper.forceInit(MCDeserializers.class);
