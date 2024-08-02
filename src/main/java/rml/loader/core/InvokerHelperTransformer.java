@@ -71,7 +71,7 @@ import org.objectweb.asm.commons.Remapper;
  * 	at net.minecraftforge.gradle.GradleStartCommon.launch(GradleStartCommon.java:97)
  * 	at GradleStart.main(GradleStart.java:25)
  *
- * No Mixin Metadata is found in the Stacktrace.
+ * No MixinForgeHooksClient Metadata is found in the Stacktrace.
  **/
 // IDK why it/unimi/dsi/fastutil/objects/Object2ObjectLinkedOpenHashMap would be referenced.
 public class InvokerHelperTransformer implements IClassTransformer {

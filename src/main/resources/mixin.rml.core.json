@@ -1,0 +1,22 @@
+{
+  "minVersion": "0.7",
+  "package": "rml.loader.core.mixin.core",
+  "compatibilityLevel": "JAVA_8",
+  "target": "@env(DEFAULT)",
+  "refmap": "mixins.rml.refmap.json",
+  "mixins": [
+    "MixinConfigManager",
+    "MixinCraftingHelper",
+    "MixinLoader"
+  ],
+  "client": [
+    "MixinForgeHooksClient",
+    "MixinGuiModListInfo"
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+
+}

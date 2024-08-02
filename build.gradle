@@ -2,15 +2,20 @@ buildscript {
     repositories {
             mavenCentral()
             maven { url "https://maven.minecraftforge.net" }
+            maven { url = "https://repo.spongepowered.org/maven" }
     }
     dependencies {
         classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
+        classpath 'org.spongepowered:mixingradle:0.6-SNAPSHOT'
     }
 }
 
 apply plugin: "net.minecraftforge.gradle.forge"
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
-
+apply plugin: 'org.spongepowered.mixin'
+mixin {
+    add sourceSets.main, "mixins.rml.refmap.json"
+}
 version = project.mod_version
 group = "mods.rml" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "ResourceModLoader"
@@ -70,6 +75,7 @@ repositories {
 dependencies {
     compileOnly 'com.cleanroommc:groovyscript:1.1.2'
     compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
+    compile 'zone.rong:mixinbooter:9.1'
     compile files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
 }
 
