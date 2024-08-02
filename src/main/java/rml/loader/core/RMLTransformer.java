@@ -13,6 +13,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
@@ -26,7 +27,6 @@ import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.asm.MethodName;
 import rml.jrx.utils.Tasks;
-import rml.layer.cleanroom.LaunchClassLoaderUtil;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -75,9 +75,10 @@ public class RMLTransformer implements IClassTransformer {
         if (basicClass!=null && basicClass.length>0){
             try{
                 if (!globalTransformers.isEmpty() || transformers.containsKey(transformedName)){
-                    ClassReader classReader=new ClassReader(basicClass);
-                    ClassNode cn=new ClassNode();
+                    ClassReader classReader = new ClassReader(basicClass);
+                    ClassNode cn = new ClassNode();
                     classReader.accept(cn, 0);
+                    publicClass(cn);
                     int flags = 0;
                     boolean isTarget = false;
                     for(GlobalTransformer transformer:globalTransformers){
@@ -104,6 +105,22 @@ public class RMLTransformer implements IClassTransformer {
         }
         return basicClass;
     }
+
+    public static void publicClass(ClassNode classNode){
+        classNode.access = toPublic(classNode.access);
+        for(MethodNode mn : classNode.methods){
+            mn.access = toPublic(mn.access);
+        }
+        for(FieldNode fn : classNode.fields){
+            fn.access = toPublic(fn.access);
+        }
+    }
+
+    private static int toPublic(int access)
+    {
+        return access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED) | Opcodes.ACC_PUBLIC;
+    }
+
     public static class LaunchClassWriter extends ClassWriter{
 
         public LaunchClassWriter(ClassReader classReader, int flags) {
@@ -263,6 +280,7 @@ public class RMLTransformer implements IClassTransformer {
                         }
                         return -1;
                     });
+            transformers.put("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
         }
         public static void initMinecraftTransformers(){
             transformers.put("net.minecraft.advancements.FunctionManager",

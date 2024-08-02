@@ -1,18 +1,17 @@
 package rml.loader;
 
-import dev.latvian.kubejs.documentation.P;
+import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
+import org.apache.logging.log4j.Logger;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
-import rml.loader.api.event.RMLModuleLoadingEvent;
 import rml.jrx.utils.file.FileHelper;
+import rml.loader.api.event.RMLModuleLoadingEvent;
 import rml.loader.api.mods.BuffedModIDContainer;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.ModContainer;
-import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
