@@ -1,12 +1,14 @@
 package rml.loader.api.mods;
 
 import net.minecraftforge.fml.common.FMLContainerHolder;
+import net.minecraftforge.fml.common.Mod;
 import rml.jrx.announces.PublicAPI;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import net.minecraftforge.fml.common.ModContainer;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 
 @PublicAPI
@@ -51,5 +53,10 @@ public class ContainerHolder implements FMLContainerHolder {
     @FunctionalInterface
     public interface ModuleConsumer{
         void accept(ModuleType module, ContainerHolder containerHolder);
+    }
+
+    @FunctionalInterface
+    public interface FileLootModuleConsumer{
+        void accept(ContainerHolder containerHolder, Module module, Path root, Path file);
     }
 }
