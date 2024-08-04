@@ -76,7 +76,7 @@ public class RMLLoaders {
     public static class OreDic {
         private static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         public static void load(){
-            ResourceModLoader.loadModuleFindAssets(ModuleType.ORE_DIC, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "ore_dic")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -93,11 +93,11 @@ public class RMLLoaders {
                 }
                 catch (JsonParseException | JsonDeserializeException e)
                 {
-                    error(ModuleType.ORE_DIC, containerHolder, e, "Parsing error loading Ore dic {}", key);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "ore_dic")), containerHolder, e, "Parsing error loading Ore dic {}", key);
                 }
                 catch (IOException e)
                 {
-                    error(ModuleType.ORE_DIC, containerHolder, e, "Couldn't read ore dic {} from {}", key, file);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "ore_dic")), containerHolder, e, "Couldn't read ore dic {} from {}", key, file);
                 }finally
                 {
                     IOUtils.closeQuietly(reader);
@@ -118,7 +118,7 @@ public class RMLLoaders {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event) {
-            ResourceModLoader.loadModuleFindAssets(ModuleType.LOOT_TABLES, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "loot_tables")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -140,7 +140,7 @@ public class RMLLoaders {
         public static LineProcessor<List<String>> processor(){ return new LineProcessor<List<String>>() {final List<String> result = Lists.newArrayList();@Override public boolean processLine(String line) {result.add(line);return true;}@Override public List<String> getResult() {return result;}};}
 
         public static void load(FunctionLoadEvent event) {
-            ResourceModLoader.loadModuleFindAssets(ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "functions")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 switch (FilenameUtils.getExtension(file.toString())) {
                     case "mcfunction" :
@@ -155,7 +155,7 @@ public class RMLLoaders {
                             );
                             event.register(key, functionObject);
                         } catch (IOException e) {
-                            error(ModuleType.FUNCTIONS, containerHolder, e,"Couldn't read function {} from {}", key, file);
+                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e,"Couldn't read function {} from {}", key, file);
                         }
                         break;
                     default:
@@ -167,7 +167,7 @@ public class RMLLoaders {
 
         public static void loadExecutors() {
 
-            ResourceModLoader.loadModuleFindAssets(ModuleType.FUNCTIONS, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "functions")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 switch (FilenameUtils.getExtension(file.toString())) {
                     case "executor" :
@@ -177,9 +177,9 @@ public class RMLLoaders {
                             JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file));
                             Deserializer.decode(FunctionExecutor[].class, jsonElement);
                         } catch (IOException e) {
-                            error(ModuleType.FUNCTIONS, containerHolder, e,"Couldn't read function executor {} from {}", key, file);
+                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e,"Couldn't read function executor {} from {}", key, file);
                         } catch (JsonDeserializeException e) {
-                            error(ModuleType.FUNCTIONS, containerHolder, e, "Couldn't read function executor {} from {}", key, file);
+                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e, "Couldn't read function executor {} from {}", key, file);
                         }
                         break;
                     default:
@@ -190,7 +190,7 @@ public class RMLLoaders {
     }
     public static class MissingRemap {
         public static void load() {
-            ResourceModLoader.loadModuleFindAssets(ModuleType.REGISTRY_REMAP, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -198,9 +198,9 @@ public class RMLLoaders {
                     JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(FileHelper.getCachedFile(file));
                     Arrays.stream(Deserializer.decode(RemapCollection[].class, jsonElement)).forEach(RemapCollection.Manager::merge);
                 } catch (IOException e) {
-                    error(ModuleType.REGISTRY_REMAP, containerHolder, e, "Could not cache the file {} ", file);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), containerHolder, e, "Could not cache the file {} ", file);
                 } catch (JsonDeserializeException e) {
-                    error(ModuleType.REGISTRY_REMAP, containerHolder, e, "Could not deserialize registry_remap {}", file);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), containerHolder, e, "Could not deserialize registry_remap {}", file);
                 }
             });
         }
@@ -215,7 +215,7 @@ public class RMLLoaders {
         public static List<IVillager> load() {
 
             final List<IVillager> list = new ArrayList<>();
-            ResourceModLoader.loadModuleFindAssets(ModuleType.CUSTOM_VILLAGERS, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
@@ -231,12 +231,12 @@ public class RMLLoaders {
                         IVillager IVillager = Deserializer.decode(rml.loader.api.world.villagers.IVillager.class, jsonElement);
                         list.add(IVillager);
                     } catch (Exception e) {
-                        error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Error load village at {}", file);
+                        error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Error load village at {}", file);
                     }
                 } catch (JsonParseException e) {
-                    error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Parsing error loading villager {}", key);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Parsing error loading villager {}", key);
                 } catch (IOException e) {
-                    error(ModuleType.CUSTOM_VILLAGERS, containerHolder, e,"Couldn't read villager {} from {}", key, file);
+                    error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Couldn't read villager {} from {}", key, file);
                 } finally {
                     IOUtils.closeQuietly(reader);
                 }
@@ -250,7 +250,7 @@ public class RMLLoaders {
         public static List<String> rawTexts;
 
         public static void load() {
-            ResourceModLoader.loadModuleFindAssets(ModuleType.SPLASH_TEXT, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "splash_text")), (containerHolder, root, file) -> {
                 BufferedReader bufferedreader = null;
                 try {
                     bufferedreader = Files.newBufferedReader(file);
@@ -293,7 +293,7 @@ public class RMLLoaders {
     public static class ConfigLoader {
         public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
         public static void load(){
-            ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_DEFINE, (containerHolder, root, file) -> {
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_define")), (containerHolder, root, file) -> {
                 String relative = root.relativize(file).toString();
                 if (!"cfg".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
