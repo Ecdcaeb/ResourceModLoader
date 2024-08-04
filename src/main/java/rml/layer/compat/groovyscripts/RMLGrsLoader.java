@@ -27,7 +27,7 @@ import java.util.Map;
 public class RMLGrsLoader {
     public static void load(){
         ClassHelper.forceInit(RunConfig.class);
-        ResourceModLoader.loadModuleFindAssets(Module.TYPE, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (containerHolder, root, file) -> {
             BufferedReader bufferedreader = null;
             try {
                 RunConfig config = Deserializer.decode(RunConfig.class, RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file)));
@@ -39,9 +39,6 @@ public class RMLGrsLoader {
         });
     }
     public static HashBiMap<ContainerHolder, RunConfig> MOD = HashBiMap.create();
-    public static class Module{
-        public static ModuleType TYPE = new ModuleType(new ResourceLocation("rml", "MOD_GROOVY_SCRIPT"), "groovy_script/run_config.json", true);
-    }
 
     public static class RunConfig{
         public static final Argument<Map<String, String[]>> ARG_CLASSES = Argument.map("classes", String[].class);

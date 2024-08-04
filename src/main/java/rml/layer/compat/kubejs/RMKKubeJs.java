@@ -6,6 +6,7 @@ import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -13,6 +14,7 @@ import rml.jrx.announces.PrivateAPI;
 import rml.jrx.reflection.jvm.MethodAccessor;
 import rml.jrx.reflection.jvm.ReflectionHelper;
 import rml.loader.ResourceModLoader;
+import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
 
@@ -32,7 +34,7 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        ResourceModLoader.loadModuleFindAssets(KubeJSModule.TYPE,
+        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_kubejs")),
                 (module, containerHolder) -> {
                     if (!packs.containsKey(containerHolder.getContainer().getModId())) {
                      packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));
@@ -76,15 +78,6 @@ public class RMKKubeJs {
         packs = ReflectionHelper.getPrivateValue(ScriptManager.class,ScriptManager.instance,"packs");
     }
 
-    /**
-     * @Project ResourceModLoader
-     * @Author Hileb
-     * @Date 2024/7/30 10:16
-     **/
-    public static class KubeJSModule{
-
-        public static ModuleType TYPE = new ModuleType(new ResourceLocation("rml", "MOD_KUBEJS"), "kubejs", false);
-    }
 }
 
 

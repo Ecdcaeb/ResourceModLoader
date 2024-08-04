@@ -97,7 +97,7 @@ public abstract class ConfigPatcher {
     }
 
     @PrivateAPI public static void searchRedefault(){
-        ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_REDEFAULT, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_redefault")), (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             String extension = FilenameUtils.getExtension(file.toString());
             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
@@ -136,7 +136,7 @@ public abstract class ConfigPatcher {
     }
 
     @PrivateAPI public static void searchOverride(){
-        ResourceModLoader.loadModuleFindAssets(ModuleType.CONFIG_OVERRIDE, (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_override")), (containerHolder, root, file) -> {
             String relative = root.relativize(file).toString();
             String extension = FilenameUtils.getExtension(file.toString());
             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");

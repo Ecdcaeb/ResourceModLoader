@@ -66,12 +66,7 @@ public class RMLModDiscover {
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
                         JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                        if (element.isJsonArray()) {
-                            JsonArray jsonArray = element.getAsJsonArray();
-                            for (int i = 0, size = jsonArray.size(); i < size; i++) {
-                                Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
-                            }
-                        }
+                        Deserializer.decode(ModuleType[].class, element);
                     }
                     info = zipFile.getEntry("rml.info");
                     if (info != null){
@@ -87,24 +82,22 @@ public class RMLModDiscover {
                 } catch (IOException e) {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
                     e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException("Could not load Module", e);
+                } catch (JsonDeserializeException e) {
+                    throw new RuntimeException("Could not define the ModuleType",e);
                 }
             }else if (modFile.isDirectory()){
                 File[] files = modFile.listFiles(pathname -> pathname.isFile() && "rml.modules".equals(pathname.getName()));
                 if (files != null && files.length==1){
                     try {
                         InputStream inputStream = Files.newInputStream(files[0].toPath());
-                        JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        Deserializer.decode(ModuleType[].class, element);
 
-                        for(int i = 0, size = jsonArray.size(); i<size ; i++){
-                            Class.forName(jsonArray.get(i).getAsString(), true, Launch.classLoader);
-                        }
                     } catch (IOException e) {
                         RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
                         e.printStackTrace();
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException("Could not load Module", e);
+                    } catch (JsonDeserializeException e) {
+                        throw new RuntimeException("Could not define the ModuleType",e);
                     }
                 }
                 files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));

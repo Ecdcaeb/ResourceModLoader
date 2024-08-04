@@ -32,17 +32,8 @@ public class ModuleType{
                         valueOf(location);
             }).markDefault().build();
     public static final HashMap<ResourceLocation, ModuleType> REGISTRY = new HashMap<>();
-    public static final ModuleType CONFIG_OVERRIDE = register("CONFIG_OVERRIDE ","config/override", false);
-    public static final ModuleType CONFIG_REDEFAULT = register("CONFIG_REDEFAULT","config/redefault", false);
-    public static final ModuleType CONFIG_DEFINE = register("CONFIG_DEFINE","config/define", false);
-    public static final ModuleType FUNCTIONS = register("FUNCTIONS","functions", false);
-    public static final ModuleType LOOT_TABLES = register("LOOT_TABLES","loot_tables", false);
-    public static final ModuleType ORE_DIC = register("ORE_DIC","ore_dic", false);
-    public static final ModuleType REGISTRY_REMAP = register("REGISTRY_REMAP","registry/remap", false);
-    public static final ModuleType CUSTOM_VILLAGERS = register("CUSTOM_VILLAGERS","villages", false);
-    public static final ModuleType SPLASH_TEXT = register("SPLASH_TEXT","text/splash_text.txt", true);
-    public static final ModuleType STRUCTURE = register("STRUCTURE","structures", false);//TODO
-    public static final ModuleType DIMENSION = register("DIMENSION", "dimension", false);//TODO
+//    public static final ModuleType STRUCTURE = register("STRUCTURE","structures", false);//TODO
+//    public static final ModuleType DIMENSION = register("DIMENSION", "dimension", false);//TODO
 
     private static ModuleType register(String name, String defaultLocation, boolean isFile){
         ResourceLocation location = new ResourceLocation("rml", name);
