@@ -2,7 +2,7 @@
 sort: 4
 ---
 
-### 战利品表(LOOT_TABLES)
+### 战利品表(rml:LOOT_TABLES)
 
 默认在 `/loot_tables/`
 

@@ -64,3 +64,5 @@
 [EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/EnchantmentData)
 
 [TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/TagOre)
+
+[ModuleType](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ModuleType)

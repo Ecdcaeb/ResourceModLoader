@@ -1,4 +1,4 @@
-### 主界面闪烁标语（SPLASH_TEXT）
+### 主界面闪烁标语（rml:SPLASH_TEXT）
 
 
 默认在 `/text/splash_text.txt`

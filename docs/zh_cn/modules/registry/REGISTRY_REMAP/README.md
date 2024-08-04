@@ -1,4 +1,4 @@
-### 注册名重定义（REGISTRY_REMAP）
+### 注册名重定义（rml:REGISTRY_REMAP）
 
 默认在 `/registry/remap`
 

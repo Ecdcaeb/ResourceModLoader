@@ -2,7 +2,7 @@
 sort: 2
 ---
 
-### MOD_KUBEJS（KubeJS脚本）
+### rml:MOD_KUBEJS（KubeJS脚本）
 
 默认在 `/kubejs/`
 

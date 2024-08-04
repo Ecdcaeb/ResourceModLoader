@@ -1,40 +1,40 @@
-### CONFIG_REDEFAULT
+### rml:CONFIG_REDEFAULT
 
-Default at `/conifg/redefault`
+默认位于 `/conifg/redefault`
 
-Only for the common forge mod.(Not contain Forge & FML)
+仅适用于通用 forge 模式。（不包含 Forge 和 FML）
 
 #### Json Patch
-File name add ".json".
+文件名添加`.json`。
 
-For example `add_potion.cfg` for `add_potion.cfg.json`.
+例如，`add_potion.cfg` 对应 `add_potion.cfg.json`。
 
-Only write the value you want to interrupt.
+仅写入要修改的值。
 
-Example:
+示例：
 ```json
 {
-  "entityelectricshakingconf": {
-    "ap_addLimit_desc": 100
-  }
+“entityelectricshakingconf”：{
+“ap_addLimit_desc”：100
+}
 }
 ```
 
 #### Cfg Patch
-use a `.cfg` file to patch a config.
+使用 `.cfg` 文件修补配置。
 
-File name add ".patch".
-For example `add_potion.cfg` for `add_potion.cfg.patch`.
+文件名添加`.patch`。
+例如，`add_potion.cfg` 对应 `add_potion.cfg.patch`。
 
-Example:
+示例：
 ```editorconfig
-# Configuration file
+# 配置文件
 
 ##########################################################################################################
 # entityelectricshakingconf
-#--------------------------------------------------------------------------------------------------------#
+#----------------------------------------------------------------------------------------------------#
 # ap.configMisc.desc
-##########################################################################################################
+#############################################################################################################
 
 entityelectricshakingconf {
 # ap.config.maxCountIs1.desc
@@ -42,7 +42,6 @@ B:ap_maxIs1_desc=true
 }
 ```
 
-Remain the items you want to patch.
+保留要修改的项目。
 
-
-Lower than file. Usually re-default.
+低于文件。通常重新默认。

@@ -2,7 +2,7 @@
 sort: 3
 ---
 
-### 函数（FUNCTIONS）
+### 函数（rml:FUNCTIONS）
 
 默认在  `/functions/`
 

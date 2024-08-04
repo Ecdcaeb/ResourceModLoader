@@ -1,4 +1,8 @@
 {
   "classes": {
+    "postInit": [
+      "groovy/example/main.groovy",
+      "groovy/example/main2.groovy"
+    ]
   }
 }

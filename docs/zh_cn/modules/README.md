@@ -15,10 +15,10 @@
 }
 ```
 
-其中，`type`代表模块，必要内容。
+其中，`name`代表模块，必要内容。
 
-`location`可选，如果不填则默认，实际路径是`/assets/<domain>/xxxx`即本文档协定的路径。
+`location`可选，如果不填则默认，实际路径是`/assets/<domain>/<location>`即本文档协定的路径。
 
-`forceLoaded`可选，默认为false，设置为true可以在该模块未加载时崩溃。
+`forceLoaded`可选，默认为false，设置为true可以在该模块加载错误时崩溃。
 
 如果`modules`字段不存在，则默认应用全部默认模块。

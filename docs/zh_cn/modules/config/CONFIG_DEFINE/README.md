@@ -1,4 +1,4 @@
-### CONFIG_DEFINE
+### rml:CONFIG_DEFINE
 
 默认在 `/conifg/define`
 

@@ -2,7 +2,7 @@
 sort: 5
 ---
 
-### 矿词（ORE_DIC）
+### 矿词（rml:ORE_DIC）
 
 默认在 `/ore_dic/`
 

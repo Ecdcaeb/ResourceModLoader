@@ -1,4 +1,4 @@
-### 村庄（CUSTOM_VILLAGERS）
+### 村庄（rml:CUSTOM_VILLAGERS）
 
 默认在 `/village`
 

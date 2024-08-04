@@ -1,8 +1,13 @@
 package rml.loader.api.mods.module;
 
 import net.minecraft.util.ResourceLocation;
+import rml.deserializer.AbstractDeserializer;
+import rml.deserializer.DeserializerBuilder;
+import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
+import rml.loader.deserialize.Deserializer;
+import rml.loader.deserialize.MCDeserializers;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,6 +20,17 @@ import java.util.HashMap;
 
 @PublicAPI
 public class ModuleType{
+    public static final AbstractDeserializer<ModuleType> DESERIALIZE_CONSTRUCTOR = Deserializer.named(ModuleType.class, new ResourceLocation("rml", "new_type"))
+            .check((context)-> MCDeserializers.RESOURCE_LOCATION == null ? new JsonDeserializeException(context.getJsonObject(), new IllegalStateException("MCDeserializers works bad.")) : null)
+            .require(ResourceLocation.class, "name")
+            .require(Boolean.class, "isFile")
+            .require(String.class, "defaultLocation")
+            .decode((context)->{
+                ResourceLocation location = context.get(ResourceLocation.class, "name");
+                return valueOf(location) == null ?
+                        new ModuleType(context.get(ResourceLocation.class, "name"), context.get(String.class, "defaultLocation"), context.get(Boolean.class, "isFile")) :
+                        valueOf(location);
+            }).markDefault().build();
     public static final HashMap<ResourceLocation, ModuleType> REGISTRY = new HashMap<>();
     public static final ModuleType CONFIG_OVERRIDE = register("CONFIG_OVERRIDE ","config/override", false);
     public static final ModuleType CONFIG_REDEFAULT = register("CONFIG_REDEFAULT","config/redefault", false);
