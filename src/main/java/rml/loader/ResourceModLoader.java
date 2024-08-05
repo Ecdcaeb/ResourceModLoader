@@ -3,6 +3,7 @@ package rml.loader;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.logging.log4j.Logger;
+import rml.internal.net.minecraftforge.common.util.LazyOptional;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
 import rml.jrx.utils.file.FileHelper;
@@ -16,7 +17,10 @@ import rml.loader.core.RMLFMLLoadingPlugin;
 import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -135,6 +139,4 @@ public class ResourceModLoader {
         }
         return null;
     }
-
-
 }

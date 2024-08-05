@@ -1,7 +1,5 @@
 package rml.jrx.announces;
 
-import net.minecraftforge.fml.common.LoaderState;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

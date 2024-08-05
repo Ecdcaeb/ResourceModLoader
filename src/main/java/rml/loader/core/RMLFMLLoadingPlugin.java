@@ -26,6 +26,8 @@ import org.apache.logging.log4j.Logger;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
+import rml.jrx.reflection.jvm.FieldAccessor;
+import rml.jrx.reflection.jvm.ReflectionHelper;
 import rml.jrx.utils.ClassHelper;
 import rml.layer.compat.crt.RMLCrTLoader;
 import rml.layer.compat.kubejs.RMKKubeJs;
@@ -40,6 +42,7 @@ import rml.loader.deserialize.craft.recipe.SimpleAnvilRecipe;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -82,8 +85,13 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public String getSetupClass() {
         return null;
     }
+
     @Override
     public void injectData(Map<String, Object> data) {
+        injectData0(data);
+    }
+
+    public <FMLPluginWrapper> void injectData0(Map<String, Object> data) {
         source = (File) data.get("coremodLocation");
         ASMUtil.gameDir = Launch.minecraftHome;
         makeFMLCorePluginContainsFMLMod(source);
@@ -101,6 +109,24 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
         }
         ASMUtil.saveTransformedClass = isDebug;
+
+
+        @SuppressWarnings("unchecked")
+        List<FMLPluginWrapper> coremodList = (List<FMLPluginWrapper>) data.get("coremodList");
+        if (coremodList != null){
+            try {
+                @SuppressWarnings("unchecked")
+                Class<FMLPluginWrapper> CoreModManager$FMLPluginWrapper = (Class<FMLPluginWrapper>) Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper");
+                FieldAccessor<String, FMLPluginWrapper> name = ReflectionHelper.getFieldAccessor(CoreModManager$FMLPluginWrapper, "name");
+                for(FMLPluginWrapper plugin : coremodList){
+                    if ("GroovyScript-Core".equals(name.get(plugin))) {
+                        RMLTransformer.Transformers.initGroovyScriptTransformer();
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override
