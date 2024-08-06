@@ -1,18 +1,29 @@
 package rml.loader.core;
 
+import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.launchwrapper.Launch;
+import net.minecraftforge.fml.common.FMLLog;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.MetadataCollection;
+import net.minecraftforge.fml.common.ModClassLoader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
+import net.minecraftforge.fml.common.discovery.ContainerType;
+import net.minecraftforge.fml.common.discovery.ModCandidate;
+import net.minecraftforge.fml.common.discovery.ModDiscoverer;
 import net.minecraftforge.fml.common.discovery.asm.ModAnnotation;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.VersionParser;
+import net.minecraftforge.fml.relauncher.CoreModManager;
+import net.minecraftforge.fml.relauncher.libraries.Artifact;
+import net.minecraftforge.fml.relauncher.libraries.LibraryManager;
+import net.minecraftforge.fml.relauncher.libraries.Repository;
 import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.ASMInvoke;
 import rml.jrx.announces.BeDiscovered;
@@ -36,8 +47,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -56,10 +67,12 @@ public class RMLModDiscover {
     public static void inject(List<ModContainer> modContainers){
 
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
+        ModuleType.DESERIALIZE_CONSTRUCTOR.getResultTarget();
         Module.DESERIALIZER.getResultTarget(); // Force to init the class for register.
-        File modRoots = new File(Launch.minecraftHome,"mods");
+        final HashSet<File> mods = getModsLocations();
 
-        for (File modFile : Objects.requireNonNull(modRoots.listFiles(), "Directory `mods/` is not exist")) {
+        // add modules
+        for (File modFile : mods) {
             if(modFile.isFile()){
                 try(ZipFile zipFile = new ZipFile(modFile)) {
                     ZipEntry info = zipFile.getEntry("rml.modules");
@@ -67,17 +80,6 @@ public class RMLModDiscover {
                         InputStream inputStream = zipFile.getInputStream(info);
                         JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                         Deserializer.decode(ModuleType[].class, element);
-                    }
-                    info = zipFile.getEntry("rml.info");
-                    if (info != null){
-                        InputStream inputStream = zipFile.getInputStream(info);
-                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                        if (element.isJsonArray()) {
-                            JsonArray jsonArray = element.getAsJsonArray();
-                            for (int i = 0, size = jsonArray.size(); i < size; i++) {
-                                modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
-                            }
-                        }
                     }
                 } catch (IOException e) {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
@@ -100,7 +102,30 @@ public class RMLModDiscover {
                         throw new RuntimeException("Could not define the ModuleType",e);
                     }
                 }
-                files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));
+            }
+        }
+
+        //add ContainerHolder
+        for (File modFile : mods) {
+            if(modFile.isFile()){
+                try(ZipFile zipFile = new ZipFile(modFile)) {
+                    ZipEntry info = zipFile.getEntry("rml.info");
+                    if (info != null){
+                        InputStream inputStream = zipFile.getInputStream(info);
+                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        if (element.isJsonArray()) {
+                            JsonArray jsonArray = element.getAsJsonArray();
+                            for (int i = 0, size = jsonArray.size(); i < size; i++) {
+                                modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
+                    e.printStackTrace();
+                }
+            }else if (modFile.isDirectory()){
+                File[] files = modFile.listFiles(pathname -> pathname.isFile() && "rml.info".equals(pathname.getName()));
                 if (files != null && files.length==1){
                     try {
                         InputStream inputStream = Files.newInputStream(files[0].toPath());
@@ -119,6 +144,51 @@ public class RMLModDiscover {
         }
         afterInject();
     }
+
+    public static HashSet<File> getModsLocations(){
+        File mcDir = Launch.minecraftHome;
+        List<Artifact> maven_canidates = LibraryManager.flattenLists(mcDir);
+        HashSet<File> file_canidates = new HashSet<>(LibraryManager.gatherLegacyCanidates(mcDir));
+
+        // Find from core-locations
+        for (Artifact artifact : maven_canidates)
+        {
+            artifact = Repository.resolveAll(artifact);
+            if (artifact != null)
+            {
+                File target = artifact.getFile();
+                if (!file_canidates.contains(target))
+                    file_canidates.add(target);
+            }
+        }
+        // Find from ModClassLoader
+        ModClassLoader modClassLoader = Loader.instance().getModClassLoader();
+        List<String> knownLibraries = ImmutableList.<String>builder()
+                // skip default libs
+                .addAll(modClassLoader.getDefaultLibraries())
+                // skip loaded coremods
+                .addAll(CoreModManager.getIgnoredMods())
+                // skip reparse coremods here
+                .addAll(CoreModManager.getReparseableCoremods())
+                .build();
+        File[] minecraftSources = modClassLoader.getParentSources();
+        if (!(minecraftSources.length == 1 && minecraftSources[0].isFile())) {
+            for (File source : minecraftSources)
+            {
+                if (source.isFile())
+                {
+                    if (!(knownLibraries.contains(source.getName()) || modClassLoader.isDefaultLibrary(source))) file_canidates.add(source);
+                }
+                else if (source.isDirectory())
+                {
+                    file_canidates.add(source);
+                }
+            }
+        }
+
+        return file_canidates;
+    }
+
     @PrivateAPI public static void afterInject(){
         ConfigPatcher.Json.searchRedefault();
         ConfigPatcher.Json.searchOverride();

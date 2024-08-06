@@ -3,7 +3,6 @@ package rml.loader;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.logging.log4j.Logger;
-import rml.internal.net.minecraftforge.common.util.LazyOptional;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.PublicAPI;
 import rml.jrx.utils.file.FileHelper;
@@ -15,12 +14,8 @@ import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
 
 import javax.annotation.Nullable;
-import java.nio.file.Path;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -114,19 +109,6 @@ public class ResourceModLoader {
             Loader.instance().setActiveModContainer(containerHolder.container);
             moduleConsumer.accept(module, containerHolder);
             FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
-            Loader.instance().setActiveModContainer(oldActive);
-        }
-    }
-
-    public static void loadModuleFindAssets(ModuleType module, ContainerHolder.FileLootModuleConsumer consumer){
-        Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
-        for(ContainerHolder containerHolder : containerHolders){
-            ModContainer oldActive = Loader.instance().activeModContainer();
-            Loader.instance().setActiveModContainer(containerHolder.container);
-            final Module module_ = containerHolder.modules.get(module);
-            FileHelper.findAssets(containerHolder, module_, (containerHolder1, root, file) -> {
-                consumer.accept(containerHolder1, module_, root, file);
-            });
             Loader.instance().setActiveModContainer(oldActive);
         }
     }

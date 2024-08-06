@@ -10,6 +10,7 @@ import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -135,14 +136,23 @@ public class DeserializerManager {
         throw new UnsupportedOperationException(exception);
     }
 
-
-
     /**
      * @param defaultDomain the default domain of one deserializer manager
      *
      * Constructor, with build-in default deserializers.
      */
     public DeserializerManager(String defaultDomain){
+        this(defaultDomain, (manager)->{});
+    }
+
+
+    /**
+     * @param defaultDomain the default domain of one deserializer manager
+     * @param consumer register the buildIn deserializer
+     *
+     * Constructor, with build-in default deserializers.
+     */
+    public DeserializerManager(String defaultDomain, Consumer<DeserializerManager> consumer){
         this.defaultDomain = defaultDomain;
         ResourceLocation GSON = new ResourceLocation("google", "primitive");
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, JsonElement::getAsInt));
@@ -159,6 +169,7 @@ public class DeserializerManager {
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, JsonElement::getAsNumber));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, (jsonElement)->null));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, JsonElement::getAsJsonObject));
+        consumer.accept(this);
     }
 
     public DeserializerManager(){

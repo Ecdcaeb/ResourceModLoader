@@ -1,9 +1,7 @@
 package rml.layer.cleanroom;
 
-import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.DefaultArtifactVersion;
-import net.minecraftforge.fml.common.versioning.VersionParser;
 
 /**
  * @Project ResourceModLoader

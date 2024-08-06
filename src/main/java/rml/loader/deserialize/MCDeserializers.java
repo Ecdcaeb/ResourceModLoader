@@ -32,10 +32,6 @@ public class MCDeserializers {
      */
 
     public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-    public static final AbstractDeserializer<ResourceLocation> RESOURCE_LOCATION = Deserializer.MANAGER.addDefaultEntry(
-            new AbstractDeserializer<>(new ResourceLocation("minecraft", "resource_location"), ResourceLocation.class,
-                    element -> new ResourceLocation(Deserializer.decode(String.class, element)))
-    );
 
     public static final AbstractDeserializer<Item> ITEM = Deserializer.MANAGER.addDefaultEntry(of(ForgeRegistries.ITEMS));
 

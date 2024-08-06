@@ -255,6 +255,22 @@ public class RMLTransformer implements IClassTransformer {
                         }
                         return -1;
                     });
+            transformers.put("net.minecraftforge.fml.common.LoadController",
+                    (cn)->{
+                        for(MethodNode mn:cn.methods){
+                            if ("distributeStateMessage".equals(mn.name) && "(Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V".equals(mn.desc)){
+                                //beforeFMLBusEventSending(Lnet/minecraftforge/fml/common/event/FMLEvent;)V
+                                InsnList hook=new InsnList();
+                                hook.add(new VarInsnNode(Opcodes.ALOAD,0));
+                                hook.add(new VarInsnNode(Opcodes.ALOAD,1));
+                                hook.add(new VarInsnNode(Opcodes.ALOAD,2));
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
+                                mn.instructions.insert(hook);
+                                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                            }
+                        }
+                        return -1;
+                    });
             transformers.put("net.minecraftforge.fml.client.GuiModList$Info",
                     (cn)->{
                         for(MethodNode mn:cn.methods){
@@ -321,22 +337,6 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
 
-            transformers.put("net.minecraftforge.fml.common.LoadController",
-                    (cn)->{
-                        for(MethodNode mn:cn.methods){
-                            if ("distributeStateMessage".equals(mn.name) && "(Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V".equals(mn.desc)){
-                                //beforeFMLBusEventSending(Lnet/minecraftforge/fml/common/event/FMLEvent;)V
-                                InsnList hook=new InsnList();
-                                hook.add(new VarInsnNode(Opcodes.ALOAD,0));
-                                hook.add(new VarInsnNode(Opcodes.ALOAD,1));
-                                hook.add(new VarInsnNode(Opcodes.ALOAD,2));
-                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
-                                mn.instructions.insert(hook);
-                                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
-                            }
-                        }
-                        return -1;
-                    });
             transformers.put("net.minecraft.client.gui.GuiMainMenu",
                     (cn)->{
                         for(MethodNode mn:cn.methods){

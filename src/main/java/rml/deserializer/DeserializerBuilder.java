@@ -4,11 +4,8 @@ import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
-import org.apache.commons.lang3.AnnotationUtils;
 import rml.internal.net.minecraftforge.common.util.LazyOptional;
-import sun.reflect.annotation.AnnotationType;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;

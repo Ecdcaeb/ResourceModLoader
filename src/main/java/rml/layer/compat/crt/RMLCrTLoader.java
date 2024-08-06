@@ -36,7 +36,7 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (containerHolder, root, file) -> {
+        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (containerHolder, module, root, file) -> {
             String relative = root.relativize(file).toString();
             if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                 return;

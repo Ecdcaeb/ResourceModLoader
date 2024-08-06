@@ -21,7 +21,6 @@ import java.util.HashMap;
 @PublicAPI
 public class ModuleType{
     public static final AbstractDeserializer<ModuleType> DESERIALIZE_CONSTRUCTOR = Deserializer.named(ModuleType.class, new ResourceLocation("rml", "new_type"))
-            .check((context)-> MCDeserializers.RESOURCE_LOCATION == null ? new JsonDeserializeException(context.getJsonObject(), new IllegalStateException("MCDeserializers works bad.")) : null)
             .require(ResourceLocation.class, "name")
             .require(Boolean.class, "isFile")
             .require(String.class, "defaultLocation")

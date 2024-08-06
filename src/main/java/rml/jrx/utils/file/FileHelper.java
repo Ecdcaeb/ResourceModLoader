@@ -10,10 +10,10 @@ import rml.loader.core.RMLFMLLoadingPlugin;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.IOUtils;
 
+import javax.annotation.Nullable;
 import java.io.CharArrayReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
@@ -35,17 +35,17 @@ public class FileHelper {
 
     public static void findAssets(ContainerHolder containerHolder, Module module, ModFileConsumer consumer){
         if (module.moduleType.isFile){
-            findFile(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
+            findFile(containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
         }else {
-            findAssets(containerHolder, module.location, consumer);
+            findAssets(containerHolder, module, module.location, consumer);
         }
     }
 
-    public static void findAssets(ContainerHolder containerHolder, String base, ModFileConsumer consumer){
-        findFiles(containerHolder, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
+    public static void findAssets(ContainerHolder containerHolder, @Nullable Module module, String base, ModFileConsumer consumer){
+        findFiles(containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
     }
 
-    public static void findFiles(ContainerHolder containerHolder, String base, ModFileConsumer consumer)
+    public static void findFiles(ContainerHolder containerHolder, @Nullable Module module, String base, ModFileConsumer consumer)
     {
         final ModContainer mod = containerHolder.getContainer();
 
@@ -98,7 +98,7 @@ public class FileHelper {
 
                 while (itr.hasNext())
                 {
-                    consumer.accept(containerHolder, root, itr.next());
+                    consumer.accept(containerHolder, module, root, itr.next());
                 }
             }
         }
@@ -109,7 +109,7 @@ public class FileHelper {
     }
 
     @PublicAPI
-    public static void findFile(ContainerHolder containerHolder, String base, ModFileConsumer processor) throws InvalidPathException
+    public static void findFile(ContainerHolder containerHolder, Module module, String base, ModFileConsumer processor) throws InvalidPathException
     {
         ModContainer mod = containerHolder.container;
         File source = mod.getSource();
@@ -128,7 +128,7 @@ public class FileHelper {
                 }catch (InvalidPathException e){
                     return;
                 }
-                processor.accept(containerHolder, path, path);
+                processor.accept(containerHolder, module, path, path);
                 IOUtils.closeQuietly(fs);
             }
             catch (IOException e) {
@@ -143,7 +143,7 @@ public class FileHelper {
             } catch (InvalidPathException e){
                 return;
             }
-            processor.accept(containerHolder, path, path);
+            processor.accept(containerHolder, module, path, path);
         }
     }
 
@@ -219,6 +219,6 @@ public class FileHelper {
 
     @FunctionalInterface
     public interface ModFileConsumer{
-        void accept(ContainerHolder containerHolder, Path root, Path file);
+        void accept(ContainerHolder containerHolder, @Nullable Module module, Path root, Path file);
     }
 }

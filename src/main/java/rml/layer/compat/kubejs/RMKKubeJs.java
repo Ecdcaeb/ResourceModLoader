@@ -6,7 +6,6 @@ import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptManager;
 import dev.latvian.kubejs.script.ScriptPack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -14,7 +13,6 @@ import rml.jrx.announces.PrivateAPI;
 import rml.jrx.reflection.jvm.MethodAccessor;
 import rml.jrx.reflection.jvm.ReflectionHelper;
 import rml.loader.ResourceModLoader;
-import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
 
@@ -40,7 +38,7 @@ public class RMKKubeJs {
                      packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));
                     }
                 },
-                (containerHolder, root, file) -> {
+                (containerHolder, module, root, file) -> {
                     String relative = root.relativize(file).toString();
                     if (!"js".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                         return;
