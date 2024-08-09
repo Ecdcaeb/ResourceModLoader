@@ -7,6 +7,7 @@ import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Argument;
 import rml.jrx.announces.RewriteWhenCleanroom;
 import rml.jrx.utils.ClassHelper;
+import rml.jrx.utils.file.JsonHelper;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.deserialize.Deserializer;
@@ -30,7 +31,7 @@ public class RMLGrsLoader {
         ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (containerHolder, module, root, file) -> {
 
             try {
-                RunConfig config = Deserializer.decode(RunConfig.class, RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file)));
+                RunConfig config = Deserializer.decode(RunConfig.class, JsonHelper.parse(Files.newBufferedReader(file)));
                 MOD.put(containerHolder, config);
             } catch (Exception ignored) {
                 ignored.printStackTrace();
