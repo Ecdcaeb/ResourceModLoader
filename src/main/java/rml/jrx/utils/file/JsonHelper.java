@@ -4,12 +4,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import org.apache.commons.io.IOUtils;
+import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
 import rml.jrx.utils.IteratorHelper;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -178,14 +183,27 @@ public class JsonHelper {
     }
 
     public static JsonObject getJson(String s){
-        return (JsonObject) new JsonParser().parse(s);
+        return (JsonObject) JSON_PARSER.parse(s);
     }
     public static JsonObject getJson(Reader s){
-        return (JsonObject) new JsonParser().parse(s);
+        return (JsonObject) JSON_PARSER.parse(s);
     }
 
 
+    public static final JsonParser JSON_PARSER = new JsonParser();
     public static JsonArray getArray(Reader s){
-        return (JsonArray) new JsonParser().parse(s);
+        return (JsonArray) JSON_PARSER.parse(s);
+    }
+
+    public static JsonElement parse(Reader reader) throws JsonDeserializeException {
+        try {
+            return JSON_PARSER.parse(reader);
+        }catch (JsonSyntaxException e){
+            try {
+                throw new JsonDeserializeException(null, new String(IOUtils.toByteArray(reader, StandardCharsets.UTF_8)), e);
+            } catch (IOException ex) {
+                throw new JsonDeserializeException(null, e);
+            }
+        }
     }
 }

@@ -9,16 +9,16 @@ import com.google.gson.JsonElement;
  **/
 public class JsonDeserializeException extends Exception{
     public JsonDeserializeException(JsonElement element, Throwable throwable){
-        super(element.toString(), throwable);
+        super(String.valueOf(element), throwable);
     }
 
     public JsonDeserializeException(JsonElement element, String s){
-        super(s + ", " + element.toString());
+        super(s + ", " + element);
     }
     public JsonDeserializeException(JsonElement element){
-        super(element.toString());
+        super(String.valueOf(element));
     }
     public JsonDeserializeException(JsonElement element, String s, Throwable throwable){
-        super(s + ", " + element.toString(), throwable);
+        super(s + ", " + element, throwable);
     }
 }

@@ -9,6 +9,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import rml.jrx.utils.file.JsonHelper;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.PrivateAPI;
 import rml.loader.api.config.ConfigFactory;
@@ -87,7 +88,7 @@ public class RMLLoaders {
                 try
                 {
                     reader = Files.newBufferedReader(file);
-                    for(TagOre tagOre : Deserializer.decode(TagOre[].class, JSON_PARSER.parse(reader))){
+                    for(TagOre tagOre : Deserializer.decode(TagOre[].class, JsonHelper.parse(reader))){
                         OreDictionary.registerOre(tagOre.ore, tagOre.item);
                     }
                 }
@@ -174,7 +175,7 @@ public class RMLLoaders {
                         String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
                         ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
                         try {
-                            JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file));
+                            JsonElement jsonElement = JsonHelper.parse(Files.newBufferedReader(file));
                             Deserializer.decode(FunctionExecutor[].class, jsonElement);
                         } catch (IOException e) {
                             error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e,"Couldn't read function executor {} from {}", key, file);
@@ -195,7 +196,7 @@ public class RMLLoaders {
                 if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
                     return;
                 try {
-                    JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(FileHelper.getCachedFile(file));
+                    JsonElement jsonElement = JsonHelper.parse(FileHelper.getCachedFile(file));
                     Arrays.stream(Deserializer.decode(RemapCollection[].class, jsonElement)).forEach(RemapCollection.Manager::merge);
                 } catch (IOException e) {
                     error(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), containerHolder, e, "Could not cache the file {} ", file);
@@ -226,14 +227,14 @@ public class RMLLoaders {
                 BufferedReader reader = null;
                 try {
                     reader = Files.newBufferedReader(file);
-                    JsonElement jsonElement = RMLLoaders.JSON_PARSER.parse(reader);
+                    JsonElement jsonElement = JsonHelper.parse(reader);
                     try {
                         IVillager IVillager = Deserializer.decode(rml.loader.api.world.villagers.IVillager.class, jsonElement);
                         list.add(IVillager);
                     } catch (Exception e) {
                         error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Error load village at {}", file);
                     }
-                } catch (JsonParseException e) {
+                } catch (JsonParseException | JsonDeserializeException e) {
                     error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Parsing error loading villager {}", key);
                 } catch (IOException e) {
                     error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Couldn't read villager {} from {}", key, file);

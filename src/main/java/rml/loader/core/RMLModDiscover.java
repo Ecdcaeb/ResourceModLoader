@@ -78,7 +78,7 @@ public class RMLModDiscover {
                     ZipEntry info = zipFile.getEntry("rml.modules");
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
-                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                         Deserializer.decode(ModuleType[].class, element);
                     }
                 } catch (IOException e) {
@@ -92,7 +92,7 @@ public class RMLModDiscover {
                 if (files != null && files.length==1){
                     try {
                         InputStream inputStream = Files.newInputStream(files[0].toPath());
-                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                         Deserializer.decode(ModuleType[].class, element);
 
                     } catch (IOException e) {
@@ -112,7 +112,7 @@ public class RMLModDiscover {
                     ZipEntry info = zipFile.getEntry("rml.info");
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
-                        JsonElement element = RMLLoaders.JSON_PARSER.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
                         if (element.isJsonArray()) {
                             JsonArray jsonArray = element.getAsJsonArray();
                             for (int i = 0, size = jsonArray.size(); i < size; i++) {
@@ -120,7 +120,7 @@ public class RMLModDiscover {
                             }
                         }
                     }
-                } catch (IOException e) {
+                } catch (IOException | JsonDeserializeException e) {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
                     e.printStackTrace();
                 }
