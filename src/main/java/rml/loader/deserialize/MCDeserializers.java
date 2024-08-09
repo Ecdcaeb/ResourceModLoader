@@ -17,6 +17,7 @@ import net.minecraftforge.registries.RegistryManager;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.BeDiscovered;
+import rml.jrx.announces.PrivateAPI;
 import rml.jrx.utils.RandomHolder;
 import rml.jrx.utils.values.RandomIntSupplier;
 
@@ -30,10 +31,7 @@ public class MCDeserializers {
     /*
      * MC BuildIn
      */
-
     public static Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
-
-    public static final AbstractDeserializer<Item> ITEM = Deserializer.MANAGER.addDefaultEntry(of(ForgeRegistries.ITEMS));
 
     public static final AbstractDeserializer<NBTTagCompound> NBT_TAG_COMPOUND = Deserializer.MANAGER.addDefaultEntry(
             new AbstractDeserializer<>(new ResourceLocation("minecraft", "json_to_nbt"), NBTTagCompound.class,
@@ -78,7 +76,6 @@ public class MCDeserializers {
                     return new ItemStack(item, count, data);
                 }
             })).markDefault().build();
-    public static final AbstractDeserializer<Enchantment> ENCHANTMENT = Deserializer.MANAGER.addDefaultEntry(of(ForgeRegistries.ENCHANTMENTS));
 
     public static final AbstractDeserializer<EnchantmentData> ENCHANTMENT_DATA = Deserializer.named(EnchantmentData.class, new ResourceLocation("minecraft", "enchantment_data"))
             .require(Enchantment.class, "name")
@@ -87,13 +84,16 @@ public class MCDeserializers {
             .markDefault().build();
 
 
-    public static<T extends IForgeRegistryEntry<T>> AbstractDeserializer<T> of(final IForgeRegistry<T> registry) {
-        ResourceLocation registryName = RegistryManager.ACTIVE.getName(registry);
-        return new AbstractDeserializer<>(registryName, registry.getRegistrySuperType(), jsonElement -> {
+    // Build Deserializer for all IForgeRegistry
+    @PrivateAPI
+    public static <T extends IForgeRegistryEntry<T>> IForgeRegistry<T> onNewRegistry(final IForgeRegistry<T> registry, final ResourceLocation name) {
+        AbstractDeserializer<T> abstractDeserializer = new AbstractDeserializer<>(name, registry.getRegistrySuperType(), jsonElement -> {
             ResourceLocation resourceLocation = Deserializer.decode(ResourceLocation.class, jsonElement);
             T obj = registry.getValue(resourceLocation);
             if (obj != null) return obj;
-            else throw new JsonDeserializeException(jsonElement, "No Such RegistryEntry for " + registryName);
+            else throw new JsonDeserializeException(jsonElement, "No Such RegistryEntry for " + name);
         });
+        Deserializer.MANAGER.addDefaultEntry(abstractDeserializer);
+        return registry;
     }
 }

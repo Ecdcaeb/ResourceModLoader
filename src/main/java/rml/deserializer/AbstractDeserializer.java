@@ -32,4 +32,17 @@ public class AbstractDeserializer<T>{
     public interface IDeserializer<V>{
         V apply(JsonElement jsonElement) throws JsonDeserializeException;
     }
+
+    public static <T> IDeserializer<T> safeRun(IDeserializer<T> deserializer){
+        return (element)->{
+            try{
+                return deserializer.apply(element);
+            }catch (Exception e){
+                if (e instanceof JsonDeserializeException) throw e;
+                else{
+                    throw new JsonDeserializeException(element, e);
+                }
+            }
+        };
+    }
 }

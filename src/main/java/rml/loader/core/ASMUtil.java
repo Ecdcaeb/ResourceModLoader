@@ -1,5 +1,7 @@
 package rml.loader.core;
 
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import net.minecraft.launchwrapper.Launch;
@@ -41,7 +43,7 @@ public class ASMUtil {
 
     public static byte[] push(String rawName,byte[] clazz){
         if (saveTransformedClass){
-            final File outRoot=new File(gameDir,"clazzs/");
+            final File outRoot = new File(gameDir,"clazzs/");
             final File outFile = new File(outRoot, rawName.replace('.', File.separatorChar) + ".class");
             final File outDir = outFile.getParentFile();
 

@@ -296,6 +296,21 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
             transformers.put("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
+            transformers.put("net.minecraftforge.registries.RegistryBuilder", (cn)->{
+                for(MethodNode mn : cn.methods){
+                    if ("create".equals(mn.name)){
+                        ASMUtil.injectBefore(mn.instructions, ()->{
+                            InsnList hook = new InsnList();
+                            hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                            hook.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/registries/RegistryBuilder", "registryName", "Lnet/minecraft/util/ResourceLocation;"));
+                            hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/MCDeserializers", "onNewRegistry", "(Lnet/minecraftforge/registries/IForgeRegistry;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraftforge/registries/IForgeRegistry;", false));
+                            return hook;
+                        }, (node) -> node.getOpcode() == Opcodes.ARETURN);
+                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                    }
+                }
+                return -1;
+            });
         }
         public static void initMinecraftTransformers(){
             transformers.put("net.minecraft.advancements.FunctionManager",

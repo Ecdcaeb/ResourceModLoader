@@ -28,13 +28,12 @@ public class RMLGrsLoader {
     public static void load(){
         ClassHelper.forceInit(RunConfig.class);
         ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (containerHolder, module, root, file) -> {
-            BufferedReader bufferedreader = null;
+
             try {
                 RunConfig config = Deserializer.decode(RunConfig.class, RMLLoaders.JSON_PARSER.parse(Files.newBufferedReader(file)));
                 MOD.put(containerHolder, config);
             } catch (Exception ignored) {
-            } finally {
-                IOUtils.closeQuietly(bufferedreader);
+                ignored.printStackTrace();
             }
         });
     }

@@ -155,20 +155,20 @@ public class DeserializerManager {
     public DeserializerManager(String defaultDomain, Consumer<DeserializerManager> consumer){
         this.defaultDomain = defaultDomain;
         ResourceLocation GSON = new ResourceLocation("google", "primitive");
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, JsonElement::getAsInt));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, JsonElement::getAsFloat));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Double.class, JsonElement::getAsDouble));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Long.class, JsonElement::getAsLong));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Character.class, JsonElement::getAsCharacter));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Byte.class, JsonElement::getAsByte));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, String.class, JsonElement::getAsString));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Boolean.class, JsonElement::getAsBoolean));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Short.class, JsonElement::getAsShort));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigInteger.class, JsonElement::getAsBigInteger));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, JsonElement::getAsBigDecimal));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, JsonElement::getAsNumber));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, (jsonElement)->null));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, JsonElement::getAsJsonObject));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, AbstractDeserializer.safeRun(JsonElement::getAsInt)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, AbstractDeserializer.safeRun(JsonElement::getAsFloat)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Double.class, AbstractDeserializer.safeRun(JsonElement::getAsDouble)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Long.class, AbstractDeserializer.safeRun(JsonElement::getAsLong)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Character.class, AbstractDeserializer.safeRun(JsonElement::getAsCharacter)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Byte.class, AbstractDeserializer.safeRun(JsonElement::getAsByte)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, String.class, AbstractDeserializer.safeRun(JsonElement::getAsString)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Boolean.class, AbstractDeserializer.safeRun(JsonElement::getAsBoolean)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Short.class, AbstractDeserializer.safeRun(JsonElement::getAsShort)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigInteger.class, AbstractDeserializer.safeRun(JsonElement::getAsBigInteger)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, AbstractDeserializer.safeRun(JsonElement::getAsBigDecimal)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, AbstractDeserializer.safeRun(JsonElement::getAsNumber)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, AbstractDeserializer.safeRun((jsonElement)->null)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, AbstractDeserializer.safeRun(JsonElement::getAsJsonObject)));
         consumer.accept(this);
     }
 
