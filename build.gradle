@@ -108,6 +108,7 @@ jar {
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'FMLCorePlugin': 'rml.loader.core.RMLFMLLoadingPlugin',
                 'FMLAT': 'rml_at.cfg',
+                'FMLCorePluginContainsFMLMod':"true",
                 'Implementation-Title': "ResourceModLoader",
                 'Implementation-Version': mod_version,
                 'Implementation-Vendor': "Hileb",

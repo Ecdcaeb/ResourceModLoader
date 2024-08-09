@@ -6,6 +6,10 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import crafttweaker.CraftTweakerAPI;
+import crafttweaker.annotations.ModOnly;
+import crafttweaker.annotations.ZenRegister;
+import crafttweaker.mc1120.CraftTweaker;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
@@ -284,14 +288,12 @@ public class RMLModDiscover {
 
 
     public static void discover(ASMDataTable asmDataTable, final String loader){
-        asmDataTable.getAll(BeDiscovered.class.getName()).stream()
-                .filter((data)-> data!=null && loader.equals(data.getAnnotationInfo().get("value")))
-                .forEach((data)-> {
-                    try {
-                        ClassHelper.forceInit(Class.forName(data.getClassName(), true, Launch.classLoader));
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+        asmDataTable.getAll(BeDiscovered.class.getCanonicalName()).forEach(clazz -> {
+            try {
+                Class<?> claz = Class.forName(clazz.getClassName(), true, Launch.classLoader);
+            } catch(ClassNotFoundException e) {
+                // impossible
+            }
+        });
     }
 }

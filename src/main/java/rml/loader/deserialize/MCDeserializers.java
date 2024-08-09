@@ -10,6 +10,7 @@ import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.nbt.NBTException;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
 import net.minecraftforge.registries.IForgeRegistry;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 import rml.deserializer.AbstractDeserializer;
@@ -80,6 +81,8 @@ public class MCDeserializers {
             .require(RandomIntSupplier.class, "level")
             .decode(context -> new EnchantmentData(context.get(Enchantment.class, "name"), context.get(RandomIntSupplier.class, "level").get(RandomHolder.RANDOM)))
             .markDefault().build();
+
+    public static final AbstractDeserializer<ITextComponent> ITEXT_COMPONENT = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "textcomponent"), ITextComponent.class, AbstractDeserializer.safeRun((jsonElement -> ITextComponent.Serializer.jsonToComponent(String.valueOf(jsonElement))))));
 
 
     // Build Deserializer for all IForgeRegistry
