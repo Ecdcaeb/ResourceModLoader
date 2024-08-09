@@ -5,6 +5,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 import rml.internal.net.minecraftforge.common.util.LazyOptional;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +19,9 @@ import java.util.function.Function;
  * @Author Hileb
  * @Date 2024/7/14 10:55
  **/
+
+@EarlyClass
+@PublicAPI
 public class DeserializerBuilder<T> {
     private DeserializerManager manager;
     private Class<T> clazz;

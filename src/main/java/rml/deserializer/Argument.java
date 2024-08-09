@@ -3,6 +3,8 @@ package rml.deserializer;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 import java.lang.reflect.Array;
 import java.util.List;
@@ -15,6 +17,9 @@ import java.util.stream.Collectors;
  * @Author Hileb
  * @Date 2024/7/27 12:49
  **/
+
+@EarlyClass
+@PublicAPI
 public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public final String name;
 

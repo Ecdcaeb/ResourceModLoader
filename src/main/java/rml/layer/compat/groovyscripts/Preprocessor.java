@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
+import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
 
 import java.io.BufferedReader;
@@ -25,7 +26,7 @@ import java.util.function.BiPredicate;
  * @Author Hileb
  * @Date 2024/7/31 15:29
  **/
-
+@PrivateAPI
 @RewriteWhenCleanroom
 public class Preprocessor {
     private static final Object2ObjectArrayMap<String, BiPredicate<ResourceLocation, String[]>> PREPROCESSORS = new Object2ObjectArrayMap<>();

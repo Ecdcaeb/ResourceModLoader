@@ -1,21 +1,22 @@
 package rml.loader.deserialize;
 
 import com.google.gson.JsonElement;
-import net.minecraft.launchwrapper.Launch;
-import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.DeserializerBuilder;
 import rml.deserializer.DeserializerManager;
 import rml.deserializer.JsonDeserializeException;
 import rml.jrx.announces.BeDiscovered;
-import net.minecraft.util.ResourceLocation;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/7/14 9:57
  **/
-
+@PublicAPI
+@EarlyClass
 @BeDiscovered
 public class Deserializer {
     public static final DeserializerManager MANAGER = new DeserializerManager("rml",

@@ -10,9 +10,9 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.util.ResourceLocation;
 import org.codehaus.groovy.runtime.InvokerHelper;
+import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
 import rml.jrx.reflection.jvm.FieldAccessor;
 import rml.jrx.reflection.jvm.MethodAccessor;
@@ -30,6 +30,7 @@ import java.util.Set;
  * @Author Hileb
  * @Date 2024/7/30 16:49
  **/
+@PrivateAPI
 @RewriteWhenCleanroom
 public class RMLGroovySandBox {
     public static final MethodAccessor<Void, GroovySandbox> m_GroovySandbox$runScript = ReflectionHelper.getMethodAccessor(GroovySandbox.class, "runScript", "runScript", Script.class);

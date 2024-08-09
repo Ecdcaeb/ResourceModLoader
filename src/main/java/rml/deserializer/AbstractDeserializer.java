@@ -2,12 +2,16 @@ package rml.deserializer;
 
 import com.google.gson.JsonElement;
 import net.minecraft.util.ResourceLocation;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 /**
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/7/14 9:57
  **/
+@EarlyClass
+@PublicAPI
 public class AbstractDeserializer<T>{
     private final ResourceLocation resourceLocation;
     private final Class<T> target;

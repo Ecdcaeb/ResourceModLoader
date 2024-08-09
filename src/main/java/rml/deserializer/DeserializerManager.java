@@ -4,6 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 import rml.jrx.utils.ClassHelper;
 
 import java.lang.reflect.Array;
@@ -18,6 +20,9 @@ import java.util.function.Function;
  * @Author Hileb
  * @Date 2024/7/14 10:03
  **/
+
+@EarlyClass
+@PublicAPI
 public class DeserializerManager {
     public final String defaultDomain;
     public final HashMap<Class<?>, AbstractDeserializer<?>> defaults = new HashMap<>();

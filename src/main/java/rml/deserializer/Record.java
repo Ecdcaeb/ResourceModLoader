@@ -1,6 +1,7 @@
 package rml.deserializer;
 
 import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PublicAPI;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -21,6 +22,7 @@ import static java.lang.annotation.ElementType.TYPE;
  *
  * Note: You could only label one constructor for each record class.
  **/
+@PublicAPI
 @EarlyClass
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

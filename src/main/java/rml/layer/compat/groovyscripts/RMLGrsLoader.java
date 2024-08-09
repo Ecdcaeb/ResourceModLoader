@@ -5,6 +5,7 @@ import net.minecraft.util.ResourceLocation;
 import org.apache.commons.io.IOUtils;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Argument;
+import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
 import rml.jrx.utils.ClassHelper;
 import rml.jrx.utils.file.JsonHelper;
@@ -24,6 +25,7 @@ import java.util.Map;
  * @Date 2024/7/30 10:26
  **/
 
+@PrivateAPI
 @RewriteWhenCleanroom
 public class RMLGrsLoader {
     public static void load(){
