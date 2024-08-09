@@ -2,6 +2,7 @@ package rml.loader.deserialize;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import net.minecraftforge.fml.common.Loader;
+import rml.jrx.announces.BeDiscovered;
 import rml.layer.compat.groovyscripts.RMLGrsLoader;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.PrivateAPI;
@@ -14,6 +15,7 @@ import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.api.world.text.RMLTextEffects;
 import rml.loader.api.world.villagers.IVillager;
+import rml.loader.core.RMLModDiscover;
 import rml.loader.deserialize.craft.recipe.NamedEmptyRecipeImpl;
 import rml.loader.deserialize.craft.recipe.SimpleAnvilRecipe;
 import rml.loader.deserialize.craft.recipe.SimpleBrewRecipe;
@@ -88,10 +90,11 @@ public class RMLForgeEventHandler {
         if (Loader.isModLoaded(GroovyScript.ID)){
             RMLGrsLoader.load();
         }
+        RMLModDiscover.discover(event.getASMHarvestedData(), BeDiscovered.Time.MOD_LOADING);
     }
 
     public static void preInit(FMLPreInitializationEvent event){
-
+        RMLModDiscover.discover(event.getAsmData(), BeDiscovered.Time.PRE_INIT);
     }
     public static void postInit(FMLPostInitializationEvent event){
         RMLLoaders.OreDic.load();

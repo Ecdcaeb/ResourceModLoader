@@ -264,6 +264,7 @@ public class RMLLoaders {
                         }
                     }
                 } catch (Exception ignored) {
+                    ignored.printStackTrace();
                 } finally {
                     IOUtils.closeQuietly(bufferedreader);
                 }
@@ -281,6 +282,7 @@ public class RMLLoaders {
             try {
                 return ITextComponent.Serializer.jsonToComponent(raw).getFormattedText();
             } catch (Exception ignored) {
+                ignored.printStackTrace();
                 return raw;
             }
         }
