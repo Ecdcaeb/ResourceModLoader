@@ -20,9 +20,9 @@ import static java.lang.annotation.ElementType.TYPE;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value={TYPE})
 public @interface BeDiscovered {
-    Time value() default Time.PRE_INIT;
-    enum Time{
-        MOD_LOADING,
-        PRE_INIT
-    }
+    String value() default PRE_INIT;
+
+    String PRE_INIT = "preInit";
+    String MOD_LOADING = "modLoading";
+
 }

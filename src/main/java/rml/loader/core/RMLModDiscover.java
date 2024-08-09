@@ -283,9 +283,9 @@ public class RMLModDiscover {
     }
 
 
-    public static void discover(ASMDataTable asmDataTable, BeDiscovered.Time time){
+    public static void discover(ASMDataTable asmDataTable, final String loader){
         asmDataTable.getAll(BeDiscovered.class.getName()).stream()
-                .filter((data)->time.name().equals(((ModAnnotation.EnumHolder)data.getAnnotationInfo().get("value")).getValue()))
+                .filter((data)-> data!=null && loader.equals(data.getAnnotationInfo().get("value")))
                 .forEach((data)-> {
                     try {
                         ClassHelper.forceInit(Class.forName(data.getClassName(), true, Launch.classLoader));

@@ -2,6 +2,7 @@ package rml.loader.deserialize;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import rml.jrx.announces.BeDiscovered;
 import rml.layer.compat.groovyscripts.RMLGrsLoader;
 import rml.loader.ResourceModLoader;
@@ -90,12 +91,13 @@ public class RMLForgeEventHandler {
         if (Loader.isModLoaded(GroovyScript.ID)){
             RMLGrsLoader.load();
         }
-        RMLModDiscover.discover(event.getASMHarvestedData(), BeDiscovered.Time.MOD_LOADING);
+        RMLModDiscover.discover(event.getASMHarvestedData(), BeDiscovered.MOD_LOADING);
     }
 
     public static void preInit(FMLPreInitializationEvent event){
-        RMLModDiscover.discover(event.getAsmData(), BeDiscovered.Time.PRE_INIT);
+        RMLModDiscover.discover(event.getAsmData(), BeDiscovered.PRE_INIT);
     }
+
     public static void postInit(FMLPostInitializationEvent event){
         RMLLoaders.OreDic.load();
     }
