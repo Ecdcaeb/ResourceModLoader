@@ -11,6 +11,7 @@ import groovy.lang.GroovyClassLoader;
 import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
 import net.minecraft.util.ResourceLocation;
+import org.codehaus.groovy.ast.PackageNode;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;

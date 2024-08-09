@@ -249,7 +249,7 @@ public class RMLTransformer implements IClassTransformer {
                                     InsnList hook = new InsnList();
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                     return hook;
-                                }, (node)->node.getOpcode()==Opcodes.ARETURN);
+                                }, (node)->node.getOpcode() == Opcodes.ARETURN);
                                 return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
                             }
                         }
@@ -259,7 +259,6 @@ public class RMLTransformer implements IClassTransformer {
                     (cn)->{
                         for(MethodNode mn:cn.methods){
                             if ("distributeStateMessage".equals(mn.name) && "(Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V".equals(mn.desc)){
-                                //beforeFMLBusEventSending(Lnet/minecraftforge/fml/common/event/FMLEvent;)V
                                 InsnList hook=new InsnList();
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,0));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,1));
