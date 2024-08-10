@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Project ResourceModLoader
@@ -263,8 +264,8 @@ public class RMLLoaders {
                             rawTexts.add(s);
                         }
                     }
-                } catch (Exception ignored) {
-                    RMLFMLLoadingPlugin.LOGGER.info(ignored);
+                } catch (Exception e) {
+                    error(Objects.requireNonNull(module.moduleType, "module"), containerHolder, e, "MCMainScreenTextLoaderError");
                 } finally {
                     IOUtils.closeQuietly(bufferedreader);
                 }
@@ -274,7 +275,7 @@ public class RMLLoaders {
         public static ArrayList<String> inject(ArrayList<String> list) {
             rawTexts = list;
             load();
-            RMLFMLLoadingPlugin.LOGGER.info("RML has injected the splashText!");
+            RMLFMLLoadingPlugin.LOGGER.debug("RML has injected the splashText!");
             return list;
         }
 

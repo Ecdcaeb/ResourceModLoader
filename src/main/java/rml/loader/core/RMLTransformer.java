@@ -24,6 +24,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.spongepowered.asm.launch.MixinBootstrap;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.asm.MethodName;
@@ -33,7 +34,6 @@ import rml.jrx.utils.Tasks;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.function.ToIntFunction;
 
 /**
@@ -247,7 +247,7 @@ public class RMLTransformer implements IClassTransformer {
             transformers.put("net.minecraftforge.client.ForgeHooksClient",
                     (cn)->{
                         for(MethodNode mn: cn.methods){
-                            if ("renderMainMenu".equals(mn.name) && "(Lnet/minecraft/client/gui/GuiMainMenu;Lnet/minecraft/client/gui/FontRenderer;IILjava/lang/String;)Ljava/lang/String;".equals(mn.desc)){
+                            if ("renderMainMenu".equals(mn.name)){
                                 ASMUtil.injectBefore(mn.instructions, ()->{
                                     InsnList hook = new InsnList();
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
@@ -458,7 +458,7 @@ public class RMLTransformer implements IClassTransformer {
                         for(MethodNode mn : cn.methods){
                             if ("setPackage".equals(mn.name)){
                                 mn.name = "setPackage0";
-                                MethodNode setPackage = new MethodNode(mn.access, "setPackage", mn.desc, mn.signature, null);
+                                MethodVisitor setPackage = cn.visitMethod(mn.access, "setPackage", mn.desc, mn.signature, mn.exceptions.isEmpty() ? null : mn.exceptions.toArray(new String[0]));
                                 Label label0 = new Label();
                                 Label label1 = new Label();
                                 Label label2 = new Label();
@@ -480,11 +480,11 @@ public class RMLTransformer implements IClassTransformer {
                                 setPackage.visitLineNumber(ClassHelper.getLineNumber(), label4);
                                 setPackage.visitVarInsn(Opcodes.ALOAD, 0);
                                 setPackage.visitVarInsn(Opcodes.ALOAD, 1);
-                                setPackage.visitFieldInsn(Opcodes.PUTFIELD, cn.name, "packageNode", "Lorg/codehaus/groovy/ast/PackageNode");
+                                setPackage.visitFieldInsn(Opcodes.PUTFIELD, cn.name, "packageNode", "Lorg/codehaus/groovy/ast/PackageNode;");
                                 setPackage.visitLabel(label3);
                                 setPackage.visitLineNumber(ClassHelper.getLineNumber(), label3);
                                 setPackage.visitInsn(Opcodes.RETURN);
-                                cn.methods.add(setPackage);
+
                                 return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                             }
                         }

@@ -1,7 +1,10 @@
 package rml.jrx.utils;
 
+import com.google.common.base.Predicate;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
+
+import java.util.Objects;
 
 /**
  * @Project ResourceModLoader
@@ -13,7 +16,11 @@ import rml.jrx.announces.PublicAPI;
 @PublicAPI
 public class ObjectHelper {
     public static <T> T orDefault(T t, T defaultValue){
-        return t == null ? defaultValue : t;
+        return orDefault(Objects::nonNull, t, defaultValue);
+    }
+
+    public static <T> T orDefault(Predicate<T> predicate, T t, T defaultValue){
+        return predicate.test(t) ? t : defaultValue;
     }
 
     public static String allToString(Object... args){

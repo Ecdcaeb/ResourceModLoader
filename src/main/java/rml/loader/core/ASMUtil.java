@@ -1,12 +1,10 @@
 package rml.loader.core;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
 import net.minecraft.launchwrapper.Launch;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import rml.jrx.announces.EarlyClass;
+import rml.jrx.announces.PrivateAPI;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -69,17 +67,17 @@ public class ASMUtil {
         return clazz;
     }
     public static void injectBefore(InsnList method, Supplier<InsnList> hook, Predicate<AbstractInsnNode> predicate){
-        LinkedList<AbstractInsnNode> nodes=new LinkedList<>();
+        LinkedList<AbstractInsnNode> nodes = new LinkedList<>();
         ListIterator<AbstractInsnNode> iterator=method.iterator();
         AbstractInsnNode node;
         while (iterator.hasNext()){
-            node=iterator.next();
+            node = iterator.next();
             if (predicate.test(node)){
                 nodes.add(node);
             }
         }
         for(AbstractInsnNode node1 : nodes){
-            method.insertBefore(node1,hook.get());
+            method.insertBefore(node1, hook.get());
         }
     }
     public static Class<?> defineClass(String name, byte[] clazz) throws InvocationTargetException, IllegalAccessException {

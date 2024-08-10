@@ -1,15 +1,13 @@
 package rml.layer.cleanroom;
 
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntMaps;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
 import rml.jrx.reflection.jvm.FieldAccessor;
 import rml.jrx.reflection.jvm.MethodAccessor;
 import rml.jrx.reflection.jvm.ReflectionHelper;
 
-import java.sql.Ref;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -30,8 +28,13 @@ public class LaunchClassLoaderUtil {
         LaunchClassLoader classLoader = Launch.classLoader;
         String transformedName = transformName.invoke(classLoader, name);
         String untransformedName = untransformName.invoke(classLoader, name);
-        return runTransformers.invoke(classLoader, untransformedName, transformedName, getClassBytes.invoke(classLoader, untransformedName));
+        try {
+            return runTransformers.invoke(classLoader, untransformedName, transformedName, classLoader.getClassBytes(untransformedName));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+
 
     public static class ClassUtil{
         public static String getSuperClass(byte[] clazz){
