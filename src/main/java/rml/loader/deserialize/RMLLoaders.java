@@ -95,11 +95,11 @@ public class RMLLoaders {
                 }
                 catch (JsonParseException | JsonDeserializeException e)
                 {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "ore_dic")), containerHolder, e, "Parsing error loading Ore dic {}", key);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "Parsing error loading Ore dic {}", key);
                 }
                 catch (IOException e)
                 {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "ore_dic")), containerHolder, e, "Couldn't read ore dic {} from {}", key, file);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "Couldn't read ore dic {} from {}", key, file);
                 }finally
                 {
                     IOUtils.closeQuietly(reader);
@@ -120,14 +120,19 @@ public class RMLLoaders {
      **/
     public static class LootTable {
         public static void load(LootTableRegistryEvent event) {
-            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "loot_tables")), (containerHolder, module, root, file) -> {
-                String relative = root.relativize(file).toString();
-                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                    return;
-                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-                ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-                event.register(key);
-            });
+                ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "loot_tables")), (containerHolder, module, root, file) -> {
+                    try{
+                        String relative = root.relativize(file).toString();
+                        if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                            return;
+                        String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                        ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+                        event.register(key);
+                    }catch (Throwable throwable){
+                        error(Objects.requireNonNull(module, "module").moduleType, containerHolder, throwable, "LootTable register error.");
+                    }
+                });
+
         }
     }
 
@@ -157,7 +162,7 @@ public class RMLLoaders {
                             );
                             event.register(key, functionObject);
                         } catch (IOException e) {
-                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e,"Couldn't read function {} from {}", key, file);
+                            error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e,"Couldn't read function {} from {}", key, file);
                         }
                         break;
                     default:
@@ -179,9 +184,9 @@ public class RMLLoaders {
                             JsonElement jsonElement = JsonHelper.parse(Files.newBufferedReader(file));
                             Deserializer.decode(FunctionExecutor[].class, jsonElement);
                         } catch (IOException e) {
-                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e,"Couldn't read function executor {} from {}", key, file);
+                            error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e,"Couldn't read function executor {} from {}", key, file);
                         } catch (JsonDeserializeException e) {
-                            error(ModuleType.valueOf(new ResourceLocation("rml", "functions")), containerHolder, e, "Couldn't read function executor {} from {}", key, file);
+                            error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "Couldn't read function executor {} from {}", key, file);
                         }
                         break;
                     default:
@@ -200,9 +205,9 @@ public class RMLLoaders {
                     JsonElement jsonElement = JsonHelper.parse(FileHelper.getCachedFile(file));
                     Arrays.stream(Deserializer.decode(RemapCollection[].class, jsonElement)).forEach(RemapCollection.Manager::merge);
                 } catch (IOException e) {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), containerHolder, e, "Could not cache the file {} ", file);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "Could not cache the file {} ", file);
                 } catch (JsonDeserializeException e) {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "registry_remap")), containerHolder, e, "Could not deserialize registry_remap {}", file);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "Could not deserialize registry_remap {}", file);
                 }
             });
         }
@@ -233,12 +238,12 @@ public class RMLLoaders {
                         IVillager IVillager = Deserializer.decode(rml.loader.api.world.villagers.IVillager.class, jsonElement);
                         list.add(IVillager);
                     } catch (Exception e) {
-                        error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Error load village at {}", file);
+                        error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e,"Error load village at {}", file);
                     }
                 } catch (JsonParseException | JsonDeserializeException e) {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Parsing error loading villager {}", key);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e,"Parsing error loading villager {}", key);
                 } catch (IOException e) {
-                    error(ModuleType.valueOf(new ResourceLocation("rml", "custom_villagers")), containerHolder, e,"Couldn't read villager {} from {}", key, file);
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e,"Couldn't read villager {} from {}", key, file);
                 } finally {
                     IOUtils.closeQuietly(reader);
                 }
@@ -265,7 +270,7 @@ public class RMLLoaders {
                         }
                     }
                 } catch (Exception e) {
-                    error(Objects.requireNonNull(module.moduleType, "module"), containerHolder, e, "MCMainScreenTextLoaderError");
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, "MCMainScreenTextLoaderError");
                 } finally {
                     IOUtils.closeQuietly(bufferedreader);
                 }
