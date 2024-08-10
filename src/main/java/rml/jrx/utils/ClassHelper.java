@@ -30,4 +30,9 @@ public class ClassHelper {
         }
         return forceInit(klass);
     }
+
+    public static int getLineNumber(){
+        int line = Thread.currentThread().getStackTrace()[2].getLineNumber();
+        return Math.max(line, 0);
+    }
 }

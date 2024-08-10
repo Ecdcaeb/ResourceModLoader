@@ -16,7 +16,7 @@ import java.util.Random;
  * @Date 2023/8/20 9:25
  **/
 @PublicAPI
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public interface RandomIntSupplier {
     AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default_constant"), RandomIntSupplier.class,
             jsonElement -> new RangeConstant(Deserializer.decode(Integer.class, jsonElement))));
@@ -27,7 +27,7 @@ public interface RandomIntSupplier {
      * @Author Hileb
      * @Date 2023/8/20 9:25
      **/
-    @BeDiscovered
+    @BeDiscovered(BeDiscovered.PRE_INIT)
     @Record
     class RangePrice implements RandomIntSupplier {
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("minecraft","price"))
@@ -50,7 +50,7 @@ public interface RandomIntSupplier {
      * @Author Hileb
      * @Date 2023/8/20 9:28
      **/
-    @BeDiscovered
+    @BeDiscovered(BeDiscovered.PRE_INIT)
     @Record
     class RangeConstant implements RandomIntSupplier {
 
@@ -75,7 +75,7 @@ public interface RandomIntSupplier {
      * @Author Hileb
      * @Date 2023/8/20 10:16
      **/
-    @BeDiscovered
+    @BeDiscovered(BeDiscovered.PRE_INIT)
     @Record
     class RangePoisson implements RandomIntSupplier {
 

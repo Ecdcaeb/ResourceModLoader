@@ -24,7 +24,7 @@ import java.util.Random;
  * @Date 2023/8/16 14:20
  * {@link EntityVillager.ItemAndEmeraldToItem}
  **/
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class ItemAndEmeraldToItem implements EntityVillager.ITradeList{
 
     public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class,new ResourceLocation("minecraft","list_item_for_emeralds"))

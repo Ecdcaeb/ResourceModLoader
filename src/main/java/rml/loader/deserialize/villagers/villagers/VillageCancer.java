@@ -14,7 +14,7 @@ import rml.deserializer.Record;
  * @Author Hileb
  * @Date 2023/8/16 11:39
  **/
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class VillageCancer implements IVillager {
     public static final AbstractDeserializer<IVillager> DESERIALIZER = Deserializer.named(IVillager.class, new ResourceLocation("minecraft","cancer"))
             .record(VillageCancer.class).build();

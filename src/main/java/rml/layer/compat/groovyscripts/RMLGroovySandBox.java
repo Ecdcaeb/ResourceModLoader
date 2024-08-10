@@ -11,7 +11,6 @@ import groovy.lang.GroovyClassLoader;
 import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
 import net.minecraft.util.ResourceLocation;
-import org.codehaus.groovy.ast.PackageNode;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
@@ -37,6 +36,7 @@ public class RMLGroovySandBox {
     public static final MethodAccessor<Void, GroovySandbox> m_GroovySandbox$runScript = ReflectionHelper.getMethodAccessor(GroovySandbox.class, "runScript", "runScript", Script.class);
     public static final FieldAccessor<LoadStage, GroovyScriptSandbox> f_GroovyScriptSandbox$currentLoadStage = ReflectionHelper.getFieldAccessor(GroovyScriptSandbox.class, "currentLoadStage");
     public static void load(GroovySandbox sandbox, GroovyScriptEngine engine, Binding binding, Set<File> unused, boolean run){
+        final String GROOVY_ROOT = GroovyScript.getScriptPath() + "/";
         HashSet<ResourceLocation> executedClasses = new HashSet<>();
         String loader = f_GroovyScriptSandbox$currentLoadStage.get(GroovyScript.getSandbox()).getName();
         HashBiMap<ResourceLocation, byte[]> files = HashBiMap.create();
@@ -53,7 +53,7 @@ public class RMLGroovySandBox {
         // load and run any configured class files
         //loadClassScripts
         for(Map.Entry<ResourceLocation, byte[]> file : files.entrySet()){
-            Class<?> clazz = compile(file.getValue(), engine.getGroovyClassLoader());
+            Class<?> clazz = compile(GROOVY_ROOT + file.getKey().toString().replace(':', '/'), file.getValue(), engine.getGroovyClassLoader());
             if (clazz.getSuperclass() != Script.class){
                 executedClasses.add(file.getKey());
                 Script script = InvokerHelper.createScript(clazz, binding);
@@ -65,7 +65,7 @@ public class RMLGroovySandBox {
         //loadScripts
         for(Map.Entry<ResourceLocation, byte[]> file : files.entrySet()){
             if (!executedClasses.contains(file.getKey())){
-                Class<?> clazz = compile(file.getValue(), engine.getGroovyClassLoader());
+                Class<?> clazz = compile(GROOVY_ROOT + file.getKey().toString().replace(':', '/'), file.getValue(), engine.getGroovyClassLoader());
                 if (clazz == GroovyLog.class) continue; // preprocessor returned false
                 if (clazz == null) {
                     GroovyLog.get().errorMC("Error loading script for {}", file.getKey());
@@ -85,7 +85,7 @@ public class RMLGroovySandBox {
         m_GroovySandbox$runScript.invoke(GroovyScript.getSandbox(), script);
     }
 
-    public static Class<?> compile(byte[] text, GroovyClassLoader classLoader){
-        return classLoader.parseClass(new String(text));
+    public static Class<?> compile(String demoName, byte[] text, GroovyClassLoader classLoader){
+        return classLoader.parseClass(new String(text), demoName);
     }
 }

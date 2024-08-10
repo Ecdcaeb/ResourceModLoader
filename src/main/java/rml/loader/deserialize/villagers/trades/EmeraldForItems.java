@@ -22,7 +22,7 @@ import java.util.Random;
  * {@link EntityVillager.EmeraldForItems}
  **/
 
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class EmeraldForItems implements EntityVillager.ITradeList
 {
     public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class, new ResourceLocation("minecraft","emerald_for_items"))

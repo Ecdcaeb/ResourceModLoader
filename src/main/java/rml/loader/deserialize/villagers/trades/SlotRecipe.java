@@ -23,7 +23,7 @@ import java.util.Random;
  * @Author Hileb
  * @Date 2023/8/20 10:27
  **/
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class SlotRecipe implements EntityVillager.ITradeList {
     public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class, new ResourceLocation("cvh","slots"))
             .require(ItemStack.class, "form.slot1.item")

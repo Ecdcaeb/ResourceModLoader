@@ -15,7 +15,7 @@ import rml.jrx.utils.values.RandomIntSupplier;
  * @Author Hileb
  * @Date 2024/7/14 15:11
  **/
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class RMLDeserializer {
 
     public static final AbstractDeserializer<RMLLoaders.OreDic.TagOre> TAG_ORES = Deserializer.named(RMLLoaders.OreDic.TagOre.class, new ResourceLocation("rml", "ore_tag"))

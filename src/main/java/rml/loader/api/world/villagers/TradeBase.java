@@ -23,7 +23,7 @@ import java.util.List;
  **/
 @SuppressWarnings("all")
 public class TradeBase {
-    @BeDiscovered
+    @BeDiscovered(BeDiscovered.PRE_INIT)
     public static class TradeHandlers implements IVillager {
         public static final AbstractDeserializer<IVillager> DESERIALIZER = Deserializer.named(IVillager.class, new ResourceLocation("rml", "trade"))
                 .optionalDefault(Integer.class, "level", 1)

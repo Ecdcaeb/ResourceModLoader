@@ -17,7 +17,7 @@ import rml.jrx.announces.PublicAPI;
  **/
 @PublicAPI
 @EarlyClass
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class Deserializer {
     public static final DeserializerManager MANAGER = new DeserializerManager("rml",
             manager -> {

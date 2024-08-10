@@ -17,7 +17,7 @@ import rml.loader.deserialize.Deserializer;
  * @Date 2024/5/25 16:56
  **/
 
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class FunctionExecutorGameLoop extends FunctionExecutor {
 
     public static final AbstractDeserializer<FunctionExecutor> DESERIALIZER = Deserializer.named(FunctionExecutor.class, new ResourceLocation("rml", "tick"))

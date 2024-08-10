@@ -20,7 +20,7 @@ import static java.lang.annotation.ElementType.TYPE;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(value={TYPE})
 public @interface BeDiscovered {
-    String value() default PRE_INIT;
+    String value();
 
     String PRE_INIT = "preInit";
     String MOD_LOADING = "modLoading";

@@ -25,7 +25,7 @@ import rml.jrx.utils.values.RandomIntSupplier;
  * @Author Hileb
  * @Date 2024/7/20 22:20
  **/
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class MCDeserializers {
     /*
      * MC BuildIn

@@ -17,7 +17,7 @@ import rml.deserializer.JsonDeserializeException;
  **/
 
 @PublicAPI
-@BeDiscovered
+@BeDiscovered(BeDiscovered.PRE_INIT)
 public class Module {
     public static final AbstractDeserializer<Module> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default"), Module.class, Module::decode0));
     public final ModuleType moduleType;
