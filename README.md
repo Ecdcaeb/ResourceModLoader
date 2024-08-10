@@ -26,7 +26,8 @@ Download snapshot from [Action](https://github.com/Ecdcaeb/ResourceModLoader/act
 
 ### Use ResourceModLoader as lib?
 
-Of course we support it, but don't do it in the near future, we are upgrading from 1.0.11 to 1.1.0 and making a huge breaking change.
+1) Add [CurseMaven](https://cursemaven.com/)
+2) Look the maven short [list](https://ecdcaeb.github.io/ResourceModLoader/en_us/java/#maven)
 
 ### Document is too short?
 
