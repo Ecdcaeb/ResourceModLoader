@@ -2,7 +2,7 @@ title: Resource Mod Loader
 lang: en
 description: the official documents of ResourceModLoader
 
-remote_theme: rundocs/jekyll-rtd-theme
+remote_theme: ecdcaeb/dark-jekyll-rtd-theme
 
 readme_index:
   with_frontmatter: true
