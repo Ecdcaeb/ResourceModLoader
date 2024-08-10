@@ -2,7 +2,7 @@ title: Resource Mod Loader
 lang: en
 description: the official documents of ResourceModLoader
 
-remote_theme: egbendito/jekyll-theme-rtd
+remote_theme: Battery-Intelligence-Lab/bil-jekyll-rtd-theme
 
 readme_index:
   with_frontmatter: true
