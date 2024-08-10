@@ -17,7 +17,7 @@ import java.util.Map;
 @EarlyClass
 public class Tasks {
     public Object2BooleanArrayMap<String> tasks;
-    public Tasks(String[] tasks){
+    public Tasks(String... tasks){
         this.tasks = new Object2BooleanArrayMap<>(tasks, new boolean[tasks.length]);
     }
 
@@ -56,9 +56,14 @@ public class Tasks {
 
     public static String combineStringArray(String[] strings){
         StringBuilder builder = new StringBuilder();
-        for(int i = 0, size = strings.length; i< size; i++){
+        for(int i = 0, size = strings.length - 1; i < size; i++){
             builder.append(strings[i]).append(", ");
         }
+        builder.append(strings[strings.length - 1]);
         return builder.toString();
+    }
+
+    public void throwError(){
+        throw new IllegalStateException("Have not completed tasks :" + getFailsString() + " ; " + getCompletedString());
     }
 }

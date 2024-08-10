@@ -182,6 +182,7 @@ public class RMLTransformer implements IClassTransformer {
         public static void initForgeTransformers(){
             transformers.put("net.minecraftforge.common.crafting.CraftingHelper",
                     (cn)->{
+                        Tasks tasks = new Tasks("init", "getItemStack", "getItemStackBasic");
                         for(MethodNode mn:cn.methods){
                             /**
                              *     registerI("forge:ore_dict", (context, json) -> {
@@ -195,14 +196,24 @@ public class RMLTransformer implements IClassTransformer {
                                     InsnList hook=new InsnList();
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/CraftingHelperInitEvent","post","()V",false));
                                     return hook;
-                                }, (node)->node.getOpcode()==Opcodes.RETURN);
-                                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                }, (node)->node.getOpcode() == Opcodes.RETURN);
+                                tasks.complete("init");
+                            }else if ("getItemStack".equals(mn.name) || "getItemStackBasic".equals(mn.name)){
+                                mn.instructions.clear();
+                                mn.visitVarInsn(Opcodes.ALOAD, 0);
+                                mn.visitVarInsn(Opcodes.ALOAD, 1);
+                                mn.visitMethodInsn(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "getItemStack", "(Lcom/google/gson/JsonObject;Lnet/minecraftforge/common/crafting/JsonContext;)Lnet/minecraft/item/ItemStack;", false);
+                                mn.visitInsn(Opcodes.ARETURN);
+                                tasks.complete(mn.name);
                             }
                         }
+                        if (tasks.isCompleted())return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraftforge.fml.common.Loader",
                     (cn)->{
+                        Tasks tasks = new Tasks("identifyDuplicates");
                         for(MethodNode mn:cn.methods){
                             /**
                              *  private void identifyDuplicates(List<ModContainer> mods) {
@@ -213,19 +224,22 @@ public class RMLTransformer implements IClassTransformer {
                                 injectList.add(new IntInsnNode(Opcodes.ALOAD,1));
                                 injectList.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/core/RMLModDiscover","inject","(Ljava/util/List;)V",false));
                                 mn.instructions.insert(injectList);
-                                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("identifyDuplicates");
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraftforge.common.config.ConfigManager",
                     (cn)->{
+                        Tasks tasks = new Tasks("sync");
                         for(MethodNode mn:cn.methods){
                             // public static sync(Ljava/lang/String;Lnet/minecraftforge/common/config/Config$Type;)V
-                            if ("sync".equals(mn.name) && "(Ljava/lang/String;Lnet/minecraftforge/common/config/Config$Type;)V".equals(mn.desc)){
+                            if ( !tasks.isCompleted("sync") && "sync".equals(mn.name) && "(Ljava/lang/String;Lnet/minecraftforge/common/config/Config$Type;)V".equals(mn.desc)){
                                 ListIterator<AbstractInsnNode> iterator=mn.instructions.iterator();
                                 AbstractInsnNode node;
-                                while (iterator.hasNext()){
+                                while (iterator.hasNext() && !tasks.isCompleted("sync")){
                                     node=iterator.next();
                                     if (node.getOpcode()==Opcodes.INVOKEINTERFACE && node instanceof MethodInsnNode){
                                         MethodInsnNode methodInsnNode=(MethodInsnNode) node;
@@ -235,17 +249,21 @@ public class RMLTransformer implements IClassTransformer {
                                             methodInsnNode.name="registerCfg";
                                             methodInsnNode.itf=false;
                                             methodInsnNode.desc="(Ljava/util/Map;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;";
-                                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                            tasks.complete("sync");
+                                            break;
                                         }
                                     }
                                 }
                             }
                         }
+                        if (tasks.isCompleted())return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     }
             );
             transformers.put("net.minecraftforge.client.ForgeHooksClient",
                     (cn)->{
+                        Tasks tasks = new Tasks("renderMainMenu");
                         for(MethodNode mn: cn.methods){
                             if ("renderMainMenu".equals(mn.name)){
                                 ASMUtil.injectBefore(mn.instructions, ()->{
@@ -253,13 +271,16 @@ public class RMLTransformer implements IClassTransformer {
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                     return hook;
                                 }, (node)->node.getOpcode() == Opcodes.ARETURN);
-                                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("renderMainMenu");
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraftforge.fml.common.LoadController",
                     (cn)->{
+                        Tasks tasks = new Tasks("distributeStateMessage");
                         for(MethodNode mn:cn.methods){
                             if ("distributeStateMessage".equals(mn.name) && "(Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V".equals(mn.desc)){
                                 InsnList hook=new InsnList();
@@ -268,13 +289,16 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new VarInsnNode(Opcodes.ALOAD,2));
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks","beforeFMLBusEventSending","(Lnet/minecraftforge/fml/common/LoadController;Lnet/minecraftforge/fml/common/LoaderState;[Ljava/lang/Object;)V",false));
                                 mn.instructions.insert(hook);
-                                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("distributeStateMessage");
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraftforge.fml.client.GuiModList$Info",
                     (cn)->{
+                        Tasks tasks = new Tasks("<init>");
                         for(MethodNode mn:cn.methods){
                             if ("<init>".equals(mn.name)){
                                 ListIterator<AbstractInsnNode> iterator = mn.instructions.iterator();
@@ -289,16 +313,20 @@ public class RMLTransformer implements IClassTransformer {
                                             iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                             iterator.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
                                             iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/client/gui/ModMenuInfoEvent", "post", "(Ljava/util/List;Ljava/lang/Object;Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;)Ljava/util/List;", false));
-                                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                            tasks.complete("<init>");
+                                            break;
                                         }
                                     }
                                 }
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
             transformers.put("net.minecraftforge.registries.RegistryBuilder", (cn)->{
+                Tasks tasks = new Tasks("create");
                 for(MethodNode mn : cn.methods){
                     if ("create".equals(mn.name)){
                         ASMUtil.injectBefore(mn.instructions, ()->{
@@ -308,15 +336,18 @@ public class RMLTransformer implements IClassTransformer {
                             hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/MCDeserializers", "onNewRegistry", "(Lnet/minecraftforge/registries/IForgeRegistry;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraftforge/registries/IForgeRegistry;", false));
                             return hook;
                         }, (node) -> node.getOpcode() == Opcodes.ARETURN);
-                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        tasks.complete("create");
                     }
                 }
+                if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                else tasks.throwError();
                 return -1;
             });
         }
         public static void initMinecraftTransformers(){
             transformers.put("net.minecraft.advancements.FunctionManager",
                     (cn)->{
+                        Tasks tasks = new Tasks("m_193061");
                         for(MethodNode mn:cn.methods){
                             /**
                              FunctionLoadEvent.post(this);
@@ -329,13 +360,16 @@ public class RMLTransformer implements IClassTransformer {
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/FunctionLoadEvent","post","(Lnet/minecraft/advancements/FunctionManager;)V",false));
                                     return hook;
                                 }, (node)->node.getOpcode() == Opcodes.RETURN);
-                                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("m_193061");
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
             transformers.put("net.minecraft.world.storage.loot.LootTableList",
                     (cn)->{
+                        Tasks tasks = new Tasks("<clinit>");
                         for(MethodNode mn: cn.methods){
                             /**
                              * static {
@@ -348,14 +382,17 @@ public class RMLTransformer implements IClassTransformer {
                                     hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/LootTableRegistryEvent","post","()V",false));
                                     return hook;
                                 }, (node)->node.getOpcode()==Opcodes.RETURN);
-                                return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("<clinit>");
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
 
             transformers.put("net.minecraft.client.gui.GuiMainMenu",
                     (cn)->{
+                        Tasks tasks = new Tasks("<init>");
                         for(MethodNode mn:cn.methods){
                             /**
                              *  try {
@@ -371,18 +408,21 @@ public class RMLTransformer implements IClassTransformer {
                                         MethodInsnNode methodInsnNode = (MethodInsnNode) node;
                                         if ("com/google/common/collect/Lists".equals(methodInsnNode.owner) && "newArrayList".equals(methodInsnNode.name) && "()Ljava/util/ArrayList;".equals(methodInsnNode.desc)){
                                             iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
-                                            return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                            tasks.complete("<init>");
+                                            break;
                                         }
                                     }
                                 }
                             }
                         }
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                         return -1;
                     });
 
             transformers.put("net.minecraft.client.gui.GuiScreen",
                     (cn)->{
-                        Tasks bar = new Tasks(new String[]{"click", "hover"});
+                        Tasks bar = new Tasks("click", "hover");
                         for(MethodNode mn : cn.methods){
                             if (m_175276.is(mn)){
                                 Label returnTrueLabel = new Label();
@@ -430,15 +470,15 @@ public class RMLTransformer implements IClassTransformer {
                             }
                         }
                         if (bar.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
-                        else{
-                            throw new RuntimeException("RML Cannot Transform Class Correctly. Unhandled Works:" + bar.getFailsString());
-                        }
+                        else bar.throwError();
+                        return -1;
                     });
         }
 
         public static void initGroovyScriptTransformer(){
             transformers.put("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
                     (cn)->{
+                        Tasks tasks = new Tasks("load");
                         for(MethodNode mn : cn.methods){
                             if ("load".equals(mn.name) && "(Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V".equals(mn.desc)){
                                 InsnList hook = new InsnList();
@@ -449,12 +489,16 @@ public class RMLTransformer implements IClassTransformer {
                                 hook.add(new VarInsnNode(Opcodes.ILOAD, 4));
                                 hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/groovyscripts/RMLGroovySandBox", "load", "(Lcom/cleanroommc/groovyscript/sandbox/GroovySandbox;Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V", false));
                                 mn.instructions.insert(hook);
+                                tasks.complete("load");
                             }
                         }
-                        return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
+                        return -1;
                     });
             transformers.put("org.codehaus.groovy.ast.ModuleNode",
                     (cn)->{
+                        Tasks tasks = new Tasks("setPackage");
                         for(MethodNode mn : cn.methods){
                             if ("setPackage".equals(mn.name)){
                                 mn.name = "setPackage0";
@@ -485,10 +529,11 @@ public class RMLTransformer implements IClassTransformer {
                                 setPackage.visitLineNumber(ClassHelper.getLineNumber(), label3);
                                 setPackage.visitInsn(Opcodes.RETURN);
 
-                                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                tasks.complete("setPackage");
                             }
                         }
-                        return -1;
+                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                        else tasks.throwError();
                     });
         }
         public static class Late{
@@ -497,6 +542,7 @@ public class RMLTransformer implements IClassTransformer {
                 if (Loader.isModLoaded(CraftTweaker.MODID)){
                     transformers.put("crafttweaker.mc1120.CraftTweaker",
                             (cn)->{
+                                Tasks tasks = new Tasks("onPreInitialization");
                                 for(MethodNode mn:cn.methods){
                                     /**
                                      *  @EventHandler
@@ -508,9 +554,11 @@ public class RMLTransformer implements IClassTransformer {
                                         InsnList hook = new InsnList();
                                         hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/CrTZenClassRegisterEvent", "post", "()V", false));
                                         mn.instructions.insert(hook);
-                                        return ClassWriter.COMPUTE_MAXS  | ClassWriter.COMPUTE_FRAMES;
+                                        tasks.complete("onPreInitialization");
                                     }
                                 }
+                                if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                else tasks.throwError();
                                 return -1;
                             });
                     for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
@@ -518,6 +566,7 @@ public class RMLTransformer implements IClassTransformer {
                         String name = asmData.getClassName().replace('/', '.');
                         transformers.put(name,
                                 (cn)->{
+                                    Tasks tasks = new Tasks("setScriptProvider");
                                     for (MethodNode mn : cn.methods) {
                                         if ("setScriptProvider".equals(mn.name)) {
                                             InsnList list = new InsnList();
@@ -525,9 +574,11 @@ public class RMLTransformer implements IClassTransformer {
                                             list.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/crt/RMLCrTLoader", "inject", "(Lcrafttweaker/runtime/IScriptProvider;)Lcrafttweaker/runtime/IScriptProvider;", false));
                                             list.add(new VarInsnNode(Opcodes.ASTORE, 1)); // provider
                                             mn.instructions.insert(list);
-                                            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                            tasks.complete("setScriptProvider");
                                         }
                                     }
+                                    if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+                                    else tasks.throwError();
                                     return -1;
                                 });
                     }
