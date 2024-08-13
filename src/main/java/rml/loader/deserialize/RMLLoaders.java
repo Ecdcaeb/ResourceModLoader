@@ -56,7 +56,6 @@ import java.util.Objects;
  **/
 @PrivateAPI
 public class RMLLoaders {
-    public static final JsonParser JSON_PARSER = new JsonParser();
 
     public static void runThrow(Throwable throwable, String msg, Object... args){
         throw new RuntimeException(new FormattedMessage(msg, args).getFormattedMessage(), throwable);
@@ -321,6 +320,8 @@ public class RMLLoaders {
             });
         }
     }
+
+
 }
 
 

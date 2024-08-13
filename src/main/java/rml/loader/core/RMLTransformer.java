@@ -24,7 +24,6 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.spongepowered.asm.launch.MixinBootstrap;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.asm.MethodName;
@@ -67,11 +66,23 @@ public class RMLTransformer implements IClassTransformer {
 
 
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
+
+    //hope not used
     public static final HashSet<GlobalTransformer> globalTransformers = new HashSet<>();
+
     static {
+        //init the bootstrap transformers
         Transformers.initMinecraftTransformers();
         Transformers.initForgeTransformers();
     }
+
+    /**
+     * @param name the obfuscated name
+     * @param transformedName de-obfuscated name
+     * @param basicClass the basic class byte array
+     *
+     * @return the transformed class byte array
+     */
     @Override
     public byte[] transform(String name, String transformedName, byte[] basicClass) {
         if (basicClass!=null && basicClass.length>0){
@@ -101,13 +112,16 @@ public class RMLTransformer implements IClassTransformer {
                     }
                 }else return basicClass;
             }catch (Exception e){
-                e.printStackTrace();
-                return basicClass;
+                //crash the game when transform failed.
+                throw new RuntimeException(e);
             }
         }
         return basicClass;
     }
 
+    /**
+     * @param classNode the class to public
+     */
     public static void publicClass(ClassNode classNode){
         classNode.access = toPublic(classNode.access);
         for(MethodNode mn : classNode.methods){
@@ -118,11 +132,19 @@ public class RMLTransformer implements IClassTransformer {
         }
     }
 
+
+    /**
+     * @param access the access
+     *
+     * @return the public access
+     */
     private static int toPublic(int access)
     {
         return access & ~(Opcodes.ACC_PRIVATE | Opcodes.ACC_PROTECTED) | Opcodes.ACC_PUBLIC;
     }
 
+    //Fix the crash of calling getCommonSuperClass
+    //Usually, the crash from the obfuscated environment
     public static class LaunchClassWriter extends ClassWriter{
 
         public LaunchClassWriter(ClassReader classReader, int flags) {
@@ -324,6 +346,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
+            //public net.minecraftforge.fml.client.GuiModList elements : fields and methods
             transformers.put("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
             transformers.put("net.minecraftforge.registries.RegistryBuilder", (cn)->{
                 Tasks tasks = new Tasks("create");
@@ -496,6 +519,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
+            //proxy the module node, override the groovy script mixin
             transformers.put("org.codehaus.groovy.ast.ModuleNode",
                     (cn)->{
                         Tasks tasks = new Tasks("setPackage");
@@ -534,6 +558,7 @@ public class RMLTransformer implements IClassTransformer {
                         }
                         if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         else tasks.throwError();
+                        return -1;
                     });
         }
         public static class Late{
@@ -561,6 +586,7 @@ public class RMLTransformer implements IClassTransformer {
                                 else tasks.throwError();
                                 return -1;
                             });
+                    //Find all ITweaker and inject it
                     for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
 
                         String name = asmData.getClassName().replace('/', '.');
