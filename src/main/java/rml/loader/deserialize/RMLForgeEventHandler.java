@@ -1,10 +1,19 @@
 package rml.loader.deserialize;
 
 import com.cleanroommc.groovyscript.GroovyScript;
+import crafttweaker.mc1120.CraftTweaker;
+import dev.latvian.kubejs.KubeJS;
+import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
+import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import rml.jrx.announces.BeDiscovered;
+import rml.jrx.utils.ClassHelper;
+import rml.layer.compat.crt.RMLCrTLoader;
 import rml.layer.compat.groovyscripts.RMLGrsLoader;
+import rml.layer.compat.justenoughdimensions.JEDLoader;
+import rml.layer.compat.kubejs.RMKKubeJs;
 import rml.loader.ResourceModLoader;
 import rml.jrx.announces.PrivateAPI;
 import rml.loader.api.event.CraftingHelperInitEvent;
@@ -92,10 +101,30 @@ public class RMLForgeEventHandler {
             RMLGrsLoader.load();
         }
         RMLModDiscover.discover(event.getASMHarvestedData(), BeDiscovered.MOD_LOADING);
+        ClassHelper.forceInit(RMLDeserializer.class);
+        ClassHelper.forceInit(MCDeserializers.class);
     }
 
     public static void preInit(FMLPreInitializationEvent event){
+        MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
+        MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
+        if (FMLLaunchHandler.side() == Side.CLIENT){
+            MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
+        }
+        if (Loader.isModLoaded(KubeJS.MOD_ID)){
+            MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
+        }
+        if (Loader.isModLoaded(CraftTweaker.MODID)){
+            MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
+        }
         RMLModDiscover.discover(event.getAsmData(), BeDiscovered.PRE_INIT);
+        RMLLoaders.MissingRemap.load();
+    }
+
+    public static void onInit(FMLInitializationEvent event){
+        if (Loader.isModLoaded("justenoughdimensions")){
+            JEDLoader.load();
+        }
     }
 
     public static void postInit(FMLPostInitializationEvent event){

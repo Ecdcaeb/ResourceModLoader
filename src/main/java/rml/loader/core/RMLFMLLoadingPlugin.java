@@ -14,6 +14,7 @@ import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLLoadCompleteEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
@@ -163,25 +164,11 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Subscribe
         @SuppressWarnings("unused")
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
-            MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
-            MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
-            if (FMLLaunchHandler.side() == Side.CLIENT){
-                MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
-            }
-            if (Loader.isModLoaded(KubeJS.MOD_ID)){
-                MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
-            }
-            if (Loader.isModLoaded(CraftTweaker.MODID)){
-                MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
-            }
             RMLForgeEventHandler.preInit(event);
-            RMLLoaders.MissingRemap.load();
         }
         @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
             RMLForgeEventHandler.construct(event);
-            ClassHelper.forceInit(RMLDeserializer.class);
-            ClassHelper.forceInit(MCDeserializers.class);
         }
         @Subscribe
         @SuppressWarnings("unused")
@@ -190,9 +177,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
 
         @Subscribe
-        @SuppressWarnings("unused")
-        @PrivateAPI public void postInit(FMLLoadCompleteEvent event){
-            if (isTestingLaunching) FMLCommonHandler.instance().exitJava(0 ,false);
+        public void init(FMLInitializationEvent event){
+            RMLForgeEventHandler.onInit(event);
         }
         @Override
         public File getSource() {
