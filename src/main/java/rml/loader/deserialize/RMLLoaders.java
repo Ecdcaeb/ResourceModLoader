@@ -287,7 +287,6 @@ public class RMLLoaders {
             try {
                 return ITextComponent.Serializer.jsonToComponent(raw).getFormattedText();
             } catch (Throwable ignored) {
-                RMLFMLLoadingPlugin.LOGGER.info(ignored);
                 return raw;
             }
         }

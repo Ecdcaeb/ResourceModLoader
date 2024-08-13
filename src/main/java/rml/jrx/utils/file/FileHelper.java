@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 /**
  * @Project ResourceModLoader
@@ -88,7 +89,7 @@ public class FileHelper {
                 Iterator<Path> itr;
                 try
                 {
-                    itr = Files.walk(root).iterator();
+                    itr = Files.walk(root).filter(Files::isReadable).iterator();
                 }
                 catch (IOException e)
                 {
@@ -128,7 +129,7 @@ public class FileHelper {
                 }catch (InvalidPathException e){
                     return;
                 }
-                processor.accept(containerHolder, module, path, path);
+                if (Files.isReadable(path)) processor.accept(containerHolder, module, path, path);
                 IOUtils.closeQuietly(fs);
             }
             catch (IOException e) {
@@ -143,7 +144,7 @@ public class FileHelper {
             } catch (InvalidPathException e){
                 return;
             }
-            processor.accept(containerHolder, module, path, path);
+            if (Files.isReadable(path)) processor.accept(containerHolder, module, path, path);
         }
     }
 
@@ -163,7 +164,8 @@ public class FileHelper {
                 byte[] toReturn;
                 try{
                     path = fs.getPath("/" + base);
-                    toReturn = getBytes(path);
+                    if (Files.isReadable(path)) toReturn = getBytes(path);
+                    else return null;
                 }catch (InvalidPathException e){
                     toReturn = null;
                 }
@@ -179,7 +181,8 @@ public class FileHelper {
             Path path;
             try{
                 path = source.toPath().resolve(base);
-                return getBytes(path);
+                if (Files.isReadable(path)) return getBytes(path);
+                else return null;
             } catch (InvalidPathException | IOException e){
                 return null;
             }
