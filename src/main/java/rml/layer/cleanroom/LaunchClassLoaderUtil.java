@@ -30,8 +30,8 @@ public class LaunchClassLoaderUtil {
         String untransformedName = untransformName.invoke(classLoader, name);
         try {
             return runTransformers.invoke(classLoader, untransformedName, transformedName, classLoader.getClassBytes(untransformedName));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            return null;
         }
     }
 
