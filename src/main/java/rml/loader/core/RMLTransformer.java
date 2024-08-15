@@ -194,6 +194,13 @@ public class RMLTransformer implements IClassTransformer {
             }
         }
     }
+    
+    public static void register(final String canonicalClassName, final ToIntFunction<ClassNode> singleTransformer){
+        if (transformers.containsKey(canonicalClassName)){
+            final ToIntFunction<ClassNode> orgTran = transformers.get(canonicalClassName);
+            transformers.put(canonicalClassName, value -> orgTran.applyAsInt(value) | singleTransformer.applyAsInt(value));
+        }else transformers.put(canonicalClassName, singleTransformer);
+    }
 
     /**
      * @Project ResourceModLoader
@@ -202,7 +209,7 @@ public class RMLTransformer implements IClassTransformer {
      **/
     public static class Transformers {
         public static void initForgeTransformers(){
-            transformers.put("net.minecraftforge.common.crafting.CraftingHelper",
+            register("net.minecraftforge.common.crafting.CraftingHelper",
                     (cn)->{
                         Tasks tasks = new Tasks("init", "getItemStack", "getItemStackBasic");
                         for(MethodNode mn:cn.methods){
@@ -233,7 +240,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
-            transformers.put("net.minecraftforge.fml.common.Loader",
+            register("net.minecraftforge.fml.common.Loader",
                     (cn)->{
                         Tasks tasks = new Tasks("identifyDuplicates");
                         for(MethodNode mn:cn.methods){
@@ -253,7 +260,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
-            transformers.put("net.minecraftforge.common.config.ConfigManager",
+            register("net.minecraftforge.common.config.ConfigManager",
                     (cn)->{
                         Tasks tasks = new Tasks("sync");
                         for(MethodNode mn:cn.methods){
@@ -283,7 +290,7 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     }
             );
-            transformers.put("net.minecraftforge.client.ForgeHooksClient",
+            register("net.minecraftforge.client.ForgeHooksClient",
                     (cn)->{
                         Tasks tasks = new Tasks("renderMainMenu");
                         for(MethodNode mn: cn.methods){
@@ -300,7 +307,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
-            transformers.put("net.minecraftforge.fml.common.LoadController",
+            register("net.minecraftforge.fml.common.LoadController",
                     (cn)->{
                         Tasks tasks = new Tasks("distributeStateMessage");
                         for(MethodNode mn:cn.methods){
@@ -318,7 +325,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
-            transformers.put("net.minecraftforge.fml.client.GuiModList$Info",
+            register("net.minecraftforge.fml.client.GuiModList$Info",
                     (cn)->{
                         Tasks tasks = new Tasks("<init>");
                         for(MethodNode mn:cn.methods){
@@ -347,8 +354,8 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
             //public net.minecraftforge.fml.client.GuiModList elements : fields and methods
-            transformers.put("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
-            transformers.put("net.minecraftforge.registries.RegistryBuilder", (cn)->{
+            register("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
+            register("net.minecraftforge.registries.RegistryBuilder", (cn)->{
                 Tasks tasks = new Tasks("create");
                 for(MethodNode mn : cn.methods){
                     if ("create".equals(mn.name)){
@@ -368,7 +375,7 @@ public class RMLTransformer implements IClassTransformer {
             });
         }
         public static void initMinecraftTransformers(){
-            transformers.put("net.minecraft.advancements.FunctionManager",
+            register("net.minecraft.advancements.FunctionManager",
                     (cn)->{
                         Tasks tasks = new Tasks("m_193061");
                         for(MethodNode mn:cn.methods){
@@ -390,7 +397,7 @@ public class RMLTransformer implements IClassTransformer {
                         else tasks.throwError();
                         return -1;
                     });
-            transformers.put("net.minecraft.world.storage.loot.LootTableList",
+            register("net.minecraft.world.storage.loot.LootTableList",
                     (cn)->{
                         Tasks tasks = new Tasks("<clinit>");
                         for(MethodNode mn: cn.methods){
@@ -413,7 +420,7 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
 
-            transformers.put("net.minecraft.client.gui.GuiMainMenu",
+            register("net.minecraft.client.gui.GuiMainMenu",
                     (cn)->{
                         Tasks tasks = new Tasks("<init>");
                         for(MethodNode mn:cn.methods){
@@ -443,7 +450,7 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
 
-            transformers.put("net.minecraft.client.gui.GuiScreen",
+            register("net.minecraft.client.gui.GuiScreen",
                     (cn)->{
                         Tasks bar = new Tasks("click", "hover");
                         for(MethodNode mn : cn.methods){
@@ -499,7 +506,7 @@ public class RMLTransformer implements IClassTransformer {
         }
 
         public static void initGroovyScriptTransformer(){
-            transformers.put("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
+            register("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
                     (cn)->{
                         Tasks tasks = new Tasks("load");
                         for(MethodNode mn : cn.methods){
@@ -520,7 +527,7 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
             //proxy the module node, override the groovy script mixin
-            transformers.put("org.codehaus.groovy.ast.ModuleNode",
+            register("org.codehaus.groovy.ast.ModuleNode",
                     (cn)->{
                         Tasks tasks = new Tasks("setPackage");
                         for(MethodNode mn : cn.methods){
@@ -565,7 +572,7 @@ public class RMLTransformer implements IClassTransformer {
             public static void initModTransformers(Object[] objects){
                 ASMDataTable asmDatas = (ASMDataTable)objects[1];
                 if (Loader.isModLoaded(CraftTweaker.MODID)){
-                    transformers.put("crafttweaker.mc1120.CraftTweaker",
+                    register("crafttweaker.mc1120.CraftTweaker",
                             (cn)->{
                                 Tasks tasks = new Tasks("onPreInitialization");
                                 for(MethodNode mn:cn.methods){
@@ -590,7 +597,7 @@ public class RMLTransformer implements IClassTransformer {
                     for (ASMDataTable.ASMData asmData : asmDatas.getAll("crafttweaker/runtime/ITweaker")) {
 
                         String name = asmData.getClassName().replace('/', '.');
-                        transformers.put(name,
+                        register(name,
                                 (cn)->{
                                     Tasks tasks = new Tasks("setScriptProvider");
                                     for (MethodNode mn : cn.methods) {
