@@ -530,10 +530,11 @@ public class RMLTransformer implements IClassTransformer {
             register("org.codehaus.groovy.ast.ModuleNode",
                     (cn)->{
                         Tasks tasks = new Tasks("setPackage");
+                        MethodNode toAdd = null;
                         for(MethodNode mn : cn.methods){
                             if ("setPackage".equals(mn.name)){
                                 mn.name = "setPackage0";
-                                MethodVisitor setPackage = cn.visitMethod(mn.access, "setPackage", mn.desc, mn.signature, mn.exceptions.isEmpty() ? null : mn.exceptions.toArray(new String[0]));
+                                MethodVisitor setPackage = toAdd = new MethodNode(mn.access, "setPackage", mn.desc, mn.signature, mn.exceptions.isEmpty() ? null : mn.exceptions.toArray(new String[0]));
                                 Label label0 = new Label();
                                 Label label1 = new Label();
                                 Label label2 = new Label();
@@ -562,6 +563,9 @@ public class RMLTransformer implements IClassTransformer {
 
                                 tasks.complete("setPackage");
                             }
+                        }
+                        if (toAdd != null){
+                            cn.methods.add(toAdd);
                         }
                         if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         else tasks.throwError();

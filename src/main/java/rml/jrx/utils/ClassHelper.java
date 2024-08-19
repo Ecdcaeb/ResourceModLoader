@@ -8,7 +8,7 @@ package rml.jrx.utils;
 public class ClassHelper {
     /**
      * Forces the initialization of the class pertaining to
-     * the specified <tt>Class</tt> object.
+     * the specified <tt>RClass</tt> object.
      * This method does nothing if the class is already
      * initialized prior to invocation.
      *

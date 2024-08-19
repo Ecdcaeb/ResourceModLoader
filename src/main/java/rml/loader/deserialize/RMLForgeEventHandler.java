@@ -3,14 +3,15 @@ package rml.loader.deserialize;
 import com.cleanroommc.groovyscript.GroovyScript;
 import crafttweaker.mc1120.CraftTweaker;
 import dev.latvian.kubejs.KubeJS;
-import fi.dy.masa.justenoughdimensions.JustEnoughDimensions;
+import groovy.lang.GroovyClassLoader;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
 import rml.jrx.announces.BeDiscovered;
-import rml.jrx.announces.OptionalAnnounce;
+import rml.jrx.announces.OptionalAnnotation;
 import rml.jrx.utils.ClassHelper;
 import rml.layer.compat.crt.RMLCrTLoader;
 import rml.layer.compat.groovyscripts.RMLGrsLoader;
@@ -104,9 +105,9 @@ public class RMLForgeEventHandler {
             RMLGrsLoader.load();
         }
         ASMDataTable asmDataTable = event.getASMHarvestedData();
-        asmDataTable.getAll(OptionalAnnounce.class.getCanonicalName())
+        asmDataTable.getAll(OptionalAnnotation.class.getCanonicalName())
                         .stream().map(data -> data.getClassName().replace('/', '.'))
-                        .forEach(name -> RMLTransformer.register(name, OptionalAnnounce.Handler::handle));
+                        .forEach(name -> RMLTransformer.register(name, OptionalAnnotation.Handler::handle));
         RMLModDiscover.discover(asmDataTable, BeDiscovered.MOD_LOADING);
         ClassHelper.forceInit(RMLDeserializer.class);
         ClassHelper.forceInit(MCDeserializers.class);

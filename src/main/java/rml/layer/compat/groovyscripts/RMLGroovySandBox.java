@@ -2,6 +2,7 @@ package rml.layer.compat.groovyscripts;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import com.cleanroommc.groovyscript.api.GroovyLog;
+import com.cleanroommc.groovyscript.sandbox.FileUtil;
 import com.cleanroommc.groovyscript.sandbox.GroovySandbox;
 import com.cleanroommc.groovyscript.sandbox.GroovyScriptSandbox;
 import com.cleanroommc.groovyscript.sandbox.LoadStage;
@@ -10,8 +11,14 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyClassLoader;
 import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
+import net.minecraft.launchwrapper.Launch;
 import net.minecraft.util.ResourceLocation;
+import org.codehaus.groovy.ast.PackageNode;
+import org.codehaus.groovy.control.SourceUnit;
 import org.codehaus.groovy.runtime.InvokerHelper;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
 import rml.jrx.reflection.jvm.FieldAccessor;
@@ -53,7 +60,7 @@ public class RMLGroovySandBox {
         // load and run any configured class files
         //loadClassScripts
         for(Map.Entry<ResourceLocation, byte[]> file : files.entrySet()){
-            Class<?> clazz = compile(GROOVY_ROOT + file.getKey().toString().replace(':', '/'), file.getValue(), engine.getGroovyClassLoader());
+            Class<?> clazz = compile(makeFakeRelativePath(file.getKey(), GROOVY_ROOT), file.getValue(), engine.getGroovyClassLoader());
             if (clazz.getSuperclass() != Script.class){
                 executedClasses.add(file.getKey());
                 Script script = InvokerHelper.createScript(clazz, binding);
@@ -65,7 +72,7 @@ public class RMLGroovySandBox {
         //loadScripts
         for(Map.Entry<ResourceLocation, byte[]> file : files.entrySet()){
             if (!executedClasses.contains(file.getKey())){
-                Class<?> clazz = compile(GROOVY_ROOT + file.getKey().toString().replace(':', '/'), file.getValue(), engine.getGroovyClassLoader());
+                Class<?> clazz = compile(makeFakeRelativePath(file.getKey(), GROOVY_ROOT), file.getValue(), engine.getGroovyClassLoader());
                 if (clazz == GroovyLog.class) continue; // preprocessor returned false
                 if (clazz == null) {
                     GroovyLog.get().errorMC("Error loading script for {}", file.getKey());
@@ -73,13 +80,18 @@ public class RMLGroovySandBox {
                     continue;
                 }
                 if (clazz.getSuperclass() != Script.class) {
-                    GroovyLog.get().errorMC("Class file '{}' should be defined in the runConfig in the classes property!", file.getKey());
+                    GroovyLog.get().errorMC("RClass file '{}' should be defined in the runConfig in the classes property!", file.getKey());
                     continue;
                 }
                 Script script = InvokerHelper.createScript(clazz, binding);
                 if (run) runScript(script);
             }
         }
+    }
+
+    public static String makeFakeRelativePath(ResourceLocation resourceLocation, String root){
+        //return resourceLocation.toString().replace(':', '/');
+        return root + resourceLocation.toString().replace(':', '/');
     }
     public static void runScript(Script script){
         m_GroovySandbox$runScript.invoke(GroovyScript.getSandbox(), script);

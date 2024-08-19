@@ -31,7 +31,7 @@ import static java.lang.annotation.ElementType.TYPE;
 @Documented
 @Retention(RetentionPolicy.SOURCE)
 @Target(value={CONSTRUCTOR, FIELD, METHOD, TYPE})
-public @interface OptionalAnnounce {
+public @interface OptionalAnnotation {
     Class<?>[] value();
 
     class Handler{
@@ -44,7 +44,7 @@ public @interface OptionalAnnounce {
 
         public static void handle(List<AnnotationNode> anns){
             if (anns != null){
-                Set<String> set = anns.stream().filter(node -> "Lrml/jrx/announces/OptionalAnnounce;".equals(node.desc))
+                Set<String> set = anns.stream().filter(node -> "Lrml/jrx/announces/OptionalAnnotation;".equals(node.desc))
                         .flatMap(
                                 (Function<AnnotationNode, Stream<String>>)
                                         annotationNode -> annotationNode.values.stream().map(Type.class::cast).map(Type::getInternalName))
