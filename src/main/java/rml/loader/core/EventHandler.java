@@ -22,16 +22,13 @@ public enum EventHandler {
         if (event.stage == LoaderState.PREINITIALIZATION){
             ConfigPatcher.Json.handleOverride();
         }
+        if (event.stage == LoaderState.CONSTRUCTING){
+            RMLTransformer.Transformers.Late.initModTransformers(event.event);
+        }
     }
 
     @Subscribe
     public void registerZenClass(CrTZenClassRegisterEvent event){
 
-    }
-
-    public void beforeConstruction(FMLBeforeStageEvent event){
-        if (event.stage == LoaderState.CONSTRUCTING){
-            RMLTransformer.Transformers.Late.initModTransformers(event.event);
-        }
     }
 }
