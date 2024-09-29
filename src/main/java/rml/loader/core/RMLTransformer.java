@@ -228,11 +228,11 @@ public class RMLTransformer implements IClassTransformer {
                                 }, (node)->node.getOpcode() == Opcodes.RETURN);
                                 tasks.complete("init");
                             }else if ("getItemStack".equals(mn.name) || "getItemStackBasic".equals(mn.name)){
-                                mn.instructions.clear();
-                                mn.visitVarInsn(Opcodes.ALOAD, 0);
-                                mn.visitVarInsn(Opcodes.ALOAD, 1);
-                                mn.visitMethodInsn(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "getItemStack", "(Lcom/google/gson/JsonObject;Lnet/minecraftforge/common/crafting/JsonContext;)Lnet/minecraft/item/ItemStack;", false);
-                                mn.visitInsn(Opcodes.ARETURN);
+                                // mn.instructions.clear();
+                                // mn.visitVarInsn(Opcodes.ALOAD, 0);
+                                // mn.visitVarInsn(Opcodes.ALOAD, 1);
+                                // mn.visitMethodInsn(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "getItemStack", "(Lcom/google/gson/JsonObject;Lnet/minecraftforge/common/crafting/JsonContext;)Lnet/minecraft/item/ItemStack;", false);
+                                // mn.visitInsn(Opcodes.ARETURN);
                                 tasks.complete(mn.name);
                             }
                         }
