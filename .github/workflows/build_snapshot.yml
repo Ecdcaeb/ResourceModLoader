@@ -8,8 +8,6 @@ on:
   push:
     branches:
         - 'main'
-    paths:
-        - 'src/**'
 
 jobs:
   build:
@@ -37,11 +35,11 @@ jobs:
               distribution: 'zulu'
               cache: gradle
           - name: Build
-            uses: gradle/gradle-build-action@v4.3.3
+            uses: gradle/gradle-build-action@v3
             with:
               arguments: build
           - name: Upload Build Artifacts
-            uses: actions/upload-artifact@v2.2.3
+            uses: actions/upload-artifact@v4.3.3
             with:
               name: ResourceModLoader-snapshot-${{ github.run_number}}.jar
               path: build/libs
