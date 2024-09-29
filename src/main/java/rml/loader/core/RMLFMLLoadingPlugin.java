@@ -30,6 +30,7 @@ import rml.jrx.announces.PublicAPI;
 import rml.jrx.reflection.jvm.FieldAccessor;
 import rml.jrx.reflection.jvm.ReflectionHelper;
 import rml.jrx.utils.ClassHelper;
+import rml.jrx.utils.ObjectHelper;
 import rml.layer.compat.crt.RMLCrTLoader;
 import rml.layer.compat.kubejs.RMKKubeJs;
 import rml.loader.ResourceModLoader;
@@ -87,12 +88,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         return null;
     }
 
+
     @Override
     public void injectData(Map<String, Object> data) {
-        injectData0(data);
-    }
-
-    public <FMLPluginWrapper> void injectData0(Map<String, Object> data) {
         source = (File) data.get("coremodLocation");
         ASMUtil.gameDir = Launch.minecraftHome;
         makeFMLCorePluginContainsFMLMod(source);
@@ -112,15 +110,16 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         ASMUtil.saveTransformedClass = isDebug;
 
 
-        @SuppressWarnings("unchecked")
-        List<FMLPluginWrapper> coremodList = (List<FMLPluginWrapper>) data.get("coremodList");
+
+        @SuppressWarnings("all")
+        List<Object> coremodList = (List<Object>) data.get("coremodList");
+
         if (coremodList != null){
             try {
-                @SuppressWarnings("unchecked")
-                Class<FMLPluginWrapper> CoreModManager$FMLPluginWrapper = (Class<FMLPluginWrapper>) Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper");
-                FieldAccessor<String, FMLPluginWrapper> name = ReflectionHelper.getFieldAccessor(CoreModManager$FMLPluginWrapper, "name");
-                for(FMLPluginWrapper plugin : coremodList){
-                    if ("GroovyScript-Core".equals(name.get(plugin))) {
+                Class<?> CoreModManager$FMLPluginWrapper = Class.forName("net.minecraftforge.fml.relauncher.CoreModManager$FMLPluginWrapper");
+                FieldAccessor<String, Object> name = ReflectionHelper.getFieldAccessor(CoreModManager$FMLPluginWrapper, "name");
+                for(Object plugin : coremodList){
+                    if ("GroovyScript-Core".equals(name.get(ObjectHelper.dynamic_cast(CoreModManager$FMLPluginWrapper, plugin)))) {
                         RMLTransformer.Transformers.initGroovyScriptTransformer();
                     }
                 }
