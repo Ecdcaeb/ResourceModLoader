@@ -1,5 +1,6 @@
 package rml.loader.api.world.text;
 
+import rml.jrx.announces.PrivateAPI;
 import rml.jrx.announces.RewriteWhenCleanroom;
 import rml.loader.api.event.client.gui.HandleComponentEvent;
 import rml.jrx.reflection.jvm.ReflectionHelper;
@@ -34,6 +35,7 @@ public class TextEffectsHelper {
         return new HoverEventHandler(nameIn, allowedInChatIn);
     }
     public static class ClickEventHandler{
+        public BiConsumer<ClickEventHandler, HandleComponentEvent.Click> handler = null;
         public ClickEvent.Action action;
 
         public ClickEventHandler(String nameIn, boolean allowedInChatIn){
@@ -49,17 +51,29 @@ public class TextEffectsHelper {
             return new ClickEvent(action, value);
         }
 
-        public <T extends HandleComponentEvent> ClickEventHandler eventHandler(BiConsumer<ClickEventHandler, T> handler){
-            new EventHandler<>(this, handler);
+        public ClickEventHandler eventHandler(BiConsumer<ClickEventHandler, HandleComponentEvent.Click> handler){
+            this.handler = handler;
+            MinecraftForge.EVENT_BUS.register(this);
             return this;
+        }
+
+        @PrivateAPI
+        @SubscribeEvent
+        public void handle(HandleComponentEvent.Click event){
+            handler.accept(this, event);
         }
 
         public boolean is(ClickEvent clickEvent){
             return clickEvent.getAction() == this.action;
         }
+
+        public boolean is(HandleComponentEvent.Click clickEvent){
+            return clickEvent.getClickEvent().getAction() == this.action;
+        }
     }
 
     public static class HoverEventHandler{
+        public BiConsumer<HoverEventHandler, HandleComponentEvent.Hover> handler = null;
         public HoverEvent.Action action;
 
         public HoverEventHandler(String nameIn, boolean allowedInChatIn){
@@ -76,23 +90,24 @@ public class TextEffectsHelper {
         }
 
 
-        public <T extends HandleComponentEvent> HoverEventHandler eventHandler(BiConsumer<HoverEventHandler, T> handler){
-            new EventHandler<>(this, handler);
+        public HoverEventHandler eventHandler(BiConsumer<HoverEventHandler, HandleComponentEvent.Hover> handler){
+            this.handler = handler;
+            MinecraftForge.EVENT_BUS.register(this);
             return this;
         }
-    }
 
-    public static class EventHandler<E, T extends HandleComponentEvent>{
-        private final BiConsumer<E, T> consumer;
-        private final E obj;
-        public EventHandler(E objIn, BiConsumer<E, T> consumer){
-            this.consumer = consumer;
-            this.obj = objIn;
-            MinecraftForge.EVENT_BUS.register(this);
+        @PrivateAPI
+        @SubscribeEvent
+        public void handle(HandleComponentEvent.Hover event){
+            handler.accept(this, event);
         }
 
-        @SubscribeEvent
-        public void handle(T evt){ consumer.accept(obj, evt); }
+        public boolean is(HoverEvent event){
+            return event.getAction() == this.action;
+        }
 
+        public boolean is(HandleComponentEvent.Hover event){
+            return event.getHoverEvent().getAction() == this.action;
+        }
     }
 }

@@ -3,8 +3,10 @@ package rml.loader.api.event.client.gui;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.event.ClickEvent;
+import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Event;
+import rml.jrx.announces.ASMInvoke;
 
 /**
  * @Project ResourceModLoader
@@ -28,10 +30,15 @@ public class HandleComponentEvent extends Event {
         this.guiScreen = guiScreen;
     }
 
+    @ASMInvoke
+    @SuppressWarnings("unused")
     public static void postHover(ITextComponent textComponent, GuiScreen guiScreen, int x, int y){
         Hover event = new Hover(textComponent, guiScreen, x, y);
         MinecraftForge.EVENT_BUS.post(event);
     }
+
+    @ASMInvoke
+    @SuppressWarnings("unused")
     public static boolean postClick(ITextComponent textComponent, GuiScreen guiScreen){
         Click event = new Click(false, textComponent, guiScreen);
         MinecraftForge.EVENT_BUS.post(event);
@@ -39,16 +46,14 @@ public class HandleComponentEvent extends Event {
     }
 
     public static class Click extends HandleComponentEvent{
-        public ClickEvent clickEvent;
         public boolean isHandled;
         public Click(boolean isHandled, ITextComponent textComponent, GuiScreen guiScreen) {
             super(textComponent, guiScreen);
             this.isHandled = isHandled;
-            this.clickEvent = textComponent.getStyle().getClickEvent();
         }
 
         public ClickEvent getClickEvent() {
-            return clickEvent;
+            return getTextComponent().getStyle().getClickEvent();
         }
 
         public boolean isHandled() {
@@ -75,6 +80,10 @@ public class HandleComponentEvent extends Event {
 
         public int getY() {
             return y;
+        }
+
+        public HoverEvent getHoverEvent(){
+            return getTextComponent().getStyle().getHoverEvent();
         }
     }
 }

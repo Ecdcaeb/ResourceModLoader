@@ -118,7 +118,7 @@ public class RMLForgeEventHandler {
         MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
         MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
         if (FMLLaunchHandler.side() == Side.CLIENT){
-            MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
+            //MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
         }
         if (Loader.isModLoaded(KubeJS.MOD_ID)){
             MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
