@@ -70,3 +70,17 @@ ResourceModLoader is not a ModLoader and cannot load Mods instead of ModLoader.
 The data does not have the overwriting function, only the <domain> that is the same as <modid> has the data packet function.
 
 More information, see official document : https://ecdcaeb.github.io/ResourceModLoader/
+
+## Development
+
+### Maven
+
+#### Maven
+
+```json
+{
+  "1.1.1": "curse.maven:resource-mod-loader-945917:5573938-sources-5573944",
+  "1.1.2": "curse.maven:resource-mod-loader-945917:5614802-sources-5614803",
+  "snapshot-79": "curse.maven:resource-mod-loader-945917:5768125-source-5768126"
+}
+```
