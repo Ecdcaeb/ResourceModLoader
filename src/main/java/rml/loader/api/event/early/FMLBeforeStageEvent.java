@@ -7,6 +7,8 @@ import rml.jrx.announces.PublicAPI;
  * @Project ResourceModLoader
  * @Author Hileb
  * @Date 2024/3/6 23:14
+ *
+ * Fired on {@link rml.loader.api.RMLBus#BUS}
  **/
 @EarlyClass
 @PublicAPI

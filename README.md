@@ -27,7 +27,7 @@ Download snapshot from [Action](https://github.com/Ecdcaeb/ResourceModLoader/act
 ### Use ResourceModLoader as lib?
 
 1) Add [CurseMaven](https://cursemaven.com/)
-2) Look the maven short [list](https://ecdcaeb.github.io/ResourceModLoader/en_us/java/#maven)
+2) Look the maven short [list](https://ecdcaeb.github.io/ResourceModLoader/#maven)
 
 ### Document is too short?
 
