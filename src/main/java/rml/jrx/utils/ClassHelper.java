@@ -26,7 +26,7 @@ public class ClassHelper {
 
     public static <T> Class<T> forceInitAll(Class<T> klass){
         if (klass.isArray()){
-            forceInit(klass.getComponentType());
+            forceInitAll(klass.getComponentType());
         }
         return forceInit(klass);
     }
