@@ -190,6 +190,10 @@ public class RMLModDiscover {
             }
         }
 
+        if (RMLFMLLoadingPlugin.developingPack != null) {
+            file_canidates.add(RMLFMLLoadingPlugin.developingPack);
+        }
+
         return file_canidates;
     }
 

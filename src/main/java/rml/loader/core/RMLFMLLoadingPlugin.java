@@ -58,8 +58,9 @@ import java.util.Map;
 @IFMLLoadingPlugin.MCVersion(ForgeVersion.mcVersion)
 public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     private static boolean isTestingLaunching = false;
-    public static File source;
-    public static boolean isDebug;
+    public static File source = null;
+    public static File developingPack = null;
+    public static boolean isDebug = false;
     @PublicAPI public static final Logger LOGGER = LogManager.getLogger(ResourceModLoader.MODID);
 
     public RMLFMLLoadingPlugin(){
@@ -103,6 +104,9 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
         if (arguments.containsKey("--rml.test")){
             isTestingLaunching = arguments.containsKey("--rml.test");
+        }
+        if (arguments.containsKey("--rml.dev.location")){
+            developingPack = new File(Launch.minecraftHome, arguments.get("--rml.dev.location"));
         }
         if (isDebug){
             arguments.forEach((key, value) -> LOGGER.info("{} | {}", key, value));
