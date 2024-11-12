@@ -32,7 +32,7 @@ public class FunctionExecutor {
             FunctionObject functionObject = manager.getFunction(resourceLocation);
             if (functionObject != null)manager.execute(functionObject, sender);
             else {
-                ResourceModLoader.LOGGER.error("Invalid FunctionExecutor for Invalid Function {}, PLZ report to resource-mod {} authors", resourceLocation, resourceLocation.getResourceDomain());
+                ResourceModLoader.LOGGER.error("Invalid FunctionExecutor for Invalid Function {}, PLZ report to resource-mod {} authors", resourceLocation, resourceLocation.getNamespace());
                 invalidFunctions.add(resourceLocation);
             }
             sender.worldServer = null;
