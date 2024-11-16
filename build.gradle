@@ -292,7 +292,12 @@ jar {
             attribute_map['FMLAT']= project.access_transformer_locations
         }
         if(propertyBool('use_mixin')){
-            attribute_map['MixinConfigs'] = project.mixin_configs;
+            StringBuilder mixins = new StringBuilder();
+            for(String s : propertyStringList('mixin_configs').collect(config -> "mixins.${config}.json" as String)){
+                mixins.append(s).append(',');
+            }
+            mixins.deleteCharAt(mixins.length());
+            attribute_map['MixinConfigs'] = mixins.toString();
         }
 
         attributes(attribute_map)

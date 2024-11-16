@@ -66,7 +66,7 @@ public class FileHelper {
             {
                 try
                 {
-                    fs = FileSystems.newFileSystem(source.toPath(), null);
+                    fs = FileSystems.newFileSystem(source.toPath(), (ClassLoader) null);
                     root = fs.getPath("/" + base);
                 }
                 catch (IOException e)
@@ -122,7 +122,7 @@ public class FileHelper {
         {
             try
             {
-                FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
+                FileSystem fs = FileSystems.newFileSystem(source.toPath(), (ClassLoader) null);
                 Path path;
                 try{
                     path = fs.getPath("/" + base);
@@ -159,7 +159,7 @@ public class FileHelper {
         {
             try
             {
-                FileSystem fs = FileSystems.newFileSystem(source.toPath(), null);
+                FileSystem fs = FileSystems.newFileSystem(source.toPath(), (ClassLoader) null);
                 Path path;
                 byte[] toReturn;
                 try{
