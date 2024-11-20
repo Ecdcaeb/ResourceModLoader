@@ -1,6 +1,10 @@
 ## <img src="icon.jpg" width = "128" height = "128" alt="ResourceModLoader" align=center /> Resource Mod Loader
-[![Discord](https://img.shields.io/discord/1189950517179330612.svg?color=%237289da&label=Discord&logo=discord&logoColor=%237289da)](https://discord.gg/HehwZApQXK)
+
 [![TotalAccess](https://count.getloli.com/get/@ResourceModLoader?theme=gelbooru)](https://ecdcaeb.github.io/ResourceModLoader/)
+
+[![Discord](https://img.shields.io/discord/1189950517179330612.svg?color=%237289da&label=Discord&logo=discord&logoColor=%237289da)](https://discord.gg/HehwZApQXK)
+![Downloads](https://img.shields.io/github/downloads/Ecdcaeb/resourcemodloader/total?style=flat-square)
+
 Here is the ResourceModLoader official repositories. All the code, local libs here.
 
 
