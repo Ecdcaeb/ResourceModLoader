@@ -213,7 +213,6 @@ public class RMLTransformer implements IClassTransformer {
             register("net.minecraftforge.common.crafting.CraftingHelper",
                     (cn)->{
                         Tasks tasks = new Tasks("init", "getItemStack", "getItemStackBasic");
-                        ListIterator<MethodNode> iterator = cn.listIteator();
 
                         for(MethodNode mn:cn.methods){
                             /**
@@ -231,7 +230,7 @@ public class RMLTransformer implements IClassTransformer {
                                 }, (node) -> node.getOpcode() == Opcodes.RETURN);
                                 tasks.complete("init");
                             } else if ("getItemStack".equals(mn.name) || "getItemStackBasic".equals(mn.name)){
-                                mn.
+                                //mn.
                                 // mn.instructions.clear();
                                 // mn.visitVarInsn(Opcodes.ALOAD, 0);
                                 // mn.visitVarInsn(Opcodes.ALOAD, 1);

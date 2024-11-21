@@ -309,7 +309,7 @@ public class RMLLoaders {
                 try
                 {
                     byte[] cfg = FileHelper.getByteSource(file).read();
-                    ConfigPatcher.OWNED_CONFIGS.put(ConfigFactory.addConfig(name, key.getResourcePath(), cfg), key.getNamespace());
+                    ConfigPatcher.OWNED_CONFIGS.put(ConfigFactory.addConfig(name, key.getPath(), cfg), key.getNamespace());
                     asm_data.get(null).put(key.getNamespace(), HashMultimap.create());
                 }
                 catch (IOException e)
