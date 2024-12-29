@@ -4,6 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
+import rml.deserializer.struct.std.StructArray;
+import rml.deserializer.struct.std.StructElement;
+import rml.deserializer.struct.std.StructObject;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
 import rml.jrx.utils.ClassHelper;
@@ -81,15 +84,15 @@ public class DeserializerManager {
      *
      * @throws JsonDeserializeException the exception. Error format? Unexpected context?
      */
-    public <T> T decode(Class<T> clazz, JsonElement jsonElement) throws JsonDeserializeException {
+    public <T> T decode(Class<T> clazz, StructElement jsonElement) throws JsonDeserializeException {
         ClassHelper.forceInitAll(clazz);
         clazz = DeserializerBuilder.avoidPrimitive(clazz);
 
         try {
             if (clazz.isArray()){
                 Class<?> clazzComponentType = clazz.getComponentType();
-                if (jsonElement.isJsonArray()){
-                    JsonArray array = jsonElement.getAsJsonArray();
+                if (jsonElement.isArray()){
+                    StructArray array = jsonElement.getAsArray();
                     Object arrayToReturn = Array.newInstance(clazzComponentType, array.size());
                     for(int index = 0 ; index < array.size() ; index++){
                         Array.set(arrayToReturn, index, decode(clazzComponentType, array.get(index)));
@@ -101,9 +104,9 @@ public class DeserializerManager {
                     return clazz.cast(arrayToReturn);
                 }
             } else {
-                if (jsonElement.isJsonObject()){
-                    JsonObject jsonObject = jsonElement.getAsJsonObject();
-                    if (jsonObject.has("type")){
+                if (jsonElement.isObject()){
+                    StructObject jsonObject = jsonElement.getAsObject();
+                    if (jsonObject.containsKey("type")){
                         ResourceLocation decoderName = parseLocation(jsonObject.get("type").getAsString());
                         if (!registry.containsKey(clazz)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" , is not registered.");
                         HashMap<ResourceLocation, AbstractDeserializer<?>> typedRegistry = registry.get(clazz);
@@ -131,7 +134,7 @@ public class DeserializerManager {
     }
 
 
-    public <T> T decodeSilently(Class<T> clazz, JsonElement jsonElement){
+    public <T> T decodeSilently(Class<T> clazz, StructElement jsonElement){
         JsonDeserializeException exception = null;
         try {
             return decode(clazz, jsonElement);
@@ -160,20 +163,19 @@ public class DeserializerManager {
     public DeserializerManager(String defaultDomain, Consumer<DeserializerManager> consumer){
         this.defaultDomain = defaultDomain;
         ResourceLocation GSON = new ResourceLocation("google", "primitive");
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, AbstractDeserializer.safeRun(JsonElement::getAsInt)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, AbstractDeserializer.safeRun(JsonElement::getAsFloat)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Double.class, AbstractDeserializer.safeRun(JsonElement::getAsDouble)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Long.class, AbstractDeserializer.safeRun(JsonElement::getAsLong)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Character.class, AbstractDeserializer.safeRun(JsonElement::getAsCharacter)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Byte.class, AbstractDeserializer.safeRun(JsonElement::getAsByte)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, String.class, AbstractDeserializer.safeRun(JsonElement::getAsString)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Boolean.class, AbstractDeserializer.safeRun(JsonElement::getAsBoolean)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Short.class, AbstractDeserializer.safeRun(JsonElement::getAsShort)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigInteger.class, AbstractDeserializer.safeRun(JsonElement::getAsBigInteger)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, AbstractDeserializer.safeRun(JsonElement::getAsBigDecimal)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, AbstractDeserializer.safeRun(JsonElement::getAsNumber)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Integer.class, AbstractDeserializer.safeRun(StructElement::getAsInteger)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Float.class, AbstractDeserializer.safeRun(StructElement::getAsFloat)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Double.class, AbstractDeserializer.safeRun(StructElement::getAsDouble)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Long.class, AbstractDeserializer.safeRun(StructElement::getAsLong)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Character.class, AbstractDeserializer.safeRun(StructElement::getAsCharacter)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Byte.class, AbstractDeserializer.safeRun(StructElement::getAsByte)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, String.class, AbstractDeserializer.safeRun(StructElement::getAsString)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Boolean.class, AbstractDeserializer.safeRun(StructElement::getAsBoolean)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Short.class, AbstractDeserializer.safeRun(StructElement::getAsShort)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigInteger.class, AbstractDeserializer.safeRun(StructElement::getAsBigInteger)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, BigDecimal.class, AbstractDeserializer.safeRun(StructElement::getAsBigDecimal)));
+        this.addDefaultEntry(new AbstractDeserializer<>(GSON, Number.class, AbstractDeserializer.safeRun((number)->number.getAsNumber().castToNumber())));
         this.addDefaultEntry(new AbstractDeserializer<>(GSON, Void.class, AbstractDeserializer.safeRun((jsonElement)->null)));
-        this.addDefaultEntry(new AbstractDeserializer<>(GSON, JsonObject.class, AbstractDeserializer.safeRun(JsonElement::getAsJsonObject)));
         consumer.accept(this);
     }
 
@@ -203,15 +205,15 @@ public class DeserializerManager {
         return new AbstractDeserializer<T>(resourceLocation, tClass, jsonElement -> function.apply(DeserializerManager.this.decode(fClass, jsonElement)));
     }
 
-    public static JsonElement getFromPath(JsonObject jsonObject, String path){
+    public static StructElement getFromPath(StructObject jsonObject, String path){
         int i = path.indexOf('.');
         if (i == -1){
             return jsonObject.get(path);
         }else {
             String first = path.substring(0, i-1);
-            JsonElement element1 = jsonObject.get(first);
-            if (element1 instanceof JsonObject){
-                return getFromPath((JsonObject)element1, path.substring(i+1));
+            StructElement element1 = jsonObject.get(first);
+            if (element1.isObject()){
+                return getFromPath(element1.getAsObject(), path.substring(i+1));
             }else return null;
         }
     }

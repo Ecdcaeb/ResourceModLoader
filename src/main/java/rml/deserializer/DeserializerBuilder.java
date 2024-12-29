@@ -4,6 +4,8 @@ import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
+import rml.deserializer.struct.std.StructElement;
+import rml.deserializer.struct.std.StructObject;
 import rml.internal.net.minecraftforge.common.util.LazyOptional;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
@@ -23,10 +25,10 @@ import java.util.function.Function;
 @EarlyClass
 @PublicAPI
 public class DeserializerBuilder<T> {
-    private DeserializerManager manager;
-    private Class<T> clazz;
-    private ResourceLocation resourceLocation;
-    private HashSet<IAction> actions = new HashSet<>();
+    private final DeserializerManager manager;
+    private final Class<T> clazz;
+    private final ResourceLocation resourceLocation;
+    private final HashSet<IAction> actions = new HashSet<>();
     private IJsonObjectFunction<T> function = (context) -> null;
     private boolean isDefault = false;
     public DeserializerBuilder(DeserializerManager manager, Class<T> clazz, ResourceLocation resourceLocation){
@@ -58,7 +60,7 @@ public class DeserializerBuilder<T> {
     public DeserializerBuilder<T> optionalWhen(final Class<?> clazz,final String name,final Context.ToBooleanFunction isNotRequired){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            StructElement element = DeserializerManager.getFromPath(jsonObject, name);
             if (element != null){
                 try{
                     Object obj = manager.decode(type, element);
@@ -93,7 +95,7 @@ public class DeserializerBuilder<T> {
     public <V> DeserializerBuilder<T> optionalDefaultWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final V defaultValue){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            StructElement element = DeserializerManager.getFromPath(jsonObject, name);
             if (element != null){
                 try{
                     Object obj = manager.decode(type, element);
@@ -116,7 +118,7 @@ public class DeserializerBuilder<T> {
     public <V> DeserializerBuilder<T> optionalDefaultLazyWhen(final Class<V> clazz, final String name, final Context.ToBooleanFunction isNotRequired, final LazyOptional<V> defaultValue){
         final Class<?> type = DeserializerBuilder.avoidPrimitive(clazz);
         return this.action(((manager, jsonObject, context) -> {
-            JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            StructElement element = DeserializerManager.getFromPath(jsonObject, name);
             if (element != null){
                 try{
                     Object obj = manager.decode(type, element);
@@ -239,8 +241,8 @@ public class DeserializerBuilder<T> {
 
         @FunctionalInterface
         public interface ToBooleanFunction{
-            ToBooleanFunction TRUE = (o)->true;
-            ToBooleanFunction FALSE = (o)->false;
+            ToBooleanFunction TRUE = (o) -> true;
+            ToBooleanFunction FALSE = (o) -> false;
             boolean apply(Context context);
         }
 
@@ -249,7 +251,7 @@ public class DeserializerBuilder<T> {
 
     @FunctionalInterface
     public interface IAction{
-        void execute(DeserializerManager manager, JsonObject jsonObject, Context context) throws JsonDeserializeException;
+        void execute(DeserializerManager manager, StructObject jsonObject, Context context) throws JsonDeserializeException;
     }
 
     @FunctionalInterface

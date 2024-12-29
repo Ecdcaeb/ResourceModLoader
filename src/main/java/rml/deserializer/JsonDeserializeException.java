@@ -1,6 +1,6 @@
 package rml.deserializer;
 
-import com.google.gson.JsonElement;
+import rml.deserializer.struct.std.StructElement;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
 
@@ -13,17 +13,17 @@ import rml.jrx.announces.PublicAPI;
 @EarlyClass
 @PublicAPI
 public class JsonDeserializeException extends Exception{
-    public JsonDeserializeException(JsonElement element, Throwable throwable){
+    public JsonDeserializeException(StructElement element, Throwable throwable){
         super(String.valueOf(element), throwable);
     }
 
-    public JsonDeserializeException(JsonElement element, String s){
+    public JsonDeserializeException(StructElement element, String s){
         super(s + ", " + element);
     }
-    public JsonDeserializeException(JsonElement element){
+    public JsonDeserializeException(StructElement element){
         super(String.valueOf(element));
     }
-    public JsonDeserializeException(JsonElement element, String s, Throwable throwable){
+    public JsonDeserializeException(StructElement element, String s, Throwable throwable){
         super(s + ", " + element, throwable);
     }
 }

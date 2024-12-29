@@ -3,6 +3,8 @@ package rml.deserializer;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import rml.deserializer.struct.std.StructElement;
+import rml.deserializer.struct.std.StructObject;
 import rml.jrx.announces.EarlyClass;
 import rml.jrx.announces.PublicAPI;
 
@@ -35,8 +37,8 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public static <E> Argument<E> type(String name, Class<E> clazz) {
         return new Argument<E>(name) {
             @Override
-            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            public void execute(DeserializerManager manager, StructObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
                     try {
                         final Class<?> clazz2 = DeserializerBuilder.avoidPrimitive(clazz);
@@ -56,7 +58,7 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
         return new Argument<Integer>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
                     Integer obj = null;
                     try {
@@ -92,8 +94,8 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public static Argument<Float> floatArgument(String name, Function<Float, Throwable> predicate){
         return new Argument<Float>(name) {
             @Override
-            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            public void execute(DeserializerManager manager, StructObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
                     Float obj = null;
                     try{
@@ -129,8 +131,8 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public static Argument<Boolean> bool(String name, Function<Boolean, Throwable> predicate){
         return new Argument<Boolean>(name) {
             @Override
-            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            public void execute(DeserializerManager manager, StructObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
                     Boolean obj = null;
                     try{
@@ -154,12 +156,12 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public static<T> Argument<Map<String, T>> map(String name, final Class<T> clazz){
         return new Argument<Map<String, T>>(name) {
             @Override
-            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            public void execute(DeserializerManager manager, StructObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
-                    if (!element.isJsonObject()) throw new JsonDeserializeException(jsonObject, "field" + name + "is required be json object.");
+                    if (!element.isObject()) throw new JsonDeserializeException(jsonObject, "field" + name + "is required be json object.");
                     try {
-                        Map<String, T> map = element.getAsJsonObject().entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> manager.decodeSilently(clazz, entry.getValue())));
+                        Map<String, T> map = element.getAsObject().entrySet().stream().collect(Collectors.toMap((entry) -> entry.getKey(), (entry) -> manager.decodeSilently(clazz, entry.getValue())));
                         context.put(name, map);
                     }catch (Exception e){
                         throw new JsonDeserializeException(element, e);
@@ -174,8 +176,8 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     public static<T> Argument<List<T>> list(String name, final Class<T> clazz){
         return new Argument<List<T>>(name) {
             @Override
-            public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
-                JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
+            public void execute(DeserializerManager manager, StructObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
+                StructElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
                     try {
                         Class<?> arrayCls = Array.newInstance(clazz, 0).getClass();
