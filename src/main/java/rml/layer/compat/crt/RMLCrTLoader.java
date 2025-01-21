@@ -43,7 +43,7 @@ public class RMLCrTLoader {
 
             String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
             ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-            name = "rml/"+key.getResourceDomain()+"/"+name;
+            name = "rml/"+key.getNamespace()+"/"+name;
             try{
                 byte[] fileBytes = FileHelper.getByteSource(file).read();
 
