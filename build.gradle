@@ -9,8 +9,6 @@ buildscript {
     }
 }
 
-
-
 apply plugin: "net.minecraftforge.gradle.forge"
 //Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 
@@ -18,16 +16,18 @@ version = project.mod_version
 group = "mods.rml" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "ResourceModLoader"
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+sourceCompatibility = targetCompatibility = "1.8" // Need this here so eclipse task generates correctly.
+compileJava {
+    sourceCompatibility = targetCompatibility = "1.8"
+}
 
 minecraft {
     version = "1.12.2-14.23.5.2847"
     runDir = "run"
     mappings = "stable_39"
     makeObfSourceJar = true // an Srg named sources jar is made by default. uncomment this to disable.
-    args = '--rml.debug', 'true',
-           '--rml.test', 'true',
-           '--rml.dev.location', '.../.../dev/example/'
+
+
 }
 
 repositories {
@@ -120,9 +120,15 @@ jar {
     }
 }
 
+tasks.register('buildExample', Zip) {
+    archiveName = "example.zip"
+    destinationDir = file("run/client/mods")
+
+    from "dev/example"
+}
 tasks.register('releaseExample', Zip) {
-    archiveBaseName = "example-"+version+".zip"
-    destinationDirectory = file("releases/example")
+    archiveName = "example-"+version+".zip"
+    destinationDir = file("releases/example")
 
     from "dev/example"
 }
