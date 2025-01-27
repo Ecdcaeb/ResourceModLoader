@@ -6,8 +6,6 @@ name: Build Test Artifact
 
 on:
   push:
-    branches:
-        - 'main'
     paths-ignore:
         - 'docs/**'
 
