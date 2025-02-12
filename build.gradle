@@ -7,7 +7,7 @@ buildscript {
             }
     }
     dependencies {
-        classpath "io.github.ecdcaeb:legacyforgegradle:0.2.3"
+        classpath "io.github.ecdcaeb:LegacyForgeGradle:0.2.3"
     }
 }
 
