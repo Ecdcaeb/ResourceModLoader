@@ -3,9 +3,11 @@ buildscript {
             mavenCentral()
             maven { url "https://maven.minecraftforge.net" }
             maven { url = "https://repo.spongepowered.org/maven" }
+            maven { url 'https://ecdcaeb.github.io/maven/'
+            }
     }
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:${forge_gradle_version}"
+        classpath "io.github.ecdcaeb:legacyforgegradle:0.2.3"
     }
 }
 
