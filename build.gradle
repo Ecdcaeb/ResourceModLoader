@@ -7,7 +7,7 @@ buildscript {
             }
     }
     dependencies {
-        classpath "io.github.ecdcaeb:LegacyForgeGradle:0.2.3"
+        classpath "io.github.ecdcaeb:LegacyForgeGradle:0.3.1"
     }
 }
 
@@ -123,14 +123,14 @@ jar {
 }
 
 tasks.register('buildExample', Zip) {
-    archiveName = "example.zip"
-    destinationDir = file("run/client/mods")
+    archivesBaseName = "example.zip"
+    destinationDirectory = file("run/client/mods")
 
     from "dev/example"
 }
 tasks.register('releaseExample', Zip) {
-    archiveName = "example-"+version+".zip"
-    destinationDir = file("releases/example")
+    archivesBaseName = "example-"+version+".zip"
+    destinationDirectory = file("releases/example")
 
     from "dev/example"
 }
