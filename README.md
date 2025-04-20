@@ -29,6 +29,9 @@ Download snapshot from [Action](https://github.com/Ecdcaeb/ResourceModLoader/act
 1) Add [CurseMaven](https://cursemaven.com/)
 2) Look the maven short [list](https://ecdcaeb.github.io/ResourceModLoader/#maven)
 
+[Here](https://github.com/Ecdcaeb/ShotaASM/commit/f5d23801b5108b2687582204f9e78a4121a72db7
+) is a example commit using rml and add a module type. 
+
 ### Document is too short?
 
 Yes, it's very sketchy. If you have any questions, you can submit an issue and ask me to supplement it or submit a PR to help me supplement it.
