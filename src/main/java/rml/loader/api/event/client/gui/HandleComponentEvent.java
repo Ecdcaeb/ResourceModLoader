@@ -6,7 +6,7 @@ import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Event;
-import rml.jrx.announces.ASMInvoke;
+import rml.loader.api.annotations.ASMInvoke;
 
 /**
  * @Project ResourceModLoader

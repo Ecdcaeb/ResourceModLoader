@@ -1,7 +1,7 @@
 package rml.loader.api.world.registry.remap;
 
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegistryEvent;

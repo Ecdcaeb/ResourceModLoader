@@ -1,13 +1,14 @@
 package rml.loader.core;
 
 import com.google.common.eventbus.Subscribe;
-import rml.jrx.announces.BeDiscovered;
+import crafttweaker.CraftTweakerAPI;
+import crafttweaker.mc1120.CraftTweaker;
+import net.minecraftforge.fml.common.Loader;
+import rml.layer.compat.crt.RMLCrTLoader;
 import rml.loader.api.config.ConfigPatcher;
 import rml.loader.api.event.early.FMLBeforeStageEvent;
-import rml.loader.api.mods.module.ModuleType;
 import rml.layer.compat.crt.CrTZenClassRegisterEvent;
 import net.minecraftforge.fml.common.LoaderState;
-import net.minecraftforge.fml.common.discovery.ASMDataTable;
 
 /**
  * @Project ResourceModLoader
@@ -17,18 +18,30 @@ import net.minecraftforge.fml.common.discovery.ASMDataTable;
 @SuppressWarnings("unused")
 public enum EventHandler {
     INSTANCE;
+
     @Subscribe
     public void beforePreInitializationEvent(FMLBeforeStageEvent event){
-        if (event.stage == LoaderState.PREINITIALIZATION){
-            ConfigPatcher.Json.handleOverride();
-        }
-        if (event.stage == LoaderState.CONSTRUCTING){
-            RMLTransformer.Transformers.Late.initModTransformers(event.event);
+        switch ((LoaderState) event.stage) {
+            case CONSTRUCTING: {
+                RMLTransformer.Transformers.Late.initModTransformers(event.event);
+                break;
+            }
+            case PREINITIALIZATION: {
+                ConfigPatcher.Json.handleOverride();
+                break;
+            }
+            case INITIALIZATION: {
+                if (Loader.isModLoaded(CraftTweaker.MODID)) {
+                    CraftTweakerAPI.tweaker.loadScript(false, "configv1");
+                }
+                break;
+            }
+            default:
         }
     }
 
     @Subscribe
     public void registerZenClass(CrTZenClassRegisterEvent event){
-
+        RMLCrTLoader.registerWrappers(event);
     }
 }

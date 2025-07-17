@@ -2,12 +2,9 @@ package rml.loader.api.mods.module;
 
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
-import rml.deserializer.DeserializerBuilder;
-import rml.deserializer.JsonDeserializeException;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.PublicAPI;
 import rml.loader.deserialize.Deserializer;
-import rml.loader.deserialize.MCDeserializers;
 
 import java.util.Arrays;
 import java.util.HashMap;

@@ -1,5 +1,6 @@
 package rml.layer.cleanroom;
 
+import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.DefaultArtifactVersion;
 
@@ -11,7 +12,5 @@ import net.minecraftforge.fml.common.versioning.DefaultArtifactVersion;
 public class CleanroomLayer {
     public static final ArtifactVersion CURRENT_JAVA = new DefaultArtifactVersion(System.getenv().get("java.specification.version"));
     public static final ArtifactVersion JAVA_8 = new DefaultArtifactVersion("1.8");
-    public static boolean isRunningOnCleanroom(){
-        return CURRENT_JAVA.compareTo(JAVA_8) > 0; // Only Cleanroom could run on higher java version.
-    }
+    public static final boolean isRunningOnCleanroom = LaunchClassLoaderUtil.getClassBytes("com.cleanroommc.common.CleanroomContainer") != null;
 }

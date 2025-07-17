@@ -8,17 +8,17 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
-import rml.jrx.utils.file.JsonHelper;
+import rml.deserializer.AbstractDeserializer;
+import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.ResourceModLoader;
-import rml.jrx.announces.PrivateAPI;
+import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.config.ConfigFactory;
 import rml.loader.api.config.ConfigPatcher;
 import rml.loader.api.event.FunctionLoadEvent;
 import rml.loader.api.event.LootTableRegistryEvent;
-import rml.jrx.utils.file.FileHelper;
-import rml.jrx.reflection.jvm.FieldAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
+import rml.loader.api.utils.file.FileHelper;
+import rml.loader.api.reflection.jvm.FieldAccessor;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.api.world.function.FunctionExecutor;
@@ -107,6 +107,16 @@ public class RMLLoaders {
         }
 
         public static class TagOre{
+            public static final AbstractDeserializer<TagOre> DESERIALIZER = Deserializer.named(RMLLoaders.OreDic.TagOre.class, new ResourceLocation("rml", "ore_tag"))
+                    .require(ItemStack.class, "item")
+                    .require(String.class, "ore")
+                    .decode((context -> {
+                        RMLLoaders.OreDic.TagOre tagOre = new RMLLoaders.OreDic.TagOre();
+                        tagOre.ore = context.get(String.class, "ore");
+                        tagOre.item = context.get(ItemStack.class, "item");
+                        return tagOre;
+                    })).markDefault().build();
+
             public String ore;
             public ItemStack item;
         }

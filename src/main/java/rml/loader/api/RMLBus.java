@@ -1,8 +1,8 @@
 package rml.loader.api;
 
 import com.google.common.eventbus.EventBus;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PublicAPI;
 
 /**
  * @Project ResourceModLoader
@@ -13,4 +13,8 @@ import rml.jrx.announces.PublicAPI;
 @PublicAPI
 public class RMLBus {
     @PublicAPI public static final EventBus BUS = new EventBus("rml");
+
+    public static void register(String depCls, String handlerCls) {
+
+    }
 }

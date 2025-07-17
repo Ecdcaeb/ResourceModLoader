@@ -4,14 +4,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PublicAPI;
-import rml.jrx.utils.ClassHelper;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PublicAPI;
+import rml.loader.api.utils.ClassHelper;
 
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -27,7 +30,8 @@ public class DeserializerManager {
     public final String defaultDomain;
     public final HashMap<Class<?>, AbstractDeserializer<?>> defaults = new HashMap<>();
     public final HashMap<Class<?>, HashMap<ResourceLocation, AbstractDeserializer<?>>> registry = new HashMap<>();
-
+    public Consumer<Class<?>> initializer = (str) -> {};
+    public final Set<Class<?>> initializedClasses = new HashSet<>();
 
     /**
      * Add a deserializer
@@ -101,12 +105,17 @@ public class DeserializerManager {
                     return clazz.cast(arrayToReturn);
                 }
             } else {
+                if (!initializedClasses.contains(clazz)) {
+                    initializer.accept(clazz);
+                }
                 if (jsonElement.isJsonObject()){
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
                     if (jsonObject.has("type")){
                         ResourceLocation decoderName = parseLocation(jsonObject.get("type").getAsString());
-                        if (!registry.containsKey(clazz)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" , is not registered.");
                         HashMap<ResourceLocation, AbstractDeserializer<?>> typedRegistry = registry.get(clazz);
+                        if (typedRegistry == null) {
+                            throw new JsonDeserializeException(jsonElement, "DeserializerRegistry for " + clazz.getName() + " is null");
+                        }
                         if (!typedRegistry.containsKey(decoderName)) throw new JsonDeserializeException(jsonObject, "Deserializer for " + clazz +" named " + decoderName + " could not be found.");
                         return clazz.cast(typedRegistry.get(decoderName).deserialize(jsonObject));
                     }else {

@@ -1,7 +1,7 @@
 package rml.loader.deserialize.function.executor;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import rml.jrx.announces.BeDiscovered;
+import rml.loader.api.annotations.BeDiscovered;
 import rml.loader.api.world.function.FunctionExecutor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.WorldServer;

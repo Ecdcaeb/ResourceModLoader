@@ -1,8 +1,8 @@
 package rml.deserializer;
 
 import com.google.gson.JsonElement;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PublicAPI;
 
 /**
  * @Project ResourceModLoader

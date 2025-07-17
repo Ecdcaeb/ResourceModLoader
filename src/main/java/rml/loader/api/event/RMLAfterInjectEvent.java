@@ -6,7 +6,7 @@ package rml.loader.api.event;
  * @Date 2024/2/9 21:33
  **/
 
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.RMLBus;
 
 /**

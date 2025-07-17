@@ -4,9 +4,9 @@ import net.minecraftforge.fml.client.GuiModList;
 import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
-import rml.jrx.reflection.jvm.FieldAccessor;
-import rml.jrx.reflection.jvm.MethodAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
+import rml.loader.api.reflection.jvm.FieldAccessor;
+import rml.loader.api.reflection.jvm.MethodAccessor;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
 
 import java.util.ArrayList;
 

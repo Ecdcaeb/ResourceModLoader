@@ -1,7 +1,7 @@
 package rml.loader.api.event;
 
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.PublicAPI;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.storage.loot.LootTableList;
 import net.minecraftforge.common.MinecraftForge;

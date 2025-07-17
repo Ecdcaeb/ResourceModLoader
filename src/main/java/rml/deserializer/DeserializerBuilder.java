@@ -4,9 +4,9 @@ import com.google.common.primitives.Primitives;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
-import rml.internal.net.minecraftforge.common.util.LazyOptional;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.utils.LazyOptional;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PublicAPI;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;

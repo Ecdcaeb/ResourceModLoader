@@ -1,6 +1,6 @@
 package rml.loader.deserialize.craft.recipe;
 
-import rml.jrx.announces.PrivateAPI;
+import rml.loader.api.annotations.PrivateAPI;
 import net.minecraft.inventory.InventoryCrafting;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;

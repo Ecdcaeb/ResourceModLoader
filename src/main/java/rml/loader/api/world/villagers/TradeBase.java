@@ -1,9 +1,9 @@
 package rml.loader.api.world.villagers;
 
 import com.google.gson.JsonObject;
-import rml.jrx.announces.BeDiscovered;
-import rml.jrx.reflection.jvm.ReflectionHelper;
-import rml.jrx.utils.values.RandomIntSupplier;
+import rml.loader.api.annotations.BeDiscovered;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
+import rml.loader.api.utils.values.RandomIntSupplier;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
@@ -11,7 +11,6 @@ import net.minecraftforge.fml.common.registry.VillagerRegistry;
 import net.minecraftforge.registries.IForgeRegistry;
 import rml.deserializer.AbstractDeserializer;
 import rml.loader.deserialize.Deserializer;
-import rml.deserializer.DeserializerBuilder;
 import rml.deserializer.JsonDeserializeException;
 
 import java.util.List;

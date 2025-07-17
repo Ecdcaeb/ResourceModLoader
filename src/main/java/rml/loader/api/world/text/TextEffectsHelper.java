@@ -1,9 +1,9 @@
 package rml.loader.api.world.text;
 
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.RewriteWhenCleanroom;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.RewriteWhenCleanroom;
 import rml.loader.api.event.client.gui.HandleComponentEvent;
-import rml.jrx.reflection.jvm.ReflectionHelper;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.event.ClickEvent;
 import net.minecraft.util.text.event.HoverEvent;

@@ -65,6 +65,11 @@ repositories {
         name 'GTCEu Maven'
         url 'https://maven.gtceu.com'
     }
+    maven {
+        name 'CurseMaven'
+        url 'https://curse.cleanroommc.com'
+    }
+
 
     mavenCentral()
 }
@@ -72,9 +77,12 @@ repositories {
 
 dependencies {
     compileOnly 'com.cleanroommc:groovyscript:1.1.3'
+    compileOnly files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
     compile 'curse.maven:just-enough-dimensions-254317:2932048'
-    compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.698'
-    compile files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
+    compile 'CraftTweaker2:CraftTweaker2-MC1120-Main:1.12-4.1.20.704'
+    compile "curse.maven:zenutil-401178:6762641-6762643"
+    compile 'zone.rong:mixinbooter:10.6'
+    compile 'com.cleanroommc:configanytime:3.0'
 }
 
 processResources {
@@ -111,7 +119,7 @@ jar {
                 'Specification-Version': '1', // We are version 1 of ourselves
                 'FMLCorePlugin': 'rml.loader.core.RMLFMLLoadingPlugin',
                 'FMLAT': 'rml_at.cfg',
-                'FMLCorePluginContainsFMLMod':"true",
+                'FMLCorePluginContainsFMLMod': "true",
                 'Implementation-Title': "ResourceModLoader",
                 'Implementation-Version': mod_version,
                 'Implementation-Vendor': "Hileb",

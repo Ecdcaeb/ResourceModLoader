@@ -3,8 +3,8 @@ package rml.deserializer;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PublicAPI;
 
 import java.lang.reflect.Array;
 import java.util.List;

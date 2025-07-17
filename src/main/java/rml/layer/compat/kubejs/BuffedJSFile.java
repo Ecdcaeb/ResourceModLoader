@@ -2,7 +2,7 @@ package rml.layer.compat.kubejs;
 
 import dev.latvian.kubejs.script.ScriptFile;
 import dev.latvian.kubejs.script.ScriptPack;
-import rml.jrx.announces.PrivateAPI;
+import rml.loader.api.annotations.PrivateAPI;
 
 import java.io.CharArrayReader;
 

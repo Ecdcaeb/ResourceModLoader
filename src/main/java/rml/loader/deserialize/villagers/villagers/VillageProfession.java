@@ -1,6 +1,6 @@
 package rml.loader.deserialize.villagers.villagers;
 
-import rml.jrx.announces.BeDiscovered;
+import rml.loader.api.annotations.BeDiscovered;
 import rml.loader.api.world.villagers.IVillager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.registry.VillagerRegistry;

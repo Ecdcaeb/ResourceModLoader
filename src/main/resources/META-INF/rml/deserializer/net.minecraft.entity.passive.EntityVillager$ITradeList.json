@@ -1,0 +1,6 @@
+[
+  "rml.loader.deserialize.villagers.trades.SlotRecipe",
+  "rml.loader.deserialize.villagers.trades.ListItemForEmeralds",
+  "rml.loader.deserialize.villagers.trades.ItemAndEmeraldToItem",
+  "rml.loader.deserialize.villagers.trades.EmeraldForItems"
+]

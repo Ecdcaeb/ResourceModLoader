@@ -2,7 +2,7 @@ package rml.layer.compat.crt;
 
 import crafttweaker.runtime.IScriptIterator;
 import crafttweaker.runtime.IScriptProvider;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PublicAPI;
 import net.minecraftforge.fml.common.eventhandler.Event;
 
 import java.util.Iterator;

@@ -1,8 +1,7 @@
 package rml.loader.api.mods;
 
 import net.minecraftforge.fml.common.FMLContainerHolder;
-import rml.jrx.announces.PublicAPI;
-import rml.loader.ResourceModLoader;
+import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import net.minecraftforge.fml.common.ModContainer;

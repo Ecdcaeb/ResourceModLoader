@@ -3,8 +3,8 @@ package rml.loader.core;
 import net.minecraft.launchwrapper.Launch;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PrivateAPI;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -40,7 +40,7 @@ public class ASMUtil {
     }
 
     public static byte[] push(String rawName,byte[] clazz){
-        if (saveTransformedClass){
+        if (true){
             final File outRoot = new File(gameDir,"clazzs/");
             final File outFile = new File(outRoot, rawName.replace('.', File.separatorChar) + ".class");
             final File outDir = outFile.getParentFile();

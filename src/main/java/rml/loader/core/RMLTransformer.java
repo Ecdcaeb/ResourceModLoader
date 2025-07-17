@@ -24,12 +24,11 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.RewriteWhenCleanroom;
-import rml.jrx.asm.MethodName;
-import rml.jrx.utils.ClassHelper;
-import rml.jrx.utils.Tasks;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.asm.MethodName;
+import rml.loader.api.utils.ClassHelper;
+import rml.loader.api.utils.Tasks;
 
 import java.util.HashMap;
 import java.util.HashSet;

@@ -1,7 +1,7 @@
 package rml.loader.api.world.villagers;
 
 import com.google.gson.JsonObject;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.PublicAPI;
 import net.minecraftforge.registries.IForgeRegistryEntry;
 
 /**

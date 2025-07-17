@@ -11,12 +11,12 @@ import groovy.lang.Script;
 import groovy.util.GroovyScriptEngine;
 import net.minecraft.util.ResourceLocation;
 import org.codehaus.groovy.runtime.InvokerHelper;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.RewriteWhenCleanroom;
-import rml.jrx.reflection.jvm.FieldAccessor;
-import rml.jrx.reflection.jvm.MethodAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
-import rml.jrx.utils.file.FileHelper;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.RewriteWhenCleanroom;
+import rml.loader.api.reflection.jvm.FieldAccessor;
+import rml.loader.api.reflection.jvm.MethodAccessor;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
+import rml.loader.api.utils.file.FileHelper;
 import rml.loader.api.mods.ContainerHolder;
 
 import java.io.File;

@@ -1,0 +1,5 @@
+[
+  "rml.loader.api.utils.values.RandomIntSupplier$RangePrice",
+  "rml.loader.api.utils.values.RandomIntSupplier$RangeConstant",
+  "rml.loader.api.utils.values.RandomIntSupplier$RangePoisson"
+]

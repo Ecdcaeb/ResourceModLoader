@@ -3,11 +3,10 @@ package rml.layer.cleanroom;
 import it.unimi.dsi.fastutil.ints.Int2IntLinkedOpenHashMap;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
-import rml.jrx.reflection.jvm.FieldAccessor;
-import rml.jrx.reflection.jvm.MethodAccessor;
-import rml.jrx.reflection.jvm.ReflectionHelper;
+import rml.loader.api.reflection.jvm.FieldAccessor;
+import rml.loader.api.reflection.jvm.MethodAccessor;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 

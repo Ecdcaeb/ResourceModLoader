@@ -5,7 +5,7 @@ import com.google.gson.JsonSyntaxException;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.crafting.JsonContext;
 import rml.deserializer.JsonDeserializeException;
-import rml.jrx.announces.RewriteWhenCleanroom;
+import rml.loader.api.annotations.RewriteWhenCleanroom;
 import rml.loader.api.RMLBus;
 import rml.loader.api.event.early.FMLBeforeStageEvent;
 import net.minecraftforge.fml.common.LoadController;

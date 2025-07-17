@@ -2,7 +2,7 @@ package rml.loader.deserialize.craft.recipe;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import rml.jrx.announces.PrivateAPI;
+import rml.loader.api.annotations.PrivateAPI;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipe;
 import net.minecraft.item.crafting.Ingredient;
@@ -21,7 +21,7 @@ import java.util.HashSet;
  **/
 @PrivateAPI
 public class SimpleAnvilRecipe extends NamedEmptyRecipeImpl {
-    public static final HashSet<SimpleAnvilRecipe> recipes=new HashSet<>();
+    public static final HashSet<SimpleAnvilRecipe> recipes = new HashSet<>();
     public Ingredient left;
     public Ingredient right;
     public ItemStack output;

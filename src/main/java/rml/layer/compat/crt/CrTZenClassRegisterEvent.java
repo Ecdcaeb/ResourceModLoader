@@ -1,9 +1,9 @@
 package rml.layer.compat.crt;
 
 import crafttweaker.CraftTweakerAPI;
-import rml.jrx.announces.EarlyClass;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
+import rml.loader.api.annotations.EarlyClass;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.RMLBus;
 
 /**
@@ -17,6 +17,12 @@ import rml.loader.api.RMLBus;
 public class CrTZenClassRegisterEvent {
     @PublicAPI public void register(Class<?> clazz){
         CraftTweakerAPI.registerClass(clazz);
+    }
+
+    public void register(Class<?>... clazz) {
+        for (Class<?> cls : clazz) {
+            register(cls);
+        }
     }
 
     @PrivateAPI public static void post(){

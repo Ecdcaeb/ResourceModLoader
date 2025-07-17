@@ -3,9 +3,9 @@ package rml.loader;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.ModContainer;
 import org.apache.logging.log4j.Logger;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.PublicAPI;
-import rml.jrx.utils.file.FileHelper;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.PublicAPI;
+import rml.loader.api.utils.file.FileHelper;
 import rml.loader.api.event.RMLModuleLoadingEvent;
 import rml.loader.api.mods.BuffedModIDContainer;
 import rml.loader.api.mods.ContainerHolder;
@@ -58,7 +58,7 @@ public class ResourceModLoader {
 
     @PublicAPI public static void updateRMLContainerState(){
         enabledModContainers.addAll(buffedModIDContainer.getHolder());
-        RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
+        //RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
     }
 
     @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(){

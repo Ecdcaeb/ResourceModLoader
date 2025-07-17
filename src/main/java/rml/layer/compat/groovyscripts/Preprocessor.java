@@ -8,8 +8,8 @@ import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
-import rml.jrx.announces.PrivateAPI;
-import rml.jrx.announces.RewriteWhenCleanroom;
+import rml.loader.api.annotations.PrivateAPI;
+import rml.loader.api.annotations.RewriteWhenCleanroom;
 
 import java.io.BufferedReader;
 import java.io.IOException;

@@ -3,14 +3,13 @@ package rml.loader.deserialize.villagers.trades;
 import net.minecraft.entity.IMerchant;
 import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.init.Items;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.village.MerchantRecipe;
 import net.minecraft.village.MerchantRecipeList;
 import rml.deserializer.AbstractDeserializer;
-import rml.jrx.announces.BeDiscovered;
-import rml.jrx.utils.values.RandomIntSupplier;
+import rml.loader.api.annotations.BeDiscovered;
+import rml.loader.api.utils.values.RandomIntSupplier;
 import rml.loader.deserialize.Deserializer;
 
 import java.util.Random;
