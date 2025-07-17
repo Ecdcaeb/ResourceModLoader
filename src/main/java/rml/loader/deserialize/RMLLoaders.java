@@ -9,6 +9,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import rml.deserializer.AbstractDeserializer;
+import rml.loader.api.config.v2.config.elements.ConfigGroup;
 import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.annotations.PrivateAPI;
@@ -40,7 +41,9 @@ import org.apache.logging.log4j.message.FormattedMessage;
 import rml.deserializer.JsonDeserializeException;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -309,6 +312,7 @@ public class RMLLoaders {
      **/
     public static class ConfigLoader {
         public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
+
         public static void load(){
             ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_define")), (containerHolder, module, root, file) -> {
                 String relative = root.relativize(file).toString();
@@ -325,6 +329,29 @@ public class RMLLoaders {
                 catch (IOException e)
                 {
                     FMLLog.log.error("Couldn't read config define {} from {}", key, file, e);
+                }
+            });
+        }
+    }
+
+    public static class ConfigNodeLoader {
+        public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
+
+        public static void load(){
+            ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_define")), (containerHolder, module, root, file) -> {
+                String relative = root.relativize(file).toString();
+                if (!"json".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
+                    return;
+                String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
+                ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
+                try
+                {
+                    byte[] cfg = FileHelper.getByteSource(file).read();
+                    Deserializer.decode(ConfigGroup.class, JsonHelper.parse(new InputStreamReader(new ByteArrayInputStream(cfg)))).register();
+                }
+                catch (Throwable e)
+                {
+                    error(Objects.requireNonNull(module, "module").moduleType, containerHolder, e, String.format("Couldn't read config nodes %s from %s", key, file));
                 }
             });
         }

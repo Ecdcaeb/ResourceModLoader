@@ -70,6 +70,11 @@
         "defaultLocation" : "crt"
     },
     {
+        "name" : "rml:config_nodes",
+        "isFile" : true,
+        "defaultLocation" : "config/nodes"
+    },
+    {
         "name" : "rml:justenoughdimensions",
         "isFile" : false,
         "defaultLocation" : "justenoughdimensions"

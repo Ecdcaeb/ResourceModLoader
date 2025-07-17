@@ -99,6 +99,7 @@ public class RMLForgeEventHandler {
 
     public static void construct(FMLConstructionEvent event){
         RMLLoaders.ConfigLoader.load();
+        RMLLoaders.ConfigNodeLoader.load();
         if (Loader.isModLoaded(GroovyScript.ID)){
             RMLGrsLoader.load();
         }
