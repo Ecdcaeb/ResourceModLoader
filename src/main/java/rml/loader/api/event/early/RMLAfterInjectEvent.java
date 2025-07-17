@@ -1,4 +1,4 @@
-package rml.loader.api.event;
+package rml.loader.api.event.early;
 
 /**
  * @Project ResourceModLoader
@@ -7,12 +7,10 @@ package rml.loader.api.event;
  **/
 
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.RMLBus;
+import rml.loader.api.bus.EventBus;
 
-/**
- * fire on {@link RMLBus#BUS}
- * **/
 @PublicAPI
 public class RMLAfterInjectEvent{
+    public static final EventBus<RMLAfterInjectEvent> BUS = EventBus.of();
 
 }

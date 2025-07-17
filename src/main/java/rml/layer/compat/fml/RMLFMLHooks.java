@@ -6,7 +6,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.crafting.JsonContext;
 import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.annotations.RewriteWhenCleanroom;
-import rml.loader.api.RMLBus;
 import rml.loader.api.event.early.FMLBeforeStageEvent;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.LoaderState;
@@ -23,7 +22,7 @@ public class RMLFMLHooks {
     @SuppressWarnings("unused")
     public static void beforeFMLBusEventSending(LoadController controller, LoaderState state, Object[] args){
         if (state.hasEvent()){
-            RMLBus.BUS.post(new FMLBeforeStageEvent(state, args));
+            FMLBeforeStageEvent.post(state, args);
         }
     }
 

@@ -1,8 +1,7 @@
 package rml.loader.api.event.early;
 
 
-import rml.loader.api.RMLBus;
-import rml.loader.core.GlobalTransformer;
+import rml.loader.api.bus.EventBus;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.function.ToIntFunction;
@@ -13,20 +12,50 @@ import java.util.function.ToIntFunction;
  * @Date 2024/4/13 10:46
  **/
 public class RMLAddTransformerEvent {
-    public Object transformer;
-    public String target;
-    public RMLAddTransformerEvent(String target, ToIntFunction<ClassNode> transformer){
-        this.transformer = transformer;
-        this.target = target;
+    public static final EventBus<RMLAddTransformerEvent> BUS = EventBus.of();
+
+    protected boolean cancel = false;
+
+    public void cancel(boolean cancel) {
+        this.cancel = cancel;
     }
-    public RMLAddTransformerEvent(GlobalTransformer globalTransformer){
-        this.transformer = globalTransformer;
-        this.target = null;
+
+    public boolean isCanceled() {
+        return cancel;
     }
-    public static void post(GlobalTransformer transformer){
-        RMLBus.BUS.post(new RMLAddTransformerEvent(transformer));
+
+    public static class SingleTransformer extends RMLAddTransformerEvent {
+        public static final EventBus<SingleTransformer> BUS = EventBus.of(RMLAddTransformerEvent.BUS);
+
+        private final ToIntFunction<ClassNode> transformer;
+        private final String target;
+        public SingleTransformer(ToIntFunction<ClassNode> transformer, String target) {
+            super();
+            this.transformer = transformer;
+            this.target = target;
+        }
+
+        public String getTarget() {
+            return target;
+        }
+
+        public ToIntFunction<ClassNode> getTransformer() {
+            return transformer;
+        }
     }
-    public static void post(String target, ToIntFunction<ClassNode> transformer){
-        RMLBus.BUS.post(new RMLAddTransformerEvent(target, transformer));
+
+    public static class GlobalTransformer extends RMLAddTransformerEvent {
+        public static final EventBus<GlobalTransformer> BUS = EventBus.of(RMLAddTransformerEvent.BUS);
+
+        private final rml.loader.core.GlobalTransformer transformer;
+        public GlobalTransformer(rml.loader.core.GlobalTransformer transformer) {
+            super();
+            this.transformer = transformer;
+
+        }
+
+        public rml.loader.core.GlobalTransformer getTransformer() {
+            return transformer;
+        }
     }
 }

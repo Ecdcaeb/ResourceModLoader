@@ -26,9 +26,8 @@ import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.RMLModContainer;
 import rml.loader.ResourceModLoader;
-import rml.loader.api.RMLBus;
 import rml.loader.api.config.ConfigPatcher;
-import rml.loader.api.event.RMLAfterInjectEvent;
+import rml.loader.api.event.early.RMLAfterInjectEvent;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
@@ -189,7 +188,7 @@ public class RMLModDiscover {
     @PrivateAPI public static void afterInject(){
         ConfigPatcher.Json.searchRedefault();
         ConfigPatcher.Json.searchOverride();
-        RMLBus.BUS.post(new RMLAfterInjectEvent());
+        RMLAfterInjectEvent.BUS.post(new RMLAfterInjectEvent());
     }
 
     @PrivateAPI public static ContainerHolder makeContainer(JsonObject jsonObject, File modFile){

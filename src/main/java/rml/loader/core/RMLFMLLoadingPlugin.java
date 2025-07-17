@@ -1,12 +1,9 @@
 package rml.loader.core;
 
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import crafttweaker.annotations.ZenRegister;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.fml.common.*;
-import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -15,22 +12,21 @@ import net.minecraftforge.fml.relauncher.CoreModManager;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import rml.layer.compat.crt.CrTZenClassRegisterEvent;
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
+import rml.loader.api.event.early.FMLBeforeStageEvent;
 import rml.loader.api.reflection.jvm.FieldAccessor;
 import rml.loader.api.reflection.jvm.ReflectionHelper;
 import rml.loader.api.utils.ObjectHelper;
 import rml.loader.ResourceModLoader;
-import rml.loader.api.RMLBus;
 import rml.loader.deserialize.RMLForgeEventHandler;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 /**
  * @Project ResourceModLoader
@@ -49,7 +45,8 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     @PublicAPI public static final Logger LOGGER = LogManager.getLogger(ResourceModLoader.MODID);
 
     public RMLFMLLoadingPlugin(){
-        RMLBus.BUS.register(EventHandler.INSTANCE);
+        FMLBeforeStageEvent.BUS.register(RMLBusHandler::beforePreInitializationEvent);
+        CrTZenClassRegisterEvent.BUS.register(RMLBusHandler::registerZenClass);
     }
 
     public static void makeFMLCorePluginContainsFMLMod(File file){

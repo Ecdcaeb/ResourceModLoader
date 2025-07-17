@@ -25,8 +25,4 @@ public class CrTFindingIScriptIteratorEvent extends Event {
             scriptIterators.add(iterator.next());
         }
     }
-    @Override
-    public boolean isCancelable() {
-        return false;
-    }
 }

@@ -1,6 +1,5 @@
 package rml.loader.api;
 
-import com.google.common.eventbus.EventBus;
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PublicAPI;
 
@@ -11,10 +10,7 @@ import rml.loader.api.annotations.PublicAPI;
  **/
 @EarlyClass
 @PublicAPI
+@Deprecated
 public class RMLBus {
-    @PublicAPI public static final EventBus BUS = new EventBus("rml");
 
-    public static void register(String depCls, String handlerCls) {
-
-    }
 }

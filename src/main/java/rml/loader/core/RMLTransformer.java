@@ -27,6 +27,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.asm.MethodName;
+import rml.loader.api.event.early.RMLAddTransformerEvent;
 import rml.loader.api.utils.ClassHelper;
 import rml.loader.api.utils.Tasks;
 
@@ -91,7 +92,7 @@ public class RMLTransformer implements IClassTransformer {
                     ClassReader classReader = new ClassReader(basicClass);
                     ClassNode cn = new ClassNode();
                     classReader.accept(cn, 0);
-                    publicClass(cn);
+                    //publicClass(cn);
                     int flags = 0;
                     boolean isTarget = false;
                     for(GlobalTransformer transformer:globalTransformers){
@@ -196,10 +197,18 @@ public class RMLTransformer implements IClassTransformer {
     }
     
     public static void register(final String canonicalClassName, final ToIntFunction<ClassNode> singleTransformer){
+        if (RMLAddTransformerEvent.SingleTransformer.BUS.post(new RMLAddTransformerEvent.SingleTransformer(singleTransformer, canonicalClassName)).isCanceled()) {
+            return;
+        }
         if (transformers.containsKey(canonicalClassName)){
-            final ToIntFunction<ClassNode> orgTran = transformers.get(canonicalClassName);
-            transformers.put(canonicalClassName, value -> orgTran.applyAsInt(value) | singleTransformer.applyAsInt(value));
+            transformers.computeIfPresent(canonicalClassName, (k, orgTran) -> value -> orgTran.applyAsInt(value) | singleTransformer.applyAsInt(value));
         }else transformers.put(canonicalClassName, singleTransformer);
+    }
+
+    public static void register(GlobalTransformer globalTransformer) {
+        if (!RMLAddTransformerEvent.GlobalTransformer.BUS.post(new RMLAddTransformerEvent.GlobalTransformer(globalTransformer)).isCanceled()) {
+            globalTransformers.add(globalTransformer);
+        }
     }
 
     /**
