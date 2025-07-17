@@ -69,7 +69,12 @@
          "name":"rml:MOD_GROOVY_SCRIPT",
          "location":"mods/groovy_script/run_config.json",
          "forceLoaded":true
-       }
+      },
+      {
+          "name" : "rml:config_nodes",
+          "location":"mods/forge/config/nodes/config.json",
+          "forceLoaded":true
+      }
     ]
   },
   {

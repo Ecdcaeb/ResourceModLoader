@@ -59,7 +59,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     public String[] getASMTransformerClass() {
         return new String[]{
                 "rml.loader.core.RMLTransformer",
-                "rml.loader.api.config.v2.config.ConfigUtils.ClassProvider"
+                "rml.loader.api.config.v2.config.ConfigUtils$ClassProvider"
         };
     }
     @Override

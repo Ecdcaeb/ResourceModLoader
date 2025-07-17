@@ -1,22 +1,67 @@
 package rml.loader.api.config.v2.config.elements;
 
+import net.minecraft.util.ResourceLocation;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-
-import rml.loader.api.config.v2.config.ConfigUtils;
+import rml.deserializer.*;
+import rml.loader.api.utils.ObjectHelper;
+import rml.loader.deserialize.Deserializer;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class ConfigMap extends ConfigPrimitive {
+    public enum ConfigMapType{
+        INT(Integer.class),
+        DOUBLE(Double.class),
+        STRING(String.class),
+        BOOL(Boolean.class),
+        INTS(Integer[].class),
+        DOUBLES(Double[].class),
+        STRINGS(String[].class),
+        BOOLS(Boolean[].class)
+        ;
+
+        public static final AbstractDeserializer<ConfigMapType> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(
+                new AbstractDeserializer<>(new ResourceLocation("rml", "type"),
+                        ConfigMapType.class, jsonElement -> {
+                            try {
+                                return ConfigMapType.valueOf(Deserializer.decode(String.class, jsonElement));
+                            } catch (IllegalArgumentException e) {
+                                throw new JsonDeserializeException(jsonElement, "ConfigMapType not found", e);
+                            }
+                        }));
+
+        private final Class<?> cls;
+        ConfigMapType(Class<?> cls){
+            this.cls = cls;
+        }
+
+        public Class<?> getType() {
+            return cls;
+        }
+    }
+    public static final AbstractDeserializer<ConfigElement> DESERIALIZER = Deserializer.named(ConfigElement.class, new ResourceLocation("rml", "map"))
+            .optionalDefault(ConfigDescription.class, "display", ConfigDescription.EMPTY)
+            .require(String.class, "name")
+            .require(ConfigMapType.class, "map_type")
+            .action((manager, jsonObject, context) -> {
+                if (context.getJsonObject().has("defaultValue")) {
+                    Argument.map("defaultValue", context.get(ConfigMapType.class, "map_type").getType()).execute(Deserializer.MANAGER, context.getJsonObject().get("defaultValue").getAsJsonObject(), context);
+                } else context.put("defaultValue", new HashMap<>());
+            })
+            .decode(context -> new ConfigMap(
+                    context.get(ConfigDescription.class, "display"),
+                    context.get(String.class, "name"),
+                    context.get(ConfigMapType.class, "map_type").getType(),
+                    ObjectHelper.static_cast(context.get(Map.class, "defaultValue")))).build();
 
     protected Class<?> type;
     protected Map<String, ?> defaultVal;
 
-    public ConfigMap(ConfigGroup parentIn, String nameIn, Class<?> type, Map<String, ?> defaultVal) {
+    public ConfigMap(ConfigDescription parentIn, String nameIn, Class<?> type, Map<String, ?> defaultVal) {
         super(parentIn, nameIn);
         this.type = type;
         this.defaultVal = defaultVal == null ? new HashMap<>() : defaultVal;
@@ -24,19 +69,19 @@ public class ConfigMap extends ConfigPrimitive {
 
     @Override
     public String createDescription() {
-        return "Lyouyihj/zenutils/api/config/elements/ConfigMap$HashDataMap;";
+        return "Ljava/util/HashMap;";
     }
 
     @Override
     public String createSignature() {
-        return "Lyouyihj/zenutils/api/config/elements/ConfigMap$HashDataMap<Ljava/lang/String;"+ Type.getDescriptor(this.type) +">;";
+        return "Ljava/util/HashMap<Ljava/lang/String;"+ Type.getDescriptor(this.type) +">;";
     }
 
     @Override
     public void createToStack(MethodVisitor methodVisitor) {
-        methodVisitor.visitTypeInsn(Opcodes.NEW, "youyihj/zenutils/api/config/elements/ConfigMap$HashDataMap");
+        methodVisitor.visitTypeInsn(Opcodes.NEW, "java/util/HashMap");
         methodVisitor.visitInsn(Opcodes.DUP);
-        methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "youyihj/zenutils/api/config/elements/ConfigMap$HashDataMap", "<init>", "()V", false);
+        methodVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/util/HashMap", "<init>", "()V", false);
 
         BiConsumer<MethodVisitor, ?> consumer = cast(STACK_PUTTER.get(this.type));
 
@@ -89,9 +134,5 @@ public class ConfigMap extends ConfigPrimitive {
             methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
         });
         addStackPutter(String.class, MethodVisitor::visitLdcInsn);
-    }
-
-    public static class HashDataMap<K extends String, V> extends HashMap<String, V> {
-
     }
 }

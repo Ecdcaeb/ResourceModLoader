@@ -65,22 +65,6 @@ public class RMLCrTLoader {
     }
 
     @PrivateAPI public static void registerWrappers(CrTZenClassRegisterEvent event) {
-        event.register(ConfigUtils.class);
-        event.register(ConfigBoolean.class);
-        event.register(ConfigBooleanArray.class);
-        event.register(ConfigGroup.class);
-        event.register(ConfigDouble.class);
-        event.register(ConfigDoubleArray.class);
-        event.register(ConfigElement.class);
-        event.register(ConfigEnum.class);
-        event.register(ConfigInt.class);
-        event.register(ConfigIntArray.class);
-        event.register(ConfigMap.class);
-        event.register(ConfigPrimitive.class);
-        event.register(ConfigRangedDouble.class);
-        event.register(ConfigRangedInt.class);
-        event.register(ConfigString.class);
-        event.register(ConfigStringArray.class);
-        event.register(ConfigMap.HashDataMap.class);
+
     }
 }

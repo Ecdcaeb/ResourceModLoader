@@ -7,11 +7,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.launchwrapper.Launch;
-import net.minecraftforge.fml.common.Loader;
-import net.minecraftforge.fml.common.MetadataCollection;
-import net.minecraftforge.fml.common.ModClassLoader;
-import net.minecraftforge.fml.common.ModContainer;
-import net.minecraftforge.fml.common.ModMetadata;
+import net.minecraftforge.fml.common.*;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.common.versioning.VersionParser;
@@ -39,6 +35,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -71,7 +68,11 @@ public class RMLModDiscover {
                     if (info != null){
                         InputStream inputStream = zipFile.getInputStream(info);
                         JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                        Deserializer.decode(ModuleType[].class, element);
+                        if (element.isJsonArray()) {
+                            for(JsonElement jsonElement : element.getAsJsonArray()) {
+                                ModuleType.decode0(jsonElement);
+                            }
+                        } else ModuleType.decode0(element);
                     }
                 } catch (IOException e) {
                     RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
@@ -85,7 +86,11 @@ public class RMLModDiscover {
                     try {
                         InputStream inputStream = Files.newInputStream(files[0].toPath());
                         JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                        Deserializer.decode(ModuleType[].class, element);
+                        if (element.isJsonArray()) {
+                            for(JsonElement jsonElement : element.getAsJsonArray()) {
+                                ModuleType.decode0(jsonElement);
+                            }
+                        } else ModuleType.decode0(element);
 
                     } catch (IOException e) {
                         RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
@@ -210,7 +215,12 @@ public class RMLModDiscover {
                 }));
             }
             try {
-                modules = Deserializer.decode(Module[].class, array);
+                ArrayList<Module> moduleArrayList = new ArrayList<>(array.size());
+                for (JsonElement element : array) {
+                    moduleArrayList.add(Module.decode0(element));
+                }
+                modules = moduleArrayList.toArray(new Module[0]);
+
             } catch (JsonDeserializeException e) {
                 throw new RuntimeException("Could not decode modules", e);
             }

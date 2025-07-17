@@ -1,5 +1,16 @@
 [
   "rml.loader.api.config.v2.config.elements.ConfigBoolean",
   "rml.loader.api.config.v2.config.elements.ConfigBooleanArray",
-  ""
+  "rml.loader.api.config.v2.config.elements.ConfigDouble",
+  "rml.loader.api.config.v2.config.elements.ConfigDoubleArray",
+  "rml.loader.api.config.v2.config.elements.ConfigEnum",
+  "rml.loader.api.config.v2.config.elements.ConfigGroup",
+  "rml.loader.api.config.v2.config.elements.ConfigInt",
+  "rml.loader.api.config.v2.config.elements.ConfigIntArray",
+  "rml.loader.api.config.v2.config.elements.ConfigMap",
+  "rml.loader.api.config.v2.config.elements.ConfigRangedDouble",
+  "rml.loader.api.config.v2.config.elements.ConfigRangedInt",
+  "rml.loader.api.config.v2.config.elements.ConfigString",
+  "rml.loader.api.config.v2.config.elements.ConfigStringArray"
+
 ]

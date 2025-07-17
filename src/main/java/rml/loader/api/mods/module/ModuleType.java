@@ -1,7 +1,10 @@
 package rml.loader.api.mods.module;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
+import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
 import rml.loader.deserialize.Deserializer;
@@ -27,6 +30,19 @@ public class ModuleType{
                         new ModuleType(context.get(ResourceLocation.class, "name"), context.get(String.class, "defaultLocation"), context.get(Boolean.class, "isFile")) :
                         valueOf(location);
             }).markDefault().build();
+
+    public static ModuleType decode0(JsonElement jsonElement) throws JsonDeserializeException {
+        try {
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            ResourceLocation resourceLocation = new ResourceLocation(jsonObject.get("name").getAsString());
+            boolean isFile = jsonObject.get("isFile").getAsBoolean();
+            String location = jsonObject.get("defaultLocation").getAsString();
+            return register(resourceLocation.toString(), location, isFile);
+        } catch (Throwable throwable) {
+            throw new JsonDeserializeException(jsonElement, "cant decode ModuleType");
+        }
+    }
+
     public static final HashMap<ResourceLocation, ModuleType> REGISTRY = new HashMap<>();
 //    public static final ModuleType STRUCTURE = register("STRUCTURE","structures", false);//TODO
 //    public static final ModuleType DIMENSION = register("DIMENSION", "dimension", false);//TODO

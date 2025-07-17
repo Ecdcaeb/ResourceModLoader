@@ -96,21 +96,25 @@ public class ResourceModLoader {
     public static void loadModuleFindAssets(ModuleType module, FileHelper.ModFileConsumer consumer){
         Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
         for(ContainerHolder containerHolder : containerHolders){
-            ModContainer oldActive = Loader.instance().activeModContainer();
-            Loader.instance().setActiveModContainer(containerHolder.container);
-            FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
-            Loader.instance().setActiveModContainer(oldActive);
+            if (containerHolder.hasModule(module)) {
+                ModContainer oldActive = Loader.instance().activeModContainer();
+                Loader.instance().setActiveModContainer(containerHolder.container);
+                FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
+                Loader.instance().setActiveModContainer(oldActive);
+            }
         }
     }
 
     public static void loadModuleFindAssets(ModuleType module, ContainerHolder.ModuleConsumer moduleConsumer, FileHelper.ModFileConsumer consumer){
         Set<ContainerHolder> containerHolders = RMLModuleLoadingEvent.post(getCurrentRMLContainerHolders(module), module);
         for(ContainerHolder containerHolder : containerHolders){
-            ModContainer oldActive = Loader.instance().activeModContainer();
-            Loader.instance().setActiveModContainer(containerHolder.container);
-            moduleConsumer.accept(module, containerHolder);
-            FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
-            Loader.instance().setActiveModContainer(oldActive);
+            if (containerHolder.hasModule(module)) {
+                ModContainer oldActive = Loader.instance().activeModContainer();
+                Loader.instance().setActiveModContainer(containerHolder.container);
+                moduleConsumer.accept(module, containerHolder);
+                FileHelper.findAssets(containerHolder, containerHolder.modules.get(module), consumer);
+                Loader.instance().setActiveModContainer(oldActive);
+            }
         }
     }
 

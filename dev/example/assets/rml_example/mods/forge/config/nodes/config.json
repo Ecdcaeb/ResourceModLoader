@@ -1,0 +1,162 @@
+{
+  "type" : "rml:group",
+  "name" : "test_config2",
+  "elements" : [
+    {
+      "type" : "rml:group",
+      "name" : "client",
+      "elements": [
+        {
+          "type" : "rml:int",
+          "name" : "integer",
+          "defaultValue" : 114514
+        },
+        {
+          "type" : "rml:ints",
+          "name" : "integerArray",
+          "defaultValue" : 0
+        },
+        {
+          "type" : "rml:ranged_int",
+          "name" : "rangedInteger",
+          "defaultValue" : "0",
+          "min" : -10,
+          "max" : 10
+        },
+        {
+          "type" : "rml:ranged_int",
+          "name" : "rangedInteger",
+          "defaultValue" : "0",
+          "min" : -10,
+          "max" : 10
+        },
+        {
+          "type" : "rml:double",
+          "name" : "double",
+          "defaultValue" : 0.0
+        },
+        {
+          "type" : "rml:doubles",
+          "name" : "doubles",
+          "defaultValue" : 0.0
+        },
+        {
+          "type" : "rml:ranged_double",
+          "name" : "rangedDouble",
+          "defaultValue" : 0.0
+        },
+        {
+          "type" : "rml:strings",
+          "name" : "stringArray",
+          "defaultValue" : "value0"
+        },
+        {
+          "type" : "rml:bool",
+          "name" : "bool",
+          "defaultValue" : false
+        },
+        {
+          "type" : "rml:bools",
+          "name" : "bools",
+          "defaultValue" : [false, true, true]
+        },
+        {
+          "type" : "rml:enum",
+          "name" : "enum",
+          "defaultValue" : "ONE",
+          "enums" : "ONE"
+        },
+        {
+          "type" : "rml:group",
+          "name" : "mapping",
+          "elements": [
+            {
+              "type" : "rml:map",
+              "name" : "booleanArrayMap",
+              "map_type" : "BOOLS",
+              "defaultValue": {
+                "name" : [true]
+              }
+            },
+            {
+              "type" : "rml:map",
+              "name" : "doubleArrayMap",
+              "map_type" : "DOUBLES",
+              "defaultValue": {
+                "name" : 0
+              }
+            },
+            {
+              "type" : "rml:map",
+              "name" : "stringArrayMap",
+              "map_type" : "STRINGS",
+              "defaultValue": {
+                "name" : "0"
+              }
+            },
+            {
+              "type" : "rml:map",
+              "name" : "intArrayMap",
+              "map_type" : "INTS",
+              "defaultValue": {
+                "name" : 0
+              }
+            },
+            {
+              "type" : "rml:map",
+              "name" : "intMap",
+              "map_type" : "INT"
+            },
+            {
+              "type" : "rml:map",
+              "name" : "boolMap",
+              "map_type" : "BOOL"
+            },
+            {
+              "type" : "rml:map",
+              "name" : "stringMap",
+              "map_type" : "STRING"
+            },
+            {
+              "type" : "rml:map",
+              "name" : "doubleMap",
+              "map_type" : "DOUBLE"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type" : "rml:group",
+      "name" : "server",
+      "elements": [
+        {
+          "type" : "rml:group",
+          "name" : "testSub",
+          "elements" : [
+            {
+              "type" : "rml:ranged_double",
+              "name" : "rangedDouble",
+              "defaultValue" : 0,
+              "min" : -1,
+              "max" : 1,
+              "display" : {
+                "requiresMcRestart": true,
+                "requiresWorldRestart": true,
+                "sliding": true,
+                "displayName" : "Display Name",
+                "langKey": "config.test_config.server.testSub.test.desc",
+                "comment": "hello comments"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type" : "rml:string",
+      "name" : "at_root",
+      "defaultValue" : "root"
+    }
+  ]
+}

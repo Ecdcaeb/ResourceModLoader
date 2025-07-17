@@ -36,7 +36,7 @@ public class ContainerHolder implements FMLContainerHolder {
     }
 
     public boolean hasModule(ModuleType module){
-        return modules.containsKey(module);
+        return modules.containsKey(module) && modules.get(module) != null;
     }
 
     public ContainerHolder(ModContainer container){
