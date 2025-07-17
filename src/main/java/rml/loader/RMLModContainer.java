@@ -19,7 +19,7 @@ import java.io.File;
 @PrivateAPI
 public class RMLModContainer extends InjectedModContainer {
     public final Logger LOGGER;
-    public RMLModContainer(ModMetadata metadata,File source) {
+    public RMLModContainer(ModMetadata metadata, File source) {
         super(new DummyModContainer(metadata), source);
         LOGGER = LogManager.getLogger(metadata.modId);
     }

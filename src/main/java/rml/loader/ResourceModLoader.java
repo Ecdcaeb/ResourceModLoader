@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+
 /**
  * @Project ResourceModLoader
  * @Author Hileb
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 public class ResourceModLoader {
     @PublicAPI public static final int PACK_VERSION = 3;
     @PublicAPI public static final String MODID = "rml";
-    @PublicAPI public static final String VERSION = "1.1.2";
+    @PublicAPI public static final String VERSION = "1.1.3";
     @PrivateAPI private static final BuffedModIDContainer buffedModIDContainer = new BuffedModIDContainer();
     @PrivateAPI public static final HashSet<ContainerHolder> enabledModContainers = new HashSet<>();
 
@@ -58,7 +59,7 @@ public class ResourceModLoader {
 
     @PublicAPI public static void updateRMLContainerState(){
         enabledModContainers.addAll(buffedModIDContainer.getHolder());
-        //RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
+        RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = enabledModContainers.stream().map(containerHolder -> containerHolder.container).collect(Collectors.toList());
     }
 
     @PublicAPI public static Set<ContainerHolder> getCurrentRMLContainerHolders(){

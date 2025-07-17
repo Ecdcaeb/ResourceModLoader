@@ -1,6 +1,6 @@
 package rml.loader.core;
 
-import crafttweaker.annotations.ZenRegister;
+import com.google.common.eventbus.Subscribe;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.fml.common.*;
@@ -64,7 +64,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
     }
     @Override
     public String getModContainerClass() {
-        return null;
+        return "rml.loader.core.RMLFMLLoadingPlugin$Container";
     }
     @Nullable
     @Override
@@ -121,47 +121,46 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         return null;
     }
 
-    @Mod(modid = ResourceModLoader.MODID, version = ResourceModLoader.VERSION, acceptableRemoteVersions = "*")
-    public static class Container{
+    public static class Container extends DummyModContainer{
 
         @PublicAPI public static ModContainer INSTANCE = Loader.instance().getIndexedModList().get(ResourceModLoader.MODID);
         @PublicAPI public static final Logger LOGGER = RMLFMLLoadingPlugin.LOGGER;
 
-//        @PrivateAPI public Container(){
-//            super(new ModMetadata());
-//            ModMetadata metadata = this.getMetadata();
-//            metadata.modId = ResourceModLoader.MODID;
-//            metadata.name = "Resource Mod Loader";
-//            metadata.authorList.add("Hileb");
-//            metadata.version = ResourceModLoader.VERSION;
-//            metadata.credits = "\n" +
-//                    "       Idealland - they provided this framework for enviroment.\n" +
-//                    "       zfms4188  - support the RML at CraftTweaker compat! \n";
-//            metadata.description = "a modloader which load mods from resource packs.(in mods/)";
-//            metadata.url = "https://github.com/Ecdcaeb/ResourceModLoader";
-//            metadata.updateJSON = "https://raw.githubusercontent.com/Ecdcaeb/ResourceModLoader/main/docs/updates.json";
-//            metadata.logoFile ="assets/rml/icon.png";
-//            INSTANCE = this;
-//        }
+        @PrivateAPI public Container(){
+            super(new ModMetadata());
+            ModMetadata metadata = this.getMetadata();
+            metadata.modId = ResourceModLoader.MODID;
+            metadata.name = "Resource Mod Loader";
+            metadata.authorList.add("Hileb");
+            metadata.version = ResourceModLoader.VERSION;
+            metadata.credits = "\n" +
+                    "       Idealland - they provided this framework for enviroment.\n" +
+                    "       zfms4188  - support the RML at CraftTweaker compat! \n";
+            metadata.description = "a modloader which load mods from resource packs.(in mods/)";
+            metadata.url = "https://github.com/Ecdcaeb/ResourceModLoader";
+            metadata.updateJSON = "https://raw.githubusercontent.com/Ecdcaeb/ResourceModLoader/main/docs/updates.json";
+            metadata.logoFile ="assets/rml/icon.png";
+            INSTANCE = this;
+        }
 
 
-        @Mod.EventHandler
+        @Subscribe
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
             RMLForgeEventHandler.preInit(event);
         }
 
-        @Mod.EventHandler
+        @Subscribe
         @PrivateAPI public void construct(FMLConstructionEvent event){
             RMLForgeEventHandler.construct(event);
-            event.getASMHarvestedData().getAll(ZenRegister.class.getName()).stream().filter(asmData -> asmData.getClassName().startsWith("youyihj")).forEach(asmData -> System.out.printf("ZenRegister "+ asmData.getClassName()));
+            INSTANCE = Loader.instance().getIndexedModList().get(ResourceModLoader.MODID);
         }
 
-        @Mod.EventHandler
+        @Subscribe
         @PrivateAPI public void postInit(FMLPostInitializationEvent event){
             RMLForgeEventHandler.postInit(event);
         }
 
-        @Mod.EventHandler
+        @Subscribe
         public void init(FMLInitializationEvent event){
             RMLForgeEventHandler.onInit(event);
         }

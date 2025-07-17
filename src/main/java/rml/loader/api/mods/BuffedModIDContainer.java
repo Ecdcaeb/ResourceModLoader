@@ -38,6 +38,7 @@ public class BuffedModIDContainer {
                 containers.add(new ContainerHolder(modContainer, opinions.get(modContainer.getModId())));
             }
         }
+        clear();
         return containers;
     }
 

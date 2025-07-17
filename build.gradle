@@ -130,7 +130,7 @@ jar {
 
 tasks.register('buildExample', Zip) {
     archiveName = "example.zip"
-    destinationDir = file("run/client/mods")
+    destinationDir = file("run/mods")
 
     from "dev/example"
 }

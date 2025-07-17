@@ -9,6 +9,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import rml.deserializer.AbstractDeserializer;
+import rml.loader.api.config.v2.config.elements.ConfigElement;
 import rml.loader.api.config.v2.config.elements.ConfigGroup;
 import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.ResourceModLoader;
@@ -347,7 +348,7 @@ public class RMLLoaders {
                 try
                 {
                     byte[] cfg = FileHelper.getByteSource(file).read();
-                    Deserializer.decode(ConfigGroup.class, JsonHelper.parse(new InputStreamReader(new ByteArrayInputStream(cfg)))).register();
+                    ((ConfigGroup)Deserializer.decode(ConfigElement.class, JsonHelper.parse(new InputStreamReader(new ByteArrayInputStream(cfg))))).register();
                 }
                 catch (Throwable e)
                 {
