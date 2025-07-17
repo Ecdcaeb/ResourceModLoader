@@ -281,10 +281,14 @@ public class RMLModDiscover {
 
     public static void discover(ASMDataTable asmDataTable, final String loader){
         asmDataTable.getAll(BeDiscovered.class.getCanonicalName()).forEach(clazz -> {
-            try {
-                Class<?> claz = Class.forName(clazz.getClassName(), true, Launch.classLoader);
-            } catch(ClassNotFoundException e) {
-                // impossible
+            if (clazz.getAnnotationInfo().containsKey("value")) {
+                if (loader.equals(clazz.getAnnotationInfo().get("value"))) {
+                    try {
+                        Class<?> claz = Class.forName(clazz.getClassName(), true, Launch.classLoader);
+                    } catch(ClassNotFoundException e) {
+                        // impossible
+                    }
+                }
             }
         });
     }

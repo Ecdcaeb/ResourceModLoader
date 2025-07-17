@@ -5,6 +5,7 @@ package rml.loader.api;
  * @Author Hileb
  * @Date 2024/4/5 14:57
  **/
+@Deprecated
 public class RMLRegistries {
 
 }
