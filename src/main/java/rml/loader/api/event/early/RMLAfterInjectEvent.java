@@ -7,10 +7,10 @@ package rml.loader.api.event.early;
  **/
 
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.bus.EventBus;
+import rml.loader.api.bus.DefaultEventBus;
 
 @PublicAPI
 public class RMLAfterInjectEvent{
-    public static final EventBus<RMLAfterInjectEvent> BUS = EventBus.of();
+    public static final DefaultEventBus<RMLAfterInjectEvent> BUS = DefaultEventBus.of();
 
 }

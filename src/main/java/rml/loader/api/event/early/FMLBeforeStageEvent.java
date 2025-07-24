@@ -2,12 +2,12 @@ package rml.loader.api.event.early;
 
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.bus.EventBus;
+import rml.loader.api.bus.DefaultEventBus;
 
 @EarlyClass
 @PublicAPI
 public class FMLBeforeStageEvent {
-    public static final EventBus<FMLBeforeStageEvent> BUS = EventBus.of();
+    public static final DefaultEventBus<FMLBeforeStageEvent> BUS = DefaultEventBus.of();
 
     public final Object stage;
     public final Object[] event;

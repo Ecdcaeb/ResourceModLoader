@@ -1,7 +1,7 @@
 package rml.loader.api.event.early;
 
 
-import rml.loader.api.bus.EventBus;
+import rml.loader.api.bus.DefaultEventBus;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.util.function.ToIntFunction;
@@ -12,7 +12,7 @@ import java.util.function.ToIntFunction;
  * @Date 2024/4/13 10:46
  **/
 public class RMLAddTransformerEvent {
-    public static final EventBus<RMLAddTransformerEvent> BUS = EventBus.of();
+    public static final DefaultEventBus<RMLAddTransformerEvent> BUS = DefaultEventBus.of();
 
     protected boolean cancel = false;
 
@@ -25,7 +25,7 @@ public class RMLAddTransformerEvent {
     }
 
     public static class SingleTransformer extends RMLAddTransformerEvent {
-        public static final EventBus<SingleTransformer> BUS = EventBus.of(RMLAddTransformerEvent.BUS);
+        public static final DefaultEventBus<SingleTransformer> BUS = DefaultEventBus.of(RMLAddTransformerEvent.BUS);
 
         private final ToIntFunction<ClassNode> transformer;
         private final String target;
@@ -45,7 +45,7 @@ public class RMLAddTransformerEvent {
     }
 
     public static class GlobalTransformer extends RMLAddTransformerEvent {
-        public static final EventBus<GlobalTransformer> BUS = EventBus.of(RMLAddTransformerEvent.BUS);
+        public static final DefaultEventBus<GlobalTransformer> BUS = DefaultEventBus.of(RMLAddTransformerEvent.BUS);
 
         private final rml.loader.core.GlobalTransformer transformer;
         public GlobalTransformer(rml.loader.core.GlobalTransformer transformer) {

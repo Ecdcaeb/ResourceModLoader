@@ -4,7 +4,7 @@ import crafttweaker.CraftTweakerAPI;
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.bus.EventBus;
+import rml.loader.api.bus.DefaultEventBus;
 
 /**
  * @Project ResourceModLoader
@@ -15,7 +15,7 @@ import rml.loader.api.bus.EventBus;
 @EarlyClass
 @PublicAPI
 public class CrTZenClassRegisterEvent {
-    public static final EventBus<CrTZenClassRegisterEvent> BUS = EventBus.of();
+    public static final DefaultEventBus<CrTZenClassRegisterEvent> BUS = DefaultEventBus.of();
 
     @PublicAPI
     public void register(Class<?> clazz){
