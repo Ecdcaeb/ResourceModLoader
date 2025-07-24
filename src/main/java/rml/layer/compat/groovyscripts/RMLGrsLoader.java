@@ -7,13 +7,11 @@ import rml.deserializer.Argument;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.RewriteWhenCleanroom;
 import rml.loader.api.utils.ClassHelper;
-import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.deserialize.Deserializer;
 
-import java.nio.file.Files;
 import java.util.Map;
 
 /**
@@ -27,14 +25,13 @@ import java.util.Map;
 public class RMLGrsLoader {
     public static void load(){
         ClassHelper.forceInit(RunConfig.class);
-        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (containerHolder, module, root, file) -> {
+        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (context) -> {
             try {
-                RunConfig config = Deserializer.decode(RunConfig.class, JsonHelper.parse(Files.newBufferedReader(file)));
-                MOD.put(containerHolder, config);
+                MOD.put(context.getContainerHolder(), context.deserialize(RunConfig.class));
             } catch (Exception ignored) {
 
             }
-        });
+        }, RMLGrsLoader.class);
     }
     public static HashBiMap<ContainerHolder, RunConfig> MOD = HashBiMap.create();
 

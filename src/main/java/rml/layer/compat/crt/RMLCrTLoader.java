@@ -3,16 +3,13 @@ package rml.layer.compat.crt;
 import crafttweaker.runtime.IScriptProvider;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import org.apache.commons.io.FilenameUtils;
 import rml.loader.api.annotations.PrivateAPI;
-import rml.loader.api.utils.file.FileHelper;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
-import rml.loader.api.config.v2.config.ConfigUtils;
-import rml.loader.api.config.v2.config.elements.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * @Project ResourceModLoader
@@ -31,31 +28,28 @@ public class RMLCrTLoader {
         if(provider_1 instanceof EventScriptProvider){
             return provider_1;
         } else {
-            RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrT:"+provider_1.toString());
+            RMLFMLLoadingPlugin.Container.LOGGER.info("Event Script Provider is injected into CrT : {}", provider_1);
             return new EventScriptProvider(provider_1);
         }
     }
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (containerHolder, module, root, file) -> {
-            String relative = root.relativize(file).toString();
-            if (!"zs".equals(FilenameUtils.getExtension(file.toString())) || relative.startsWith("_"))
-                return;
+        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (context) -> {
+            if (context.isExtension("zs")) {
 
-            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-            name = "rml/"+key.getNamespace()+"/"+name;
-            try{
-                byte[] fileBytes = FileHelper.getByteSource(file).read();
+                ResourceLocation key = context.getResourceLocation();
+                try{
+                    byte[] fileBytes = context.getBytes(StandardCharsets.UTF_8);
 
-                providerCustom.add(name, fileBytes);
+                    providerCustom.add("rml/" + key.getNamespace() + "/" + key.getPath(), fileBytes);
 
-                RMLFMLLoadingPlugin.Container.LOGGER.info("Injected {} for CrT",key);
-            } catch (IOException e) {
-                throw new RuntimeException("IOException when RML loading " + file, e);
+                    RMLFMLLoadingPlugin.Container.LOGGER.debug("Injected {} for CrT", key);
+                } catch (IOException e) {
+                    context.error(e, "IOException when RML loading {}", key);
+                }
             }
-        });
+        }, RMLCrTLoader.class);
         return providerCustom;
     }
 

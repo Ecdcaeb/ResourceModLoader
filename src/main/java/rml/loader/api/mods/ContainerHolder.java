@@ -1,11 +1,26 @@
 package rml.loader.api.mods;
 
+import com.google.common.io.ByteSource;
+import com.google.gson.JsonElement;
+import dev.latvian.kubejs.documentation.O;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLContainerHolder;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.FormattedMessage;
+import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
 import net.minecraftforge.fml.common.ModContainer;
+import rml.loader.api.utils.file.JsonHelper;
+import rml.loader.deserialize.Deserializer;
 
+import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 
@@ -57,13 +72,114 @@ public class ContainerHolder implements FMLContainerHolder {
                 '}';
     }
 
-    @FunctionalInterface
-    public interface ModuleConsumer{
-        void accept(ModuleType module, ContainerHolder containerHolder);
-    }
+    public static class ModuleConsumeContext {
+        private final ContainerHolder containerHolder;
+        private final Module module;
+        private final Path root;
+        private final Path file;
+        private Logger logger;
+        public ModuleConsumeContext(Logger logger, ContainerHolder containerHolder, Module module, Path root, Path file) {
+            this.containerHolder = containerHolder;
+            this.module = module;
+            this.root = root;
+            this.file = file;
+            this.logger = logger;
+        }
 
-    @FunctionalInterface
-    public interface FileLootModuleConsumer{
-        void accept(ContainerHolder containerHolder, Module module, Path root, Path file);
+        public ContainerHolder getContainerHolder() {
+            return containerHolder;
+        }
+
+        public Module getModule() {
+            return module;
+        }
+
+        public Path getFile() {
+            return file;
+        }
+
+        public Path getRoot() {
+            return root;
+        }
+
+        public static void runThrow(Throwable throwable, String msg, Object... args){
+            throw new RuntimeException(new FormattedMessage("Error at loading RML Module. " + msg, args).getFormattedMessage(), throwable);
+        }
+
+        public void error(Throwable throwable, String msg, Object... args){
+            error(logger, throwable, msg, args);
+        }
+
+        public void error(Logger logger, Throwable throwable, String msg, Object... args){
+            if (this.getModule().isForceLoaded()) runThrow(throwable, "Error at load module " + this.getModule() + "  " + msg, args);
+            else logger.error(new FormattedMessage("Error at load module " + this.getModule() + "  " + msg, args).getFormattedMessage(), throwable);
+        }
+
+        public void info(String msg, Object... args) {
+            logger.info(msg, args);
+        }
+
+        public String getRelativePath() {
+            return getRoot().relativize(getFile()).toString();
+        }
+
+        public ResourceLocation getResourceLocation() {
+            String name = FilenameUtils.removeExtension(getRelativePath()).replaceAll("\\\\", "/");
+            return new ResourceLocation(getContainerHolder().getContainer().getModId(), name);
+        }
+
+        public String getExtension(){
+            return FilenameUtils.getExtension(getFile().toString());
+        }
+
+        public boolean isExtension(String... str) {
+            String ext = getExtension();
+            for (String st : str) {
+                if (st.equals(ext)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public InputStream openStream() throws IOException {
+            return Files.newInputStream(this.getFile());
+        }
+
+        public BufferedReader openBufferedReader() throws IOException {
+            return Files.newBufferedReader(this.getFile());
+        }
+
+        public BufferedReader openBufferedReader(Charset charset) throws IOException {
+            return Files.newBufferedReader(this.getFile(), charset);
+        }
+
+        public JsonElement toJson() throws IOException, JsonDeserializeException {
+            try (BufferedReader bufferedReader = this.openBufferedReader()) {
+                return JsonHelper.parse(bufferedReader);
+            }
+        }
+
+        public <T> T deserialize(Class<T> cls) throws JsonDeserializeException, IOException {
+            return Deserializer.decode(cls, toJson());
+        }
+
+        public void setLogger(Logger logger) {
+            this.logger = logger;
+        }
+
+        @PublicAPI
+        public byte[] getBytes(Charset charset) throws IOException {
+            try (BufferedReader bufferedReader = this.openBufferedReader()) {
+                return IOUtils.toByteArray(bufferedReader, charset);
+            }
+        }
+
+        @PublicAPI
+        public byte[] getBytes() throws IOException {
+            try (InputStream inputStream = this.openStream()){
+                return IOUtils.toByteArray(inputStream);
+            }
+        }
     }
 }

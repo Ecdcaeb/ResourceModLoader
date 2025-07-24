@@ -5,6 +5,7 @@ import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import rml.deserializer.JsonDeserializeException;
 import rml.loader.ResourceModLoader;
 import rml.loader.api.annotations.ASMInvoke;
 import rml.loader.api.annotations.PrivateAPI;
@@ -37,6 +38,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -97,79 +99,64 @@ public abstract class ConfigPatcher {
     }
 
     @PrivateAPI public static void searchRedefault(){
-        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_redefault")), (containerHolder, module, root, file) -> {
-            String relative = root.relativize(file).toString();
-            String extension = FilenameUtils.getExtension(file.toString());
-            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-            switch (extension){
-                case "json":
+        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_redefault")), (context) -> {
 
-                    BufferedReader reader = null;
+            String name = FilenameUtils.removeExtension(context.getRelativePath()).replaceAll("\\\\", "/");
+            ResourceLocation key = context.getResourceLocation();
+
+            switch (context.getExtension()){
+                case "json":
                     try {
-                        reader = Files.newBufferedReader(file);
-                        JsonObject json = JsonHelper.getJson(reader);
-                        cachedRedefault.put(name, new Json(json));
-                        RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}", name, json);
-                    } catch (JsonParseException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config redefault {}", key, e);
+                        cachedRedefault.put(name, new Json(context.toJson().getAsJsonObject()));
+                    } catch (JsonParseException | ClassCastException | JsonDeserializeException e) {
+                        context.error(e, "Parsing error loading config redefault {}", key);
                     } catch (IOException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
-                    } finally {
-                        IOUtils.closeQuietly(reader);
+                        context.error(e, "Couldn't read config redefault {} from {}", key);
                     }
                     break;
                 case "patch":
                     try {
-                        cachedOverrides.put(name, new Cfg(FileHelper.getByteSource(file).read()));
+                        cachedOverrides.put(name, new Cfg(context.getBytes(StandardCharsets.UTF_8)));
                     } catch (JsonParseException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading redefault override {}", key, e);
+                        context.error(e, "Parsing error loading redefault override {}", key);
                     } catch (IOException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config redefault {} from {}", key, file, e);
+                        context.error(e, "Couldn't read config redefault {} from {}", key, context.getFile());
                     }
                     break;
                 default:
                     break;
             }
-        });
+        }, ConfigPatcher.class);
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config redefault",cachedRedefault.size());
     }
 
     @PrivateAPI public static void searchOverride(){
-        ResourceModLoader.loadModuleFindAssets(ModuleType.valueOf(new ResourceLocation("rml", "config_override")), (containerHolder, module, root, file) -> {
-            String relative = root.relativize(file).toString();
-            String extension = FilenameUtils.getExtension(file.toString());
-            String name = FilenameUtils.removeExtension(relative).replaceAll("\\\\", "/");
-            ResourceLocation key = new ResourceLocation(containerHolder.getContainer().getModId(), name);
-            switch (extension){
+        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_override")), (context) -> {
+            String name = FilenameUtils.removeExtension(context.getRelativePath()).replaceAll("\\\\", "/");
+            ResourceLocation key = context.getResourceLocation();
+            switch (context.getExtension()){
                 case "json":
-                    BufferedReader reader = null;
                     try {
-                        reader = Files.newBufferedReader(file);
-                        JsonObject json = JsonHelper.getJson(reader);
-                        cachedOverrides.put(name, new Json(json));
-                        RMLFMLLoadingPlugin.Container.LOGGER.info("find {} {}", name, json);
-                    } catch (JsonParseException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
+                        cachedOverrides.put(name, new Json(context.toJson().getAsJsonObject()));
+                    } catch (JsonParseException | ClassCastException | JsonDeserializeException e) {
+                        context.error(e, "Parsing error loading config override {}", key);
                     } catch (IOException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
-                    } finally {
-                        IOUtils.closeQuietly(reader);
+                        context.error(e, "Couldn't read config override {} from {}", key, context.getFile());
                     }
                     break;
                 case "patch":
                     try {
-                        cachedOverrides.put(name, new Cfg(FileHelper.getByteSource(file).read()));
+                        cachedOverrides.put(name, new Cfg(context.getBytes(StandardCharsets.UTF_8)));
                     } catch (JsonParseException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Parsing error loading config override {}", key, e);
+                        context.error(e, "Parsing error loading config override {}", key);
                     } catch (IOException e) {
-                        RMLFMLLoadingPlugin.Container.LOGGER.error("Couldn't read config override {} from {}", key, file, e);
+                        context.error(e, "Couldn't read config override {} from {}", key, context.getFile());
                     }
                     break;
                 default:
                     break;
             }
-        });
+        }, ConfigPatcher.class);
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config overrides",cachedOverrides.size());
     }
 
@@ -196,7 +183,7 @@ public abstract class ConfigPatcher {
      **/
     @PrivateAPI
     @SuppressWarnings("all")
-    public static class Json extends ConfigPatcher{
+    public static class Json extends ConfigPatcher {
         private static Map<String, Configuration> CONFIGS = ReflectionHelper.getPrivateValue(ConfigManager.class,  null,"CONFIGS");
         private static Map<String, Set<Class<?>>> MOD_CONFIG_CLASSES = ReflectionHelper.getPrivateValue(ConfigManager.class,  null,"MOD_CONFIG_CLASSES");
 
@@ -292,7 +279,7 @@ public abstract class ConfigPatcher {
                     if (start.matches())
                     {
                         fileName.set(configuration, start.group(1));
-                        categories.set(configuration, new TreeMap<String, ConfigCategory>());
+                        categories.set(configuration, new TreeMap<>());
                         continue;
                     }
                     else if (end.matches())
@@ -418,7 +405,7 @@ public abstract class ConfigPatcher {
                                             throw new RuntimeException(String.format("'%s' has no scope in '%s:%d'", name, fileName.get(configuration), lineNum));
                                         }
 
-                                        tmpList = new ArrayList<String>();
+                                        tmpList = new ArrayList<>();
 
                                         skip = true;
                                     }

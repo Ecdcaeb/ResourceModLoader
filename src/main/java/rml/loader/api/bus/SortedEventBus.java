@@ -86,10 +86,10 @@ public class SortedEventBus<EVENT> implements EventBus<EVENT>{
     }
 
     public static<V, T extends V> SortedEventBus<T> of(DefaultEventBus<V> parent) {
-        return new SortedEventBus<T>(parent);
+        return new SortedEventBus<>(parent);
     }
 
     public static<V, T extends V> SortedEventBus<T> of(SortedEventBus<V> parent) {
-        return new SortedEventBus<T>(parent);
+        return new SortedEventBus<>(parent);
     }
 }

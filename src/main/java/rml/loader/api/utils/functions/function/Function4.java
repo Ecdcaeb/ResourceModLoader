@@ -1,4 +1,4 @@
-package rml.loader.api.utils.functions;
+package rml.loader.api.utils.functions.function;
 
 @FunctionalInterface
 public interface Function4<R, P1, P2, P3, P4>{

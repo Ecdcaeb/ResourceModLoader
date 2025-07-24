@@ -63,7 +63,7 @@ public class DefaultEventBus<EVENT> implements EventBus<EVENT>{
     }
 
     public static<V, T extends V> DefaultEventBus<T> of(DefaultEventBus<V> parent) {
-        return new DefaultEventBus<T>(parent);
+        return new DefaultEventBus<>(parent);
     }
 
     @FunctionalInterface

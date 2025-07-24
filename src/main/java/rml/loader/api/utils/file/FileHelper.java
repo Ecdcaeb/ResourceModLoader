@@ -3,6 +3,7 @@ package rml.loader.api.utils.file;
 import com.google.common.io.ByteSource;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.logging.log4j.Logger;
 import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.Module;
@@ -22,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 /**
  * @Project ResourceModLoader
@@ -33,19 +35,22 @@ public class FileHelper {
     @PublicAPI
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
-    public static void findAssets(ContainerHolder containerHolder, Module module, ModFileConsumer consumer){
+    @PublicAPI
+    public static void findAssets(Logger logger, ContainerHolder containerHolder, Module module, Consumer<ContainerHolder.ModuleConsumeContext> consumer){
         if (module.moduleType.isFile){
-            findFile(containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
+            findFile(logger, containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + module.location, consumer);
         }else {
-            findAssets(containerHolder, module, module.location, consumer);
+            findAssets(logger, containerHolder, module, module.location, consumer);
         }
     }
 
-    public static void findAssets(ContainerHolder containerHolder, @Nullable Module module, String base, ModFileConsumer consumer){
-        findFiles(containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
+    @PublicAPI
+    public static void findAssets(Logger logger, ContainerHolder containerHolder, @Nullable Module module, String base, Consumer<ContainerHolder.ModuleConsumeContext> consumer){
+        findFiles(logger, containerHolder, module, "assets/" + containerHolder.getContainer().getModId() + "/" + base, consumer);
     }
 
-    public static void findFiles(ContainerHolder containerHolder, @Nullable Module module, String base, ModFileConsumer consumer)
+    @PublicAPI
+    public static void findFiles(Logger logger, ContainerHolder containerHolder, @Nullable Module module, String base, Consumer<ContainerHolder.ModuleConsumeContext> consumer)
     {
         final ModContainer mod = containerHolder.getContainer();
 
@@ -70,7 +75,7 @@ public class FileHelper {
                 }
                 catch (IOException e)
                 {
-                    RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+                    logger.error("Error loading FileSystem from jar: ", e);
                     return;
                 }
             }
@@ -92,13 +97,14 @@ public class FileHelper {
                 }
                 catch (IOException e)
                 {
-                    RMLFMLLoadingPlugin.LOGGER.error("Error iterating filesystem for: {}", mod.getModId(), e);
+                    logger.error("Error iterating filesystem for: {}", mod.getModId(), e);
                     return;
                 }
 
                 while (itr.hasNext())
                 {
-                    consumer.accept(containerHolder, module, root, itr.next());
+                    ContainerHolder.ModuleConsumeContext context = new ContainerHolder.ModuleConsumeContext(logger, containerHolder, module, root, itr.next());
+                    consumer.accept(context);
                 }
             }
         }
@@ -109,7 +115,7 @@ public class FileHelper {
     }
 
     @PublicAPI
-    public static void findFile(ContainerHolder containerHolder, Module module, String base, ModFileConsumer processor) throws InvalidPathException
+    public static void findFile(Logger logger, ContainerHolder containerHolder, Module module, String base, Consumer<ContainerHolder.ModuleConsumeContext> processor) throws InvalidPathException
     {
         ModContainer mod = containerHolder.container;
         File source = mod.getSource();
@@ -128,11 +134,11 @@ public class FileHelper {
                 }catch (InvalidPathException e){
                     return;
                 }
-                if (Files.isReadable(path)) processor.accept(containerHolder, module, path, path);
+                if (Files.isReadable(path)) processor.accept(new ContainerHolder.ModuleConsumeContext(logger, containerHolder, module, path, path));
                 IOUtils.closeQuietly(fs);
             }
             catch (IOException e) {
-                RMLFMLLoadingPlugin.LOGGER.error("Error loading FileSystem from jar: ", e);
+                logger.error("Error loading FileSystem from jar: ", e);
             }
         }
         else if (source.isDirectory())
@@ -143,7 +149,7 @@ public class FileHelper {
             } catch (InvalidPathException e){
                 return;
             }
-            if (Files.isReadable(path)) processor.accept(containerHolder, module, path, path);
+            if (Files.isReadable(path)) processor.accept(new ContainerHolder.ModuleConsumeContext(logger, containerHolder, module, path, path));
         }
     }
 
@@ -217,10 +223,5 @@ public class FileHelper {
     @PublicAPI
     public static byte[] getBytes(Path path) throws IOException {
         return getBytes(path, StandardCharsets.UTF_8);
-    }
-
-    @FunctionalInterface
-    public interface ModFileConsumer{
-        void accept(ContainerHolder containerHolder, @Nullable Module module, Path root, Path file);
     }
 }

@@ -55,7 +55,6 @@ public class RMLModDiscover {
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
 
         final HashSet<File> mods = getModsLocations();
-        RMLFMLLoadingPlugin.Container.LOGGER.info("mods: " + Arrays.toString(mods.toArray()));
 
         // add modules
         for (String str : new String[]{"rml.modules", "META-INF/rml/modules.json"}) {

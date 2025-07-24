@@ -7,11 +7,11 @@ import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.core.RMLFMLLoadingPlugin;
 import rml.loader.deserialize.Deserializer;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Optional;
 
 /**
  * @Project ResourceModLoader
@@ -45,8 +45,6 @@ public class ModuleType{
     }
 
     public static final HashMap<ResourceLocation, ModuleType> REGISTRY = new HashMap<>();
-//    public static final ModuleType STRUCTURE = register("STRUCTURE","structures", false);//TODO
-//    public static final ModuleType DIMENSION = register("DIMENSION", "dimension", false);//TODO
 
     private static ModuleType register(ResourceLocation location, String defaultLocation, boolean isFile){
         return new ModuleType(location, defaultLocation, isFile);
@@ -57,10 +55,13 @@ public class ModuleType{
     public final String defaultLocation;
 
     public ModuleType(ResourceLocation name, String defaultLocationIn, boolean isFileIn) {
+        this(name, defaultLocationIn, isFileIn, null);
+    }
+
+    public ModuleType(ResourceLocation name, String defaultLocationIn, boolean isFileIn, String unused) {
         this.name = name;
         this.defaultLocation = defaultLocationIn;
         this.isFile = isFileIn;
-        RMLFMLLoadingPlugin.LOGGER.info("Module Type Registered: {}", this);
         REGISTRY.put(name, this);
     }
 

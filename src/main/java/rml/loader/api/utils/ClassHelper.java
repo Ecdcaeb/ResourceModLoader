@@ -35,4 +35,5 @@ public class ClassHelper {
         int line = Thread.currentThread().getStackTrace()[2].getLineNumber();
         return Math.max(line, 0);
     }
+
 }

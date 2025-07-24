@@ -198,7 +198,7 @@ public class JsonHelper {
     public static JsonElement parse(Reader reader) throws JsonDeserializeException {
         try {
             return JSON_PARSER.parse(reader);
-        }catch (JsonSyntaxException e){
+        }catch (Throwable e){
             try {
                 throw new JsonDeserializeException(null, new String(IOUtils.toByteArray(reader, StandardCharsets.UTF_8)), e);
             } catch (IOException ex) {

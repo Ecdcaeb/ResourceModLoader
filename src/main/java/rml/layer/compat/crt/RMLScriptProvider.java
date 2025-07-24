@@ -80,7 +80,7 @@ public class RMLScriptProvider implements IScriptProvider {
         }
 
         @Override
-        public InputStream open() throws IOException {
+        public InputStream open() {
             return new BufferedInputStream(new ByteArrayInputStream(file));
         }
 

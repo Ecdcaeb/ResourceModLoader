@@ -209,7 +209,7 @@ public class DeserializerManager {
     }
 
     public <T, F> AbstractDeserializer<T> map(final Class<T> tClass, final Class<F> fClass, final ResourceLocation resourceLocation, final Function<F, T> function){
-        return new AbstractDeserializer<T>(resourceLocation, tClass, jsonElement -> function.apply(DeserializerManager.this.decode(fClass, jsonElement)));
+        return new AbstractDeserializer<>(resourceLocation, tClass, jsonElement -> function.apply(DeserializerManager.this.decode(fClass, jsonElement)));
     }
 
     public static JsonElement getFromPath(JsonObject jsonObject, String path){

@@ -12,5 +12,4 @@ import rml.loader.api.bus.DefaultEventBus;
 @PublicAPI
 public class RMLAfterInjectEvent{
     public static final DefaultEventBus<RMLAfterInjectEvent> BUS = DefaultEventBus.of();
-
 }
