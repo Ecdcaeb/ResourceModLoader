@@ -48,6 +48,15 @@ public class ContainerHolder implements FMLContainerHolder {
         return getContainer();
     }
 
+    @Override
+    public String toString() {
+        return "ContainerHolder{" +
+                "container=" + container +
+                ", modules=" + modules +
+                ", packVersion=" + packVersion +
+                '}';
+    }
+
     @FunctionalInterface
     public interface ModuleConsumer{
         void accept(ModuleType module, ContainerHolder containerHolder);

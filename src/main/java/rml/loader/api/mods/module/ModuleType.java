@@ -31,7 +31,7 @@ public class ModuleType{
                         valueOf(location);
             }).markDefault().build();
 
-    public static ModuleType decode0(JsonElement jsonElement) throws JsonDeserializeException {
+    public static ModuleType decodeAndRegister(JsonElement jsonElement) throws JsonDeserializeException {
         try {
             JsonObject jsonObject = jsonElement.getAsJsonObject();
             ResourceLocation resourceLocation = new ResourceLocation(jsonObject.get("name").getAsString());
@@ -91,5 +91,14 @@ public class ModuleType{
 
     public static ModuleType valueOf(ResourceLocation resourceLocation){
         return REGISTRY.get(resourceLocation);
+    }
+
+    @Override
+    public String toString() {
+        return "ModuleType{" +
+                "name=" + name +
+                ", isFile=" + isFile +
+                ", defaultLocation='" + defaultLocation + '\'' +
+                '}';
     }
 }

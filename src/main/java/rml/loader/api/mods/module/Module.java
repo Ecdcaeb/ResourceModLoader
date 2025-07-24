@@ -20,6 +20,7 @@ import rml.deserializer.JsonDeserializeException;
 @BeDiscovered(BeDiscovered.PRE_INIT)
 public class Module {
     public static final AbstractDeserializer<Module> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default"), Module.class, Module::decode0));
+
     public final ModuleType moduleType;
     public final String location;
     public final boolean forceLoaded;
@@ -61,5 +62,17 @@ public class Module {
     @Override
     public String toString() {
         return "ModuleType:"+this.moduleType+"-location:"+this.location + (this.forceLoaded ? "" : "(Optional)");
+    }
+
+    public ModuleType getModuleType() {
+        return moduleType;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public boolean isForceLoaded() {
+        return forceLoaded;
     }
 }
