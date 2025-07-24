@@ -7,6 +7,7 @@ import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
+import rml.loader.core.RMLFMLLoadingPlugin;
 import rml.loader.deserialize.Deserializer;
 
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class ModuleType{
             ResourceLocation resourceLocation = new ResourceLocation(jsonObject.get("name").getAsString());
             boolean isFile = jsonObject.get("isFile").getAsBoolean();
             String location = jsonObject.get("defaultLocation").getAsString();
-            return register(resourceLocation.toString(), location, isFile);
+            return register(resourceLocation, location, isFile);
         } catch (Throwable throwable) {
             throw new JsonDeserializeException(jsonElement, "cant decode ModuleType");
         }
@@ -47,8 +48,7 @@ public class ModuleType{
 //    public static final ModuleType STRUCTURE = register("STRUCTURE","structures", false);//TODO
 //    public static final ModuleType DIMENSION = register("DIMENSION", "dimension", false);//TODO
 
-    private static ModuleType register(String name, String defaultLocation, boolean isFile){
-        ResourceLocation location = new ResourceLocation("rml", name);
+    private static ModuleType register(ResourceLocation location, String defaultLocation, boolean isFile){
         return new ModuleType(location, defaultLocation, isFile);
     }
 
@@ -60,6 +60,7 @@ public class ModuleType{
         this.name = name;
         this.defaultLocation = defaultLocationIn;
         this.isFile = isFileIn;
+        RMLFMLLoadingPlugin.LOGGER.info("Module Type Registered: {}", this);
         REGISTRY.put(name, this);
     }
 

@@ -58,25 +58,28 @@ public class RMLModDiscover {
         RMLFMLLoadingPlugin.Container.LOGGER.info("mods: " + Arrays.toString(mods.toArray()));
 
         // add modules
-        try {
-            Enumeration<URL> moduleFiles = Launch.classLoader.getResources("rml.modules");
-            while (moduleFiles.hasMoreElements()) {
-                URL url = moduleFiles.nextElement();
-                try (InputStream inputStream = url.openStream()) {
-                    JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                    if (element.isJsonArray()) {
-                        for(JsonElement jsonElement : element.getAsJsonArray()) {
-                            ModuleType.decodeAndRegister(jsonElement);
-                        }
-                    } else ModuleType.decodeAndRegister(element);
-                } catch (IOException e) {
-                    RMLFMLLoadingPlugin.Container.LOGGER.error("could not read {}", url, e);
-                } catch (JsonDeserializeException e) {
-                    throw new RuntimeException("Could not define the ModuleType",e);
+        for (String str : new String[]{"rml.modules", "META-INF/rml/modules.json"}) {
+            try {
+                Enumeration<URL> moduleFiles = Launch.classLoader.getResources(str);
+                while (moduleFiles.hasMoreElements()) {
+                    URL url = moduleFiles.nextElement();
+                    try (InputStream inputStream = url.openStream()) {
+                        JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                        RMLFMLLoadingPlugin.LOGGER.info("json rml : {}", element);
+                        if (element.isJsonArray()) {
+                            for (JsonElement jsonElement : element.getAsJsonArray()) {
+                                ModuleType.decodeAndRegister(jsonElement);
+                            }
+                        } else ModuleType.decodeAndRegister(element);
+                    } catch (IOException e) {
+                        RMLFMLLoadingPlugin.Container.LOGGER.error("could not read {}", url, e);
+                    } catch (JsonDeserializeException e) {
+                        throw new RuntimeException("Could not define the ModuleType", e);
+                    }
                 }
+            } catch (IOException e) {
+                throw new RuntimeException("Could not read module define file `modules.json`", e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read module define file `rml.modules`", e);
         }
 
 
