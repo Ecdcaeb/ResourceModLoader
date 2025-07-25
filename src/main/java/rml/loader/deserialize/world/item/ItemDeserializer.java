@@ -13,7 +13,10 @@ import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.JsonDeserializeException;
 import rml.loader.api.utils.RandomHolder;
 import rml.loader.api.utils.values.RandomIntSupplier;
+import rml.loader.core.RMLFMLLoadingPlugin;
 import rml.loader.deserialize.Deserializer;
+
+import java.util.Map;
 
 public class ItemDeserializer {
     public static class EnchantmentDataDeserializer {
@@ -32,6 +35,11 @@ public class ItemDeserializer {
                 .optional(NBTTagCompound.class, "nbt")
                 .optionalDefault(Integer.class, "count", 1)
                 .decode((context -> {
+                    RMLFMLLoadingPlugin.LOGGER.info("Decodeing ItemStack");
+                    for (Map.Entry<String, ?> entry : context.environments.entrySet()) {
+                        RMLFMLLoadingPlugin.LOGGER.info("Data : {} : {}", entry.getKey(), entry.getValue());
+                    }
+                    RMLFMLLoadingPlugin.LOGGER.info("End Item Stack");
                     Item item = context.get(Item.class, "item");
                     int data = context.get(Integer.class, "data");
                     int count = context.get(Integer.class, "count");

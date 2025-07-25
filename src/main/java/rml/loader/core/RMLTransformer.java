@@ -1,9 +1,11 @@
 package rml.loader.core;
 
+import com.google.gson.JsonObject;
 import crafttweaker.mc1120.CraftTweaker;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
+import net.minecraftforge.common.crafting.JsonContext;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import org.objectweb.asm.ClassReader;
@@ -238,12 +240,28 @@ public class RMLTransformer implements IClassTransformer {
                                 }, (node) -> node.getOpcode() == Opcodes.RETURN);
                                 tasks.complete("init");
                             } else if ("getItemStack".equals(mn.name) || "getItemStackBasic".equals(mn.name)){
-                                //mn.
-                                // mn.instructions.clear();
-                                // mn.visitVarInsn(Opcodes.ALOAD, 0);
-                                // mn.visitVarInsn(Opcodes.ALOAD, 1);
-                                // mn.visitMethodInsn(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "getItemStack", "(Lcom/google/gson/JsonObject;Lnet/minecraftforge/common/crafting/JsonContext;)Lnet/minecraft/item/ItemStack;", false);
-                                // mn.visitInsn(Opcodes.ARETURN);
+                                /**
+                                 * Overwrite:
+                                 *
+                                 * {@link net.minecraftforge.common.crafting.CraftingHelper#getItemStack(JsonObject, JsonContext)}
+                                 * public static ItemStack getItemStack(JsonObject json, JsonContext context) {
+                                 *     return RMLFMLHook.LateHook.getItemStack(json, context);
+                                 * }
+                                 *
+                                 * {@link net.minecraftforge.common.crafting.CraftingHelper#getItemStackBasic(JsonObject, JsonContext)}
+                                 * public static ItemStack getItemStackBasic(JsonObject json, JsonContext context) {
+                                 *     return RMLFMLHook.LateHook.getItemStack(json, context);
+                                 * }
+                                 *
+                                 * {@link rml.layer.compat.fml.RMLFMLHooks.LateHooks#getItemStack(JsonObject, JsonContext)}
+                                 * **/
+                                if (mn.tryCatchBlocks != null) mn.tryCatchBlocks.clear();
+                                if (mn.localVariables != null) mn.localVariables.clear();
+                                mn.instructions.clear();
+                                mn.visitVarInsn(Opcodes.ALOAD, 0);
+                                mn.visitVarInsn(Opcodes.ALOAD, 1);
+                                mn.visitMethodInsn(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "getItemStack", "(Lcom/google/gson/JsonObject;Lnet/minecraftforge/common/crafting/JsonContext;)Lnet/minecraft/item/ItemStack;", false);
+                                mn.visitInsn(Opcodes.ARETURN);
                                 tasks.complete(mn.name);
                             }
                         }
@@ -371,7 +389,14 @@ public class RMLTransformer implements IClassTransformer {
                         return -1;
                     });
             //public net.minecraftforge.fml.client.GuiModList elements : fields and methods
-            register("net.minecraftforge.fml.client.GuiModList", (cn)-> 0);
+            register("net.minecraftforge.fml.client.GuiModList", (cn)-> {
+                for (FieldNode fn : cn.fields) {
+                    if ("selectedMod".equals(fn.name)) {
+                        fn.access = toPublic(fn.access);
+                    }
+                }
+                return 0;
+            });
             //Add Deserializer for all IForgeRegistry
             register("net.minecraftforge.registries.RegistryBuilder", (cn)->{
                 Tasks tasks = new Tasks("create");
