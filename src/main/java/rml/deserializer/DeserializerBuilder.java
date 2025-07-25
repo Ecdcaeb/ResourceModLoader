@@ -103,8 +103,10 @@ public class DeserializerBuilder<T> {
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }
                 }
-            }else if (!isNotRequired.apply(context)){
+            } else if (isNotRequired.apply(context)){
                 context.put(name, defaultValue);
+            } else {
+                throw new JsonDeserializeException(jsonObject, "element `" + name + "` typed `" + clazz.getName() + "` is missing");
             }
         }));
     }
@@ -126,9 +128,11 @@ public class DeserializerBuilder<T> {
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }
                 }
-            }else if (!isNotRequired.apply(context)){
+            }else if (isNotRequired.apply(context)){
                 if (defaultValue.isPresent()) defaultValue.ifPresent((value)->context.put(name, value));
                 else throw new JsonDeserializeException(jsonObject, "field " + name + " is absent, and it's default value suppler, LazyOptional, works not well.");
+            } else {
+                throw new JsonDeserializeException(jsonObject, "element `" + name + "` typed `" + clazz.getName() + "` is missing");
             }
         }));
     }
