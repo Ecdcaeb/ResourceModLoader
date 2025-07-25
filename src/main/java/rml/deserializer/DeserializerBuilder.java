@@ -10,8 +10,8 @@ import rml.loader.api.annotations.PublicAPI;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.function.Function;
 
 /**
@@ -22,11 +22,11 @@ import java.util.function.Function;
 
 @EarlyClass
 @PublicAPI
-public class DeserializerBuilder<T> {
-    private DeserializerManager manager;
-    private Class<T> clazz;
-    private ResourceLocation resourceLocation;
-    private HashSet<IAction> actions = new HashSet<>();
+public final class DeserializerBuilder<T> {
+    private final DeserializerManager manager;
+    private final Class<T> clazz;
+    private final ResourceLocation resourceLocation;
+    private final ArrayList<IAction> actions = new ArrayList<>();
     private IJsonObjectFunction<T> function = (context) -> null;
     private boolean isDefault = false;
     public DeserializerBuilder(DeserializerManager manager, Class<T> clazz, ResourceLocation resourceLocation){
@@ -181,7 +181,7 @@ public class DeserializerBuilder<T> {
     public AbstractDeserializer<T> build(){
         final DeserializerManager managerIn = this.manager;
         final IJsonObjectFunction<T> function = this.function;
-        final HashSet<IAction> actions = this.actions;
+        final ArrayList<IAction> actions = this.actions;
         AbstractDeserializer<T> deserializer = new AbstractDeserializer<>(resourceLocation, clazz,
                 (jsonElement)->{
                     if (!jsonElement.isJsonObject()) throw new JsonDeserializeException(jsonElement, "Only Support JsonObject.");
@@ -199,6 +199,28 @@ public class DeserializerBuilder<T> {
         else managerIn.addEntry(deserializer);
         return deserializer;
     }
+
+    public <K> AbstractDeserializer<T> remappingBuild(final Class<K> cls, final Function<K, T> mapper, boolean isDefault){
+        final DeserializerManager managerIn = this.manager;
+        AbstractDeserializer<T> deserializer = new AbstractDeserializer<>(resourceLocation, clazz,
+                (jsonElement) -> {
+                    if (jsonElement.isJsonObject()) {
+                        JsonObject jsonObject = jsonElement.getAsJsonObject();
+                        if (jsonObject.has("value")) {
+                            return mapper.apply(managerIn.decode(cls, jsonObject.get("value")));
+                        } else {
+                            throw new JsonDeserializeException(jsonElement, "Missing field `value`");
+                        }
+                    } else {
+                        return mapper.apply(managerIn.decode(cls, jsonElement));
+                    }
+                }
+        );
+        if (isDefault) managerIn.addDefaultEntry(deserializer);
+        else managerIn.addEntry(deserializer);
+        return deserializer;
+    }
+
 
     public static class Context{
         public JsonObject jsonObject;

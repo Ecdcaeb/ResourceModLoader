@@ -64,7 +64,6 @@ public class RMLModDiscover {
                     URL url = moduleFiles.nextElement();
                     try (InputStream inputStream = url.openStream()) {
                         JsonElement element = JsonHelper.parse(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-                        RMLFMLLoadingPlugin.LOGGER.info("json rml : {}", element);
                         if (element.isJsonArray()) {
                             for (JsonElement jsonElement : element.getAsJsonArray()) {
                                 ModuleType.decodeAndRegister(jsonElement);

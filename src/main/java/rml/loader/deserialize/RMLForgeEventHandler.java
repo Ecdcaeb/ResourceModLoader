@@ -73,9 +73,9 @@ public class RMLForgeEventHandler {
 
     @SubscribeEvent
     public static void registerRecipeFactory(CraftingHelperInitEvent event){
-        event.register(new ResourceLocation("rml","smelt"),new SmeltRecipe.Factory());
-        event.register(new ResourceLocation("rml","brew"),new SimpleBrewRecipe.Factory());
-        event.register(new ResourceLocation("rml","anvil"),new SimpleAnvilRecipe.Factory());
+        event.register(new ResourceLocation("rml","smelt"), new SmeltRecipe.Factory());
+        event.register(new ResourceLocation("rml","brew"), new SimpleBrewRecipe.Factory());
+        event.register(new ResourceLocation("rml","anvil"), new SimpleAnvilRecipe.Factory());
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)

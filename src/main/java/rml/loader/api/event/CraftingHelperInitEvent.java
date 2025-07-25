@@ -9,6 +9,7 @@ import net.minecraftforge.common.crafting.IConditionFactory;
 import net.minecraftforge.common.crafting.IIngredientFactory;
 import net.minecraftforge.common.crafting.IRecipeFactory;
 import net.minecraftforge.fml.common.eventhandler.Event;
+import rml.loader.core.RMLFMLLoadingPlugin;
 
 /**
  * @Project ResourceModLoader

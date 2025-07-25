@@ -16,7 +16,7 @@ import java.util.HashSet;
  **/
 @PrivateAPI
 public class NamedEmptyRecipeImpl extends IForgeRegistryEntry.Impl<IRecipe>  implements IRecipe {
-    public static HashSet<NamedEmptyRecipeImpl> removeCaches=new HashSet<>();
+    public static HashSet<NamedEmptyRecipeImpl> removeCaches = new HashSet<>();
     public NamedEmptyRecipeImpl(){
         removeCaches.add(this);
     }
