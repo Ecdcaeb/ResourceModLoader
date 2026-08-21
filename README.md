@@ -1,37 +1,34 @@
 ## <img src="icon.jpg" width = "128" height = "128" alt="ResourceModLoader" align=center /> Resource Mod Loader
 [![Discord](https://img.shields.io/discord/1189950517179330612.svg?color=%237289da&label=Discord&logo=discord&logoColor=%237289da)](https://discord.gg/HehwZApQXK)
 [![TotalAccess](https://count.getloli.com/get/@ResourceModLoader?theme=gelbooru)](https://ecdcaeb.github.io/ResourceModLoader/)
-Here is the ResourceModLoader official repositories. All the code, local libs here.
 
+Official repository for ResourceModLoader: source, local libraries, and examples.
 
 ### What is ResourceModLoader
 
-ResourceModLoader is a mod loader or not.
+ResourceModLoader is a loader for non-executable resource mods, and a library for Java mods.
 
-At first, in JE 1.13, data packs were added to Minecraft. Prior to this, the resource package already had some data package functions, such as using JSON to define a large number of recipes in more recipes, and mod authors could also use JSON to define their progress. However, the data package functions of these resource packages can only be used in modules and cannot be applied to real resource packages.
+Minecraft Java Edition 1.13 added data packs. Before that, resource packs already had a few data-pack features: JSON recipes from More Recipes, JSON advancements from mods, and similar. Those features only worked inside mods. They did not work in a real resource pack.
 
-However, when we compat with `crt` and `kubejs`, it changed. More and more users use ResourceModLoader to pack their scripts. This is different from DataPack.Therefore, the current ResourceModLoader is not a pure LowCode.
+RML packages a zip, jar, or directory that contains `rml.info` as a Forge mod and runs those data files. After CraftTweaker and KubeJS support, many people also use it to ship scripts. That is no longer a pure low-code data pack.
 
-### What can I do with ResourceModLoader？
+### What can I do with ResourceModLoader?
 
-See [document](https://ecdcaeb.github.io/ResourceModLoader/).
+See the [documentation](https://ecdcaeb.github.io/ResourceModLoader/).
 
-### Where can I install it？
+### Where can I install it?
 
-Install release from [CurseForge](https://www.curseforge.com/minecraft/mc-mods/resource-mod-loader).
+- [CurseForge](https://www.curseforge.com/minecraft/mc-mods/resource-mod-loader)
+- [GitHub releases](https://github.com/Ecdcaeb/ResourceModLoader/releases)
+- [GitHub Actions snapshots](https://github.com/Ecdcaeb/ResourceModLoader/actions)
 
-Download release from [Github](https://github.com/Ecdcaeb/ResourceModLoader/releases).
+### Use ResourceModLoader as a library
 
-Download snapshot from [Action](https://github.com/Ecdcaeb/ResourceModLoader/actions).
+1. Add [CurseMaven](https://cursemaven.com/).
+2. Pick a Maven short coordinate from the [list](https://ecdcaeb.github.io/ResourceModLoader/#maven).
 
-### Use ResourceModLoader as lib?
+[This commit](https://github.com/Ecdcaeb/ShotaASM/commit/f5d23801b5108b2687582204f9e78a4121a72db7) is an example of depending on RML and adding a module type.
 
-1) Add [CurseMaven](https://cursemaven.com/)
-2) Look the maven short [list](https://ecdcaeb.github.io/ResourceModLoader/#maven)
+### The documentation is short
 
-[Here](https://github.com/Ecdcaeb/ShotaASM/commit/f5d23801b5108b2687582204f9e78a4121a72db7
-) is a example commit using rml and add a module type. 
-
-### Document is too short?
-
-Yes, it's very sketchy. If you have any questions, you can submit an issue and ask me to supplement it or submit a PR to help me supplement it.
+Yes. Open an issue if you want a page expanded, or send a pull request.

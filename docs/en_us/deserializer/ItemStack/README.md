@@ -1,24 +1,27 @@
 ## [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/)
-A pile of items. For example, in MC, the items in an item grid are a pile of items.
+
+A stack of items: the contents of one inventory slot.
 
 ### `minecraft:item`
-Default parser.
-#### Fields:
 
-`item` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) Item registration name
+Default deserializer.
 
-`data` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) Meta value, if the item has variants, this field is required, default is 0
+#### Fields
 
-`count` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) Quantity, default is 1
+`item` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — item registry name.
 
-`nbt` NBTTagCompound (nbt in string form) The nbt of the item.
+`data` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) — metadata. Required when the item has subtypes. Defaults to `0`.
+
+`count` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) — stack size. Defaults to `1`.
+
+`nbt` `NBTTagCompound` (JSON object or SNBT string) — item NBT.
 
 ### `rml:enchantmented_item`
-Since mc1.12.2 enchantments use numeric ids in nbt, a separate method is used here to add additional enchantments.
-Represents an enchanted item.
 
-#### Fields:
+Minecraft 1.12.2 stores enchantments as numeric ids in NBT. This type adds enchantments by registry name instead.
 
-`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) Pre-item
+#### Fields
 
-`enchantment` Array of [EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/EnchantmentData) enchantments
+`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) — base stack.
+
+`enchantment` array of [EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/EnchantmentData).

@@ -1,37 +1,39 @@
 ## [IVillager](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/)
 
-表示为村民或对村民的操作。
+对村民职业或子职业的操作。
 
 ### `minecraft:profession`
-表示村民职业
 
-#### 字段：
+注册村民职业。
 
-`professionName` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 职业注册名
+#### 字段
 
-`villageTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 村民贴图
+`professionName` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 职业注册名。
 
-`zombieTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 僵尸村民贴图
+`villageTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 村民贴图。
 
+`zombieTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 僵尸村民贴图。
 
 ### `minecraft:cancer`
-表示村民子职业。
 
-#### 字段：
+注册村民子职业（career）。
 
-`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 职业名
+#### 字段
 
-`career` String 子职业名
+`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 职业名。
+
+`career` String — 子职业名。
 
 ### `rml:trade`
-对给定村民添加交易。
 
-#### 字段：
+给指定子职业添加交易。
 
-`level` [Integer](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/Integer) 可选，解锁交易的等级，默认为1
+#### 字段
 
-`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 职业
+`level` [Integer](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/Integer) — 可选，解锁交易的等级，默认为 `1`。
 
-`career` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 子职业
+`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 职业。
 
-`trade` [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ITradeList)的数组 交易列表 
+`career` String — 子职业名。
+
+`trade` [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ITradeList) 的数组。

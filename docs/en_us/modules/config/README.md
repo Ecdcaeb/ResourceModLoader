@@ -1,5 +1,3 @@
 ### Config
 
-About Config.
-
-Patch or Define.
+Patch existing Forge configs, or define new ones.

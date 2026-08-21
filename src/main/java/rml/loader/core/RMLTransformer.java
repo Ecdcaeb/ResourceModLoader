@@ -11,7 +11,6 @@ import net.minecraftforge.fml.common.discovery.ASMDataTable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -30,7 +29,6 @@ import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.asm.MethodName;
 import rml.loader.api.event.early.RMLAddTransformerEvent;
-import rml.loader.api.utils.ClassHelper;
 import rml.loader.api.utils.Tasks;
 
 import java.util.HashMap;
@@ -374,9 +372,7 @@ public class RMLTransformer implements IClassTransformer {
                                         if ("resizeContent".equals(methodInsnNode.name)){
                                             iterator.add(new VarInsnNode(Opcodes.ALOAD, 0));
                                             iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                            iterator.add(new VarInsnNode(Opcodes.ALOAD, 1));
-                                            iterator.add(new FieldInsnNode(Opcodes.GETFIELD, "net/minecraftforge/fml/client/GuiModList", "selectedMod", "Lnet/minecraftforge/fml/common/ModContainer;"));
-                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/client/gui/ModMenuInfoEvent", "post", "(Ljava/util/List;Ljava/lang/Object;Lnet/minecraftforge/fml/client/GuiModList;Lnet/minecraftforge/fml/common/ModContainer;)Ljava/util/List;", false));
+                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/api/event/client/gui/ModMenuInfoEvent", "post", "(Ljava/util/List;Ljava/lang/Object;Lnet/minecraftforge/fml/client/GuiModList;)Ljava/util/List;", false));
                                             tasks.complete("<init>");
                                             break;
                                         }
@@ -549,67 +545,20 @@ public class RMLTransformer implements IClassTransformer {
         }
 
         public static void initGroovyScriptTransformer(){
-            register("com.cleanroommc.groovyscript.sandbox.GroovySandbox",
+            register("com.cleanroommc.groovyscript.sandbox.GroovyScriptSandbox",
                     (cn)->{
-                        Tasks tasks = new Tasks("load");
+                        Tasks tasks = new Tasks("loadScripts");
                         for(MethodNode mn : cn.methods){
-                            if ("load".equals(mn.name) && "(Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V".equals(mn.desc)){
+                            if ("loadScripts".equals(mn.name) && "(Lgroovy/lang/Binding;Ljava/util/Set;Z)V".equals(mn.desc)){
                                 InsnList hook = new InsnList();
                                 hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
                                 hook.add(new VarInsnNode(Opcodes.ALOAD, 2));
-                                hook.add(new VarInsnNode(Opcodes.ALOAD, 3));
-                                hook.add(new VarInsnNode(Opcodes.ILOAD, 4));
-                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/groovyscripts/RMLGroovySandBox", "load", "(Lcom/cleanroommc/groovyscript/sandbox/GroovySandbox;Lgroovy/util/GroovyScriptEngine;Lgroovy/lang/Binding;Ljava/util/Set;Z)V", false));
+                                hook.add(new VarInsnNode(Opcodes.ILOAD, 3));
+                                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/groovyscripts/RMLGroovySandBox", "load", "(Lcom/cleanroommc/groovyscript/sandbox/GroovyScriptSandbox;Lgroovy/lang/Binding;Ljava/util/Set;Z)V", false));
                                 mn.instructions.insert(hook);
-                                tasks.complete("load");
+                                tasks.complete("loadScripts");
                             }
-                        }
-                        if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
-                        else tasks.throwError();
-                        return -1;
-                    });
-            //TODO : delete here when Cleanroom/GroovyScript#235 merged
-            //proxy the module node, override the groovy script mixin
-            register("org.codehaus.groovy.ast.ModuleNode",
-                    (cn)->{
-                        Tasks tasks = new Tasks("setPackage");
-                        MethodNode toAdd = null;
-                        for(MethodNode mn : cn.methods){
-                            if ("setPackage".equals(mn.name)){
-                                mn.name = "setPackage0";
-                                MethodVisitor setPackage = toAdd = new MethodNode(mn.access, "setPackage", mn.desc, mn.signature, mn.exceptions.isEmpty() ? null : mn.exceptions.toArray(new String[0]));
-                                Label label0 = new Label();
-                                Label label1 = new Label();
-                                Label label2 = new Label();
-                                setPackage.visitTryCatchBlock(label0, label1, label2, "java/lang/Throwable");
-                                setPackage.visitLabel(label0);
-                                setPackage.visitLineNumber(ClassHelper.getLineNumber(), label0);
-                                setPackage.visitVarInsn(Opcodes.ALOAD, 0);
-                                setPackage.visitVarInsn(Opcodes.ALOAD, 1);
-                                setPackage.visitMethodInsn(Opcodes.INVOKEVIRTUAL, cn.name, mn.name, mn.desc, false);
-                                setPackage.visitLabel(label1);
-                                setPackage.visitLineNumber(ClassHelper.getLineNumber(), label1);
-                                Label label3 = new Label();
-                                setPackage.visitJumpInsn(Opcodes.GOTO, label3);
-                                setPackage.visitLabel(label2);
-                                setPackage.visitLineNumber(ClassHelper.getLineNumber(), label2);
-                                setPackage.visitVarInsn(Opcodes.ASTORE, 2);
-                                Label label4 = new Label();
-                                setPackage.visitLabel(label4);
-                                setPackage.visitLineNumber(ClassHelper.getLineNumber(), label4);
-                                setPackage.visitVarInsn(Opcodes.ALOAD, 0);
-                                setPackage.visitVarInsn(Opcodes.ALOAD, 1);
-                                setPackage.visitFieldInsn(Opcodes.PUTFIELD, cn.name, "packageNode", "Lorg/codehaus/groovy/ast/PackageNode;");
-                                setPackage.visitLabel(label3);
-                                setPackage.visitLineNumber(ClassHelper.getLineNumber(), label3);
-                                setPackage.visitInsn(Opcodes.RETURN);
-
-                                tasks.complete("setPackage");
-                            }
-                        }
-                        if (toAdd != null){
-                            cn.methods.add(toAdd);
                         }
                         if (tasks.isCompleted()) return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
                         else tasks.throwError();

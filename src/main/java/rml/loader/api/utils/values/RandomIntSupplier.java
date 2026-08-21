@@ -32,7 +32,7 @@ public interface RandomIntSupplier {
     @Record
     class RangePrice implements RandomIntSupplier {
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("minecraft","price"))
-                .record(RangePrice.class).markDefault().build();
+                .record(RangePrice.class).build();
         EntityVillager.PriceInfo info;
 
         @Record({"min", "max"})
@@ -56,7 +56,7 @@ public interface RandomIntSupplier {
     class RangeConstant implements RandomIntSupplier {
 
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","constant"))
-                .record(RangeConstant.class).markDefault().build();
+                .record(RangeConstant.class).build();
         public static final RangeConstant ONE = new RangeConstant(1);
         final int a;
 
@@ -81,7 +81,7 @@ public interface RandomIntSupplier {
     class RangePoisson implements RandomIntSupplier {
 
         public static final AbstractDeserializer<RandomIntSupplier> DESERIALIZER = Deserializer.named(RandomIntSupplier.class, new ResourceLocation("cvh","poisson_distribution"))
-                .record(RangePoisson.class).markDefault().build();
+                .record(RangePoisson.class).build();
         public final int min;
         public final int max;
         public final int lambda;

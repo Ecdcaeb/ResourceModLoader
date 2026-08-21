@@ -1,70 +1,65 @@
 ## [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/)
-表示为村民交易。
+
+村民交易。
 
 ### `minecraft:emerald_for_items`
-用物品换取绿宝石。
 
-#### 字段：
+玩家用物品换村民的绿宝石。
 
-`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 玩家提供的物品
+#### 字段
 
-`price` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 村民提供绿宝石的数量
+`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) — 玩家提供的物品。
+
+`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 村民给出的绿宝石数量。
 
 ### `minecraft:list_item_for_emeralds`
-物品加绿宝石换取物品。
 
-#### 字段：
+玩家物品加绿宝石，换村民物品。
+
+#### 字段
 
 `from`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 绿宝石的数量
-
-__`count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 物品数量，运行时替换物品数量
-
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 绿宝石数量
+- `count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 运行时买入物品数量
 
 `to`
 
-__`count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 物品数量，运行时替换物品数量
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
+- `count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 运行时卖出物品数量
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
+### `minecraft:item_and_emerald_to_item`
 
-### `minecraft:list_item_for_emeralds`
-绿宝石换取物品。
+绿宝石换物品。
 
-#### 字段：
+#### 字段
 
 `from`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 价格
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 绿宝石价格
 
 `to`
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
-
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
 
 ### `cvh:slots`
-指定格子物品。
 
-slot1 + slot2 -> slot3
+三格配方：`slot1` + `slot2` → `slot3`。
 
-#### 字段：
+#### 字段
 
-`slot1`
+`from.slot1`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 物品数量
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 数量，默认 `1`
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
+`from.slot2`
 
-`slot2`
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 数量，默认 `1`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 物品数量
+`to.slot3`
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
-
-`slot3`
-
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 物品数量
-
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
-
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) — 数量，默认 `1`

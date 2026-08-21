@@ -1,36 +1,36 @@
 ## Deserializer
 
-`Deserializer` is a tool designed by rml, which is used to deserialize Json to the target object.
+`Deserializer` turns JSON into typed Java objects.
 
 ### Array unpacking
 
-For a given JsonElement, `Deserializer` will do the following:
+For a given `JsonElement`:
 
-- If both the given type and JsonElement are arrays, deserialize to an array.
+- If the target type and the JSON are both arrays, decode an array.
+- If the target type is an array but the JSON is not, decode a one-element array.
+- If the target type is not an array, decode that type.
 
-- If the given type is an array, but the JsonElement is not, deserialize to an array with only one content.
-
-- If the given type is not an array, deserialize to the given type.
-
-For example, in a field specified as an integer array, the following formats are equivalent:
+These two integer-array fields are equivalent:
 
 ```json
-{"demo":1}
+{"demo": 1}
 ```
+
 ```json
-{"demo":[1]}
+{"demo": [1]}
 ```
 
-### Free combination
+### Named types
 
-`Deserializer` has built-in and registered default deserializers for basic types, and rml adds many custom deserializers for customized types.
+Built-in deserializers cover Java primitives. RML registers more for Minecraft types.
 
-For a specific type, if json is not a JsonObject, the default deserializer is applied, otherwise the deserializer specified in the `type` field is used. If the field does not exist, the default is still used.
+If the JSON is not a `JsonObject`, the default deserializer for that class is used. If it is a `JsonObject` with `type`, that named deserializer is used. If `type` is missing, the default is used.
 
-For example, for a field that expresses an integer, the default `google:primitive` can be used, or `rml:random_int` can be used. They can also be mixed in an array to achieve free combination of components.
+An integer field can use `google:primitive` or `rml:random_int`. An array can mix both:
+
 ```json
 {
-  "demo":[
+  "demo": [
     {
       "type": "rml:random_int",
       "random": {
@@ -52,21 +52,14 @@ For example, for a field that expresses an integer, the default `google:primitiv
 }
 ```
 
-### All documented Types：
-[Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer)
+### Documented types
 
-[RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier)
-
-[ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation)
-
-[IVillager](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/IVillager)
-
-[ITradeList](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ITradeList)
-
-[ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
-
-[EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/EnchantmentData)
-
-[TagOre](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/TagOre)
-
-[ModuleType](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ModuleType)
+- [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer)
+- [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier)
+- [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation)
+- [IVillager](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/IVillager)
+- [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ITradeList)
+- [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- [EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/EnchantmentData)
+- [TagOre](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/TagOre)
+- [ModuleType](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ModuleType)

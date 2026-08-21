@@ -263,7 +263,7 @@ public class RMLLoaders {
         public static final FieldAccessor<Map<String, Multimap<Config.Type, ASMDataTable.ASMData>>, ConfigManager> asm_data = ReflectionHelper.getFieldAccessor(ConfigManager.class, "asm_data");
 
         public static void load(){
-            ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_define")), (context) -> {
+            ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_nodes")), (context) -> {
                 if (context.isExtension("json")) {
                     ResourceLocation key = context.getResourceLocation();
                     try

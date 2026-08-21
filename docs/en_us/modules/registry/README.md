@@ -1,3 +1,3 @@
 ### Registry
 
-About Registry (Especially for ForgeRegistry)
+Forge registry helpers, especially remap.

@@ -1,81 +1,65 @@
 ## Resource Mod Loader
 
-The official document of ResourceModLoader.
+Official documentation for ResourceModLoader.
 
-The total access count:
+Total visits:
 
 [![ResourceModLoader](https://count.getloli.com/get/@ResourceModLoader?theme=gelbooru)](https://ecdcaeb.github.io/ResourceModLoader/)
 
+# Summary
 
-# summary
+ResourceModLoader loads non-executable resource mods. Java mods can also use it as a library.
 
-ResourceModLoader is a module that allows loading non-executable Mods (`Resource Mod`), but can also be used as a library for modules written in Java.
+Minecraft Java Edition 1.13 added data packs. Before that, resource packs already had a few data-pack features: JSON recipes from More Recipes, JSON advancements from mods, and similar. Those features only worked inside mods. They did not work in a real resource pack.
 
-In JE 1.13, data packs were added to Minecraft. 
-Prior to this, the resource packs already had some data pack functions, such as using JSON to define a large number of recipes in more recipes, and mod authors could also use JSON to define their advancements.
-However, the data package functions of these resource packages can only be used in mods and cannot be applied to real resource packs.
+RML scans `mods/` for zip files, jar files, and directories that contain `rml.info`, wraps each one as a Forge mod, and runs it.
 
-This module reads the `.zip` and `.jar` file or `directories` containing the `rml.info` file in `mods/`, packages it as a mod and runs it.
+# Features
 
-# Functions
+See the rest of this site for details.
 
-For details, please view the brief official documentation.
+## Forge
 
-## Forge function
+- Shows up as a normal mod in the mod list.
+- Uses Forge resource-pack data features:
+  - JSON recipes
+  - JSON advancements
+- Can be used as a resource pack.
 
-### Can be displayed as a Mod normally.
+## ResourceModLoader
 
-### The data package function of the resource package provided by Forge can be applied, which includes:
-
-- Define recipes using JSON;
-
-- Define advancements using JSON.
-
-### Can be used as a resource pack.
-
-## ResourceModLoader function
-
-- Use JSON to define OreDic.
-
-- Load mcfunction.
-
-- Define the loot table using JSON.
-
-- Configuration value override.
-
-- Configuration values re-default.
-
-- Remap missing registry.
-
+- Define ore dictionary entries in JSON.
+- Load `.mcfunction` files.
+- Register loot tables from JSON.
+- Override config values.
+- Re-default config values.
+- Remap missing registry names.
 - Define villagers.
-
 - Add splash texts.
 
-## Expand functions
+## Integrations
 
-- Load the KubeJS script.
-
-- Load CrT script.
-
+- Load KubeJS scripts.
+- Load CraftTweaker scripts.
+- Load GroovyScript classes.
 
 ## Gallery
 
-![](https://media.forgecdn.net/attachments/768/377/2023-12-03-112009.png)  
-"More formulas" without mod structure are loaded by fml   
+![](https://media.forgecdn.net/attachments/768/377/2023-12-03-112009.png)
 
-## Attention
+"More Recipes" content without a Java mod structure, loaded through FML.
 
-ResourceModLoader is not a ModLoader and cannot load Mods instead of ModLoader.
+## Limits
 
-The data does not have the overwriting function, only the <domain> that is the same as <modid> has the data packet function.
+ResourceModLoader is not a replacement for Forge. It cannot load ordinary Java mods by itself.
 
-More information, see official document : https://ecdcaeb.github.io/ResourceModLoader/
+Data files do not overwrite other mods. Only the namespace that matches the pack `modid` gets data-pack behaviour.
+
+More: <https://ecdcaeb.github.io/ResourceModLoader/>
 
 ## Development
 
 ### Maven
-
-#### Maven
 
 ```json
 {

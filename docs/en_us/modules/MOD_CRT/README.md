@@ -2,8 +2,8 @@
 sort: 1
 ---
 
-### rml:MOD_CRT
+### `rml:mod_crt`
 
-Default at `/crt/`
+Default path: `/crt/`
 
-put the `.zs` file into the dir.
+Place `.zs` files in that directory. CraftTweaker loads them.

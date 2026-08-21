@@ -1,10 +1,11 @@
 ### [TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/)
 
-表示矿辞。
+矿辞条目。
+
 ### 默认
 
-#### 字段：
+#### 字段
 
-`ore` String  矿词名称
+`ore` String — 矿辞名称。
 
-`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) 物品
+`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack) — 物品。

@@ -1,4 +1,3 @@
 ### Java
 
-This section applies to mods written in Java.
-
+This section is for mods written in Java.

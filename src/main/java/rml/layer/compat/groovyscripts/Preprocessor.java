@@ -2,7 +2,10 @@ package rml.layer.compat.groovyscripts;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import com.cleanroommc.groovyscript.api.GroovyLog;
+import com.cleanroommc.groovyscript.helper.Alias;
+import com.cleanroommc.groovyscript.packmode.Packmode;
 import com.cleanroommc.groovyscript.registry.ReloadableRegistryManager;
+import com.google.common.base.CaseFormat;
 import com.google.common.io.ByteSource;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import net.minecraft.util.ResourceLocation;
@@ -14,6 +17,7 @@ import rml.loader.api.annotations.RewriteWhenCleanroom;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,21 +44,26 @@ public class Preprocessor {
         registerPreprocessor("NO_RUN", (file, args) -> false);
         registerPreprocessor("DEBUG_ONLY", (file, args) -> GroovyScript.getRunConfig().isDebug());
         registerPreprocessor("NO_RELOAD", (file, args) -> !ReloadableRegistryManager.isFirstLoad());
-        registerPreprocessor("MODS_LOADED",Preprocessor::checkModsLoaded);
+        registerPreprocessor("MODS_LOADED", Preprocessor::checkModsLoaded);
         registerPreprocessor("SIDE", Preprocessor::checkSide);
+        registerPreprocessor("PACKMODE", Preprocessor::checkPackmode);
     }
 
     public static List<String> parsePreprocessors(byte[] file) {
         List<String> preprocessors = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(ByteSource.wrap(file).openBufferedStream()))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(ByteSource.wrap(file).openBufferedStream(), StandardCharsets.UTF_8))) {
             boolean isComment = false;
             String line;
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty()) continue;
                 if (line.startsWith("/*")) {
-                    isComment = true;
-                    line = line.substring(2).trim();
+                    if (line.endsWith("*/")) {
+                        line = line.substring(2, line.length() - 2).trim();
+                    } else {
+                        isComment = true;
+                        line = line.substring(2).trim();
+                    }
                     if (line.isEmpty()) continue;
                 }
                 if (line.startsWith("//")) {
@@ -130,4 +139,14 @@ public class Preprocessor {
         return true;
     }
 
+    private static boolean checkPackmode(ResourceLocation name, String[] modes) {
+        for (String mode : modes) {
+            if (!Packmode.isValidPackmode(mode)) {
+                GroovyLog.get().error("The packmode '{}' specified in file '{}' does not exist. Valid values are {}", mode, name, GroovyScript.getRunConfig().getPackmodeList());
+            } else if (Packmode.getPackmode().equals(Alias.autoConvertTo(mode, CaseFormat.LOWER_UNDERSCORE))) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -1,17 +1,19 @@
-### rml:CONFIG_REDEFAULT
+### `rml:config_redefault`
 
-Default at `/conifg/redefault`
+Default path: `/config/redefault`
 
-Only for the common forge mod.(Not contain Forge & FML)
+Applies to ordinary Forge mods. Does not apply to Forge or FML themselves.
 
-#### Json Patch
-File name add ".json".
+Re-defaults run before the written config file, so they change the default, not a later override.
 
-For example `add_potion.cfg` for `add_potion.cfg.json`.
+#### JSON patch
 
-Only write the value you want to interrupt.
+Append `.json` to the config file name.
 
-Example:
+`add_potion.cfg` → `add_potion.cfg.json`.
+
+Write only the values you want to change:
+
 ```json
 {
   "entityelectricshakingconf": {
@@ -20,13 +22,14 @@ Example:
 }
 ```
 
-#### Cfg Patch
-use a `.cfg` file to patch a config.
+#### Cfg patch
 
-File name add ".patch".
-For example `add_potion.cfg` for `add_potion.cfg.patch`.
+Append `.patch` to the config file name.
 
-Example:
+`add_potion.cfg` → `add_potion.cfg.patch`.
+
+Keep only the entries you want to change:
+
 ```editorconfig
 # Configuration file
 
@@ -41,8 +44,3 @@ entityelectricshakingconf {
 B:ap_maxIs1_desc=true
 }
 ```
-
-Remain the items you want to patch.
-
-
-Lower than file. Usually re-default.

@@ -2,8 +2,8 @@
 sort: 2
 ---
 
-### rml:MOD_KUBEJS
+### `rml:mod_kubejs`
 
-Default at `/kubejs/`
+Default path: `/kubejs/`
 
-put the `.js` file(s) into the dictionary.
+Place `.js` files in that directory. KubeJS loads them.

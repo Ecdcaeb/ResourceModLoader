@@ -1,13 +1,13 @@
 ## [ModuleType](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/)
 
 ### `rml:new_type`
-Default resolver. Create and register a new module type, or get a registered one.
 
-#### Fields:
+Default deserializer. Creates and registers a module type, or returns one that is already registered.
 
-`name` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation)
-Module registration name
+#### Fields
 
-`isFile` boolean Is it a single file?
+`name` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — registry name.
 
-`defaultLocation` String Default path
+`isFile` boolean — `true` if the module is a single file.
+
+`defaultLocation` string — default path under `/assets/<domain>/`.

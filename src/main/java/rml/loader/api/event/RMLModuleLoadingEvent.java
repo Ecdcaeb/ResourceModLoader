@@ -2,7 +2,6 @@ package rml.loader.api.event;
 
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.utils.file.FileHelper;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import net.minecraftforge.common.MinecraftForge;
@@ -17,11 +16,10 @@ import java.util.HashSet;
  * @Author Hileb
  * @Date 2024/4/5 15:29
  *
- * post when the module loading.
- * {@link ResourceModLoader#loadModule(ModuleType, ContainerHolder.ModuleConsumer)}
- * {@link ResourceModLoader#loadModuleFindAssets(ModuleType, FileHelper.ModFileConsumer)}
- * {@link ResourceModLoader#loadModuleFindAssets(ModuleType, ContainerHolder.ModuleConsumer, FileHelper.ModFileConsumer)}
- * you could inject some operation here.
+ * Posted when a module is about to load.
+ * {@link ResourceModLoader#loadModule(ModuleType, java.util.function.Consumer)}
+ * {@link ResourceModLoader#loadModule(ModuleType, java.util.function.Consumer, Class)}
+ * Cancel to skip every remaining container for that module.
  **/
 
 @PublicAPI

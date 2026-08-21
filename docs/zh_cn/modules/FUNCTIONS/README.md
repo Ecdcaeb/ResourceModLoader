@@ -2,12 +2,14 @@
 sort: 3
 ---
 
-### 函数（rml:FUNCTIONS）
+### 函数（`rml:functions`）
 
-默认在  `/functions/`
+默认路径：`/functions/`
 
-将 `.mcfunction` 文件放在 `/function/` 就像数据包做的那样。
+把 `.mcfunction` 文件放进该目录，和数据包一样。
 
-看 : <https://minecraft.fandom.com/wiki/Function_(Java_Edition)>
+参见：<https://minecraft.fandom.com/wiki/Function_(Java_Edition)>
 
-看 : <https://ruhuasiyu.github.io/VanillaModTutorial/#%E5%87%BD%E6%95%B0>
+国内教程：<https://ruhuasiyu.github.io/VanillaModTutorial/#%E5%87%BD%E6%95%B0>
+
+同一目录下的 `.executor` 文件用于定义函数执行器。

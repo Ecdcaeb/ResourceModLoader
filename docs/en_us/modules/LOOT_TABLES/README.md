@@ -2,17 +2,13 @@
 sort: 4
 ---
 
-### rml:LOOT_TABLES
+### `rml:loot_tables`
 
-Default at `/loot_tables/`
+Default path: `/loot_tables/`
 
-format: see mc wiki.
+Format: Minecraft loot tables. See <https://minecraft.fandom.com/wiki/Loot_table#Recurring_JSON_structures_within_loot_tables_and_other_data_pack_files>.
 
-<https://minecraft.fandom.com/wiki/Loot_table#Recurring_JSON_structures_within_loot_tables_and_other_data_pack_files>
-
-note: in Forge, `name` is required for each loot
-
-for example: 
+Forge requires a `name` on every pool:
 
 ```json
 {

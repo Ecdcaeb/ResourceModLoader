@@ -1,9 +1,5 @@
-### 村庄（rml:CUSTOM_VILLAGERS）
+### 村庄（`rml:custom_villagers`）
 
-默认在 `/village`
+默认路径：`/villages`
 
-~~很多内容可以参照过去Cvh的文档：
-<https://www.mcmod.cn/post/3371.html>~~
-
-
-在该文件下，所有 Json 均表示为 [IVillager](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/IVillager)。
+该目录下每个 JSON 都表示一个 [IVillager](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/IVillager)。

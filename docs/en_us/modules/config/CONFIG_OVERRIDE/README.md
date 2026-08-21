@@ -1,19 +1,19 @@
-### rml:CONFIG_OVERRIDE
+### `rml:config_override`
 
-Default at `/conifg/override`
+Default path: `/config/override`
 
-Only for the common forge mod.(Not contain Forge & FML)
+Applies to ordinary Forge mods. Does not apply to Forge or FML themselves.
 
+Overrides win over values already written in the `.cfg` file.
 
-#### Json Patch
+#### JSON patch
 
-File name add "json".
+Append `.json` to the config file name.
 
-For example `add_potion.cfg` for `add_potion.cfg.json`.
+`add_potion.cfg` → `add_potion.cfg.json`.
 
-Only write the value you want to interrupt.
+Write only the values you want to change:
 
-Example:
 ```json
 {
   "entityelectricshakingconf": {
@@ -22,13 +22,14 @@ Example:
 }
 ```
 
-#### Cfg Patch
-use a `.cfg` file to patch a config.
+#### Cfg patch
 
-File name add ".patch".
-For example `add_potion.cfg` for `add_potion.cfg.patch`.
+Append `.patch` to the config file name.
 
-Example:
+`add_potion.cfg` → `add_potion.cfg.patch`.
+
+Keep only the entries you want to change:
+
 ```editorconfig
 # Configuration file
 
@@ -43,7 +44,3 @@ entityelectricshakingconf {
 B:ap_maxIs1_desc=true
 }
 ```
-
-Remain the items you want to patch.
-
-Higher than cfg file.

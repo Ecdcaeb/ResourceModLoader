@@ -52,10 +52,11 @@ public class ItemAndEmeraldToItem implements EntityVillager.ITradeList{
     {
         int i = this.buyingPriceInfo.get(random);
         int j = this.sellingPriceInfo.get(random);
-        int k = this.buyingPriceInfo.get(random);
+        int k = this.buyingPriceInfo2.get(random);
         ItemStack stack1=this.buyingItemStack.copy();
         stack1.setCount(i);
         ItemStack stack2=this.sellingItemstack.copy();
+        stack2.setCount(j);
         ItemStack stack=new ItemStack(Items.EMERALD);
         stack.setCount(k);
         recipeList.add(new MerchantRecipe(stack1, stack, stack2));

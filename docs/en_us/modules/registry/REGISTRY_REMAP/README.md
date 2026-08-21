@@ -1,19 +1,16 @@
-### rml:REGISTRY_REMAP
+### `rml:registry_remap`
 
-Default at `/registry/remap`
+Default path: `/registry/remap`
 
-Remap the registry.
+Remap missing registry names.
 
-```text
-Type          |  Name    | Description
+| Type | Name | Description |
+| --- | --- | --- |
+| string | `registry` | Registry name |
+| object | `mapping` | Old name → new name |
 
-String        | registry | the register name for the registry.
-JsonObject    | mapping  | the mapping
-     \
-      --String| *        | the name is old name, the value is the new name.
-```
+Example:
 
-For example:
 ```json
 {
   "registry": "minecraft:items",

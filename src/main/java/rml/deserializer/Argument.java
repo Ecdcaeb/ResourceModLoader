@@ -157,7 +157,7 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
                 JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
                 if (element != null){
-                    if (!element.isJsonObject()) throw new JsonDeserializeException(jsonObject, "field" + name + "is required be json object.");
+                    if (!element.isJsonObject()) throw new JsonDeserializeException(jsonObject, "field " + name + " is required to be a json object.");
                     try {
                         Map<String, T> map = element.getAsJsonObject().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, (entry) -> manager.decodeSilently(clazz, entry.getValue())));
                         context.put(name, map);

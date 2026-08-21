@@ -2,9 +2,12 @@
 sort: 3
 ---
 
-### rml:FUNCTIONS
+### `rml:functions`
 
-Default at  `/functions/`
+Default path: `/functions/`
 
-put the `.mcfunction` file into `/function/` as data-pack do.
-see : <https://minecraft.fandom.com/wiki/Function_(Java_Edition)>
+Put `.mcfunction` files under that folder, the same way a data pack does.
+
+See <https://minecraft.fandom.com/wiki/Function_(Java_Edition)>.
+
+`.executor` files in the same folder define function executors.

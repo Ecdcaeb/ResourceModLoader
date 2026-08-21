@@ -2,8 +2,8 @@
 sort: 2
 ---
 
-### rml:MOD_KUBEJS（KubeJS脚本）
+### `rml:mod_kubejs`（KubeJS）
 
-默认在 `/kubejs/`
+默认路径：`/kubejs/`
 
-将 `.js` 文件放入其中，KubeJS会加载它们。
+把 `.js` 文件放进该目录，KubeJS 会加载它们。

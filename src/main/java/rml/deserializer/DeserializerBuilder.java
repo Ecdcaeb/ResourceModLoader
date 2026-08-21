@@ -102,6 +102,7 @@ public final class DeserializerBuilder<T> {
                     if (!isNotRequired.apply(context)){
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }
+                    context.put(name, defaultValue);
                 }
             } else if (isNotRequired.apply(context)){
                 context.put(name, defaultValue);
@@ -127,6 +128,7 @@ public final class DeserializerBuilder<T> {
                     if (!isNotRequired.apply(context)){
                         throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
                     }
+                    if (defaultValue.isPresent()) defaultValue.ifPresent((value)->context.put(name, value));
                 }
             }else if (isNotRequired.apply(context)){
                 if (defaultValue.isPresent()) defaultValue.ifPresent((value)->context.put(name, value));

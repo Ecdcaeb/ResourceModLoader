@@ -1,10 +1,5 @@
-### rml:SPLASH_TEXT
+### `rml:splash_text`
 
+Default path: `/text/splash_text.txt`
 
-Default at `/text/splash_text.txt`
-
-Single file.
-
-Every Splash text is defined by a single line in it.
-
-Enable the `ITextComponent`.
+A single file. Each non-empty line is one splash. JSON text components are supported.

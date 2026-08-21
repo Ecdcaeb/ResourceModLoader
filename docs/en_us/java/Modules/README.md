@@ -1,15 +1,13 @@
-### Modules、
+### Modules
 
-### Get
+### Look up
 
-Get the module type through `rml.loader.api.mods.module.ModuleType#valueOf`.
+Resolve a module type with `rml.loader.api.mods.module.ModuleType#valueOf`.
 
-`rml.loader.ResourceModLoader#loadModuleFindAssets` gets and traverses the resources of all mods that have enabled the module and post events.
+`rml.loader.ResourceModLoader#loadModule` walks every enabled container that has that module, sets the active mod container, and runs your consumer on each file.
 
 ### Create
 
-Create `rml.modules` in the root directory to implement customized module types.
+Place `rml.modules` or `META-INF/rml/modules.json` on the classpath to register extra module types.
 
-File format:
-
-[ModuleType](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ModuleType) 的数组。
+File format: an array of [ModuleType](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ModuleType).

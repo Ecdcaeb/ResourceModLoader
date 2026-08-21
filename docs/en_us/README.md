@@ -4,6 +4,6 @@ sort: 2
 
 ## ResourceModLoader
 
-The Official documents of ResourceModLoader.
+Official English documentation for ResourceModLoader.
 
-Welcome to contribute to RML and docs.
+Contributions to the loader and these pages are welcome.

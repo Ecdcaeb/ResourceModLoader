@@ -7,11 +7,16 @@ import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.eventhandler.Event;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import rml.loader.api.reflection.jvm.FieldAccessor;
+import rml.loader.api.reflection.jvm.ReflectionHelper;
 
 import java.util.List;
 
 @SideOnly(Side.CLIENT)
 public class ModMenuInfoEvent extends Event {
+    private static final FieldAccessor<ModContainer, GuiModList> SELECTED_MOD =
+            ReflectionHelper.getFieldAccessor(GuiModList.class, "selectedMod");
+
     public ModContainer mod;
     public Object info;
     public List<ITextComponent> textComponents;
@@ -40,8 +45,9 @@ public class ModMenuInfoEvent extends Event {
         return info;
     }
 
-    public static List<ITextComponent> post(List<ITextComponent> textComponentList, Object info, GuiModList modList, ModContainer mod){
-        ModMenuInfoEvent event = new ModMenuInfoEvent(info, modList, mod, textComponentList);
+    public static List<ITextComponent> post(List<ITextComponent> textComponentList, Object info, GuiModList modList){
+        ModContainer selected = modList == null ? null : SELECTED_MOD.get(modList);
+        ModMenuInfoEvent event = new ModMenuInfoEvent(info, modList, selected, textComponentList);
         MinecraftForge.EVENT_BUS.post(event);
         return event.getTextComponents();
     }

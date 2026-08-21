@@ -2,25 +2,23 @@
 sort: 5
 ---
 
-### rml:ORE_DIC
+### `rml:ore_dic`
 
-Default at `/ore_dic/`
+Default path: `/ore_dic/`
 
-format:
+Format: an array of [TagOre](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/TagOre).
 
-A array of [TagOre](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/TagOre)
-
-
-example:
+Example:
 
 ```json
-{
-  "ore": "oreDiamond",
-  "item": {
-    "item": "minecraft:dirt",
-    "count": 1,
-    "data": 0
+[
+  {
+    "ore": "oreDiamond",
+    "item": {
+      "item": "minecraft:dirt",
+      "count": 1,
+      "data": 0
+    }
   }
-
-}
+]
 ```

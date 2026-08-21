@@ -21,14 +21,14 @@ import java.util.Random;
 @BeDiscovered(BeDiscovered.PRE_INIT)
 public class SlotRecipe implements EntityVillager.ITradeList {
     public static final AbstractDeserializer<EntityVillager.ITradeList> DESERIALIZER = Deserializer.named(EntityVillager.ITradeList.class, new ResourceLocation("cvh","slots"))
-            .require(ItemStack.class, "form.slot1.item")
+            .require(ItemStack.class, "from.slot1.item")
             .require(ItemStack.class, "from.slot2.item")
             .require(ItemStack.class, "to.slot3.item")
             .optionalDefault(RandomIntSupplier.class, "from.slot1.price", RandomIntSupplier.RangeConstant.ONE)
             .optionalDefault(RandomIntSupplier.class, "from.slot2.price", RandomIntSupplier.RangeConstant.ONE)
             .optionalDefault(RandomIntSupplier.class, "to.slot3.price", RandomIntSupplier.RangeConstant.ONE)
             .decode(context -> new SlotRecipe(
-                    context.get(ItemStack.class, "form.slot1.item"),
+                    context.get(ItemStack.class, "from.slot1.item"),
                     context.get(ItemStack.class, "from.slot2.item"),
                     context.get(ItemStack.class, "to.slot3.item"),
                     context.get(RandomIntSupplier.class, "from.slot1.price"),

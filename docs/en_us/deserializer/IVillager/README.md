@@ -1,37 +1,39 @@
 ## [IVillager](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/)
 
-Represents actions for or on villagers.
+An action on villager professions or careers.
 
 ### `minecraft:profession`
-Indicates the villager's profession
+
+Registers a villager profession.
 
 #### Fields
 
-`professionName` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) Profession registration name
+`professionName` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — profession registry name.
 
-`villageTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) Villager texture
+`villageTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — villager texture.
 
-`zombieTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) Zombie villager texture
-
+`zombieTexture` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — zombie villager texture.
 
 ### `minecraft:cancer`
-Indicates the villager's cancer.
+
+Registers a villager career (sub-profession).
 
 #### Fields
 
-`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) profession name
+`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — profession name.
 
-`career` String cancer name
+`career` string — career name.
 
 ### `rml:trade`
-对给定村民添加交易。
+
+Adds trades to a career.
 
 #### Fields
 
-`level` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) Optional, unlock trade level, default is 1
+`level` [Integer](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/Integer) — optional. Trade unlock level. Defaults to `1`.
 
-`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) profession
+`profession` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — profession.
 
-`career` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) career
+`career` string — career name.
 
-`trade` Array of [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ITradeList) trade list
+`trade` array of [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ITradeList).

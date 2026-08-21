@@ -2,8 +2,8 @@
 sort: 1
 ---
 
-### rml:MOD_CRT (CraftTweaker)
+### `rml:mod_crt`（CraftTweaker）
 
-在 `/crt/`
+默认路径：`/crt/`
 
-将 `.zs` 文件放入这个目录。它们会被CrT加载。
+把 `.zs` 文件放进该目录，CraftTweaker 会加载它们。

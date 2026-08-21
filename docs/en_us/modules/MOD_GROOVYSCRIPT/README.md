@@ -1,11 +1,14 @@
-### rml:MOD_GROOVYSCRIPT (GroovyScript)
+### `rml:mod_groovy_script` (GroovyScript)
 
-Default at
-`/groovy_script/run_config.json`
+Default path: `/groovy_script/run_config.json`
 
-Unlike `runConfig.json`, `run_config.json` only requires the `classes` field to be filled in. This field is a JsonObject with the key name being loader and the key value being a String array. Each String represents the absolute path of the script file in the package.
+Requires GroovyScript 1.4 or newer.
 
-For example:
+Unlike GroovyScript's `runConfig.json`, this file only needs `classes`. The value is a JSON object: loader name → string array. Each string is the path of a script inside the pack.
+
+Loaders match GroovyScript 1.4: `preInit`, `init`, `postInit`, plus `all` for every stage.
+
+Example:
 
 ```json
 {
@@ -17,4 +20,3 @@ For example:
   }
 }
 ```
-

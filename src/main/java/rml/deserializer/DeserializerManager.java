@@ -107,6 +107,7 @@ public class DeserializerManager {
             } else {
                 if (!initializedClasses.contains(clazz)) {
                     initializer.accept(clazz);
+                    initializedClasses.add(clazz);
                 }
                 if (jsonElement.isJsonObject()){
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -217,10 +218,10 @@ public class DeserializerManager {
         if (i == -1){
             return jsonObject.get(path);
         }else {
-            String first = path.substring(0, i-1);
+            String first = path.substring(0, i);
             JsonElement element1 = jsonObject.get(first);
             if (element1 instanceof JsonObject){
-                return getFromPath((JsonObject)element1, path.substring(i+1));
+                return getFromPath((JsonObject)element1, path.substring(i + 1));
             }else return null;
         }
     }

@@ -1,8 +1,6 @@
 package rml.loader.api.mods;
 
-import com.google.common.io.ByteSource;
 import com.google.gson.JsonElement;
-import dev.latvian.kubejs.documentation.O;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLContainerHolder;
 import org.apache.commons.io.FilenameUtils;
@@ -19,7 +17,6 @@ import rml.loader.deserialize.Deserializer;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;

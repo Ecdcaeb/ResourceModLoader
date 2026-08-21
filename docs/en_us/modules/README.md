@@ -4,23 +4,24 @@ sort: 1
 
 ### Modules
 
-This part is about the resource mod
+This section is for resource mods.
 
-You can selectively apply load functions and paths through modules.
+You choose which loaders run, and where they look, with modules.
 
-The module is defined in `modules` in `rml.info` and is an array of JsonObject. Each element is as follows:
+Modules are the `modules` array in `rml.info`. Each element is a JSON object:
+
 ```json
 {
-  "name":"rml:CONFIG_OVERRIDE",
-  "location":"mods/forge/config/override",
-  "forceLoaded":false
+  "name": "rml:config_override",
+  "location": "mods/forge/config/override",
+  "forceLoaded": false
 }
 ```
 
-Among them, `name` represents module, necessary content.
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `name` | yes | Module type id. Unprefixed names use the `rml` domain. |
+| `location` | no | Path under `/assets/<domain>/`. Defaults to the type's built-in path. |
+| `forceLoaded` | no | If `true`, a load error crashes the game. Defaults to `false`. |
 
-`location` is optional. If not filled in, it will default. The actual path is `/assets/<domain>/<location>`, which is the path agreed in this document.
-
-`forceLoaded` is optional, defaults to false, set to true to crash when the module is failed to be loaded.
-
-If the `modules` field is not exist, all default modules are applied by default.
+If `modules` is missing, every default module type is enabled.

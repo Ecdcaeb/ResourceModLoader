@@ -1,12 +1,11 @@
-### rml:CONFIG_DEFINE
+### `rml:config_define`
 
-默认在 `/conifg/define`
+默认路径：`/config/define`
 
-使用cfg格式定义cfg
+用 cfg 格式定义 cfg。名称相同：`example.cfg` → `example.cfg`。
 
-名称相同，例如： `example.cfg` -> `example.cfg`
+例如：
 
-例如:
 ```editorconfig
 # Configuration file
 

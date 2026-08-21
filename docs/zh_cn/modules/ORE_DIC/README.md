@@ -2,15 +2,13 @@
 sort: 5
 ---
 
-### 矿词（rml:ORE_DIC）
+### 矿辞（`rml:ore_dic`）
 
-默认在 `/ore_dic/`
+默认路径：`/ore_dic/`
 
-格式:
+格式：[TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/TagOre) 的数组。
 
-[TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/TagOre) 的数组。
-
-例子:
+例子：
 
 ```json
 [

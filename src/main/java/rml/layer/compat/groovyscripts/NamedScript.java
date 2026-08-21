@@ -1,14 +1,9 @@
 package rml.layer.compat.groovyscripts;
 
-import groovy.lang.GroovyClassLoader;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * @Project ResourceModLoader
@@ -16,9 +11,9 @@ import java.util.stream.Collectors;
  * @Date 2024/8/21 12:52
  **/
 public class NamedScript {
-    private ResourceLocation name;
-    private byte[] file;
-    private Class<?> clazz;
+    private final ResourceLocation name;
+    private final byte[] file;
+
     public NamedScript(ResourceLocation name, byte[] file){
         this.name = name;
         this.file = file;
@@ -30,12 +25,6 @@ public class NamedScript {
 
     public byte[] getFile() {
         return file;
-    }
-
-    public Class<?> compile(String name, GroovyClassLoader groovyClassLoader){
-        if (clazz != null){
-            return clazz;
-        }else return clazz = groovyClassLoader.parseClass(new String(this.getFile()), name);
     }
 
     @Override

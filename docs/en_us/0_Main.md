@@ -4,12 +4,9 @@ sort: 1
 
 ## ResourceModLoader
 
-This mod load the `resource-mod` as mods.
+This mod loads resource packs as Forge mods and extends what those packs can do.
 
-see [modules](https://ecdcaeb.github.io/ResourceModLoader/en_us/modules) to get the information of modules.
+- [Modules](https://ecdcaeb.github.io/ResourceModLoader/en_us/modules) — resource-mod file formats.
+- [Java](https://ecdcaeb.github.io/ResourceModLoader/en_us/java) — API for Java Minecraft mods.
 
-see [java](https://ecdcaeb.github.io/ResourceModLoader/en_us/modules) to get the api for `Java Minecraft Mod`.
-
-
-
-We define `/` as `assets/<DoMain>/` for short.
+In this documentation, `/` means `assets/<domain>/`.

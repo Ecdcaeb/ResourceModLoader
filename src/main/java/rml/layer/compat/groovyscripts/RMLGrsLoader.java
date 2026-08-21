@@ -28,8 +28,8 @@ public class RMLGrsLoader {
         ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (context) -> {
             try {
                 MOD.put(context.getContainerHolder(), context.deserialize(RunConfig.class));
-            } catch (Exception ignored) {
-
+            } catch (Exception e) {
+                context.error(e, "Could not decode GroovyScript run_config {}", context.getResourceLocation());
             }
         }, RMLGrsLoader.class);
     }

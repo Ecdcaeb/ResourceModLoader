@@ -1,11 +1,5 @@
-### rml:CUSTOM_VILLAGERS
+### `rml:custom_villagers`
 
-default at `/village`
+Default path: `/villages`
 
-~~很多内容可以参照过去Cvh的文档：
-<https://www.mcmod.cn/post/3371.html>~~
-
-
-Format:
-
-[IVillager](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/IVillager)
+Each JSON file is an [IVillager](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/IVillager).

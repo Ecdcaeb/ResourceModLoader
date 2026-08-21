@@ -1,66 +1,65 @@
 ## [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/)
-Indicates a villager trade.
+
+A villager trade.
 
 ### `minecraft:emerald_for_items`
-Exchange items for emeralds.
 
-#### Fields:
+Player items for villager emeralds.
 
-`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) Items provided by players
+#### Fields
 
-`price` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) Number of emeralds provided by villagers
+`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) — items the player offers.
+
+`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — emerald count the villager pays.
 
 ### `minecraft:list_item_for_emeralds`
-Items plus emeralds in exchange for items.
 
-#### Fields:
+Player item plus emeralds for a villager item.
+
+#### Fields
 
 `from`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Number of emeralds
-
-__`count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Item quantity, replace item quantity at runtime
-
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) Item
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — emerald count
+- `count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — buying-item count at runtime
 
 `to`
 
-__`count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Item quantity, replace item quantity at runtime
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- `count` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — selling-item count at runtime
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) Item
+### `minecraft:item_and_emerald_to_item`
 
-### `minecraft:list_item_for_emeralds`
-Exchange emeralds for items. 
-#### Fields: 
+Emeralds for an item.
 
-`from` 
+#### Fields
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Price 
+`from`
 
-`to` 
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — emerald price
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) 
+`to`
 
-### `cvh:slots` 
-Specifies the slot item. 
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
 
-slot1 + slot2 -> slot3 
-#### Field: 
+### `cvh:slots`
 
-`slot1`
+Three-slot recipe: `slot1` + `slot2` → `slot3`.
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Item quantity
+#### Fields
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) items
+`from.slot1`
 
-`slot2`
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — count, defaults to `1`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Item quantity
+`from.slot2`
 
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) items
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — count, defaults to `1`
 
-`slot3` 
+`to.slot3`
 
-__`price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) Item quantity 
-
-__`item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack) items
+- `item` [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ItemStack)
+- `price` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — count, defaults to `1`

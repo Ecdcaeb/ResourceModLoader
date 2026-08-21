@@ -2,10 +2,10 @@
 
 ### `minecraft:enchantment_data`
 
-Default Deserializer
+Default deserializer.
 
-#### Fields:
+#### Fields
 
-`name` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) 附魔注册名
+`name` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/ResourceLocation) — enchantment registry name.
 
-`level` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier) 等级
+`level` [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/RandomIntSupplier) — level.

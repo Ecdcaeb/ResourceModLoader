@@ -1,11 +1,11 @@
-### rml:CONFIG_DEFINE
+### `rml:config_define`
 
-Default at `/conifg/define`
+Default path: `/config/define`
 
-use cfg to define a cfg.
-name same as cfg. `example.cfg` -> `example.cfg`
+Define a Forge `.cfg` from a cfg file. Names match: `example.cfg` → `example.cfg`.
 
-For example:
+Example:
+
 ```editorconfig
 # Configuration file
 

@@ -2,26 +2,24 @@ package rml.layer.compat.groovyscripts;
 
 import com.cleanroommc.groovyscript.GroovyScript;
 import com.cleanroommc.groovyscript.api.GroovyLog;
-import com.cleanroommc.groovyscript.sandbox.GroovySandbox;
+import com.cleanroommc.groovyscript.sandbox.CustomGroovyScriptEngine;
+import com.cleanroommc.groovyscript.sandbox.GroovyScriptClassLoader;
 import com.cleanroommc.groovyscript.sandbox.GroovyScriptSandbox;
 import com.cleanroommc.groovyscript.sandbox.LoadStage;
 import groovy.lang.Binding;
-import groovy.lang.GroovyClassLoader;
 import groovy.lang.Script;
-import groovy.util.GroovyScriptEngine;
 import net.minecraft.util.ResourceLocation;
 import org.codehaus.groovy.runtime.InvokerHelper;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.RewriteWhenCleanroom;
+import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.reflection.jvm.FieldAccessor;
 import rml.loader.api.reflection.jvm.MethodAccessor;
 import rml.loader.api.reflection.jvm.ReflectionHelper;
 import rml.loader.api.utils.file.FileHelper;
-import rml.loader.api.mods.ContainerHolder;
 
-import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
+import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -34,78 +32,88 @@ import java.util.Set;
 @PrivateAPI
 @RewriteWhenCleanroom
 public class RMLGroovySandBox {
-    public static final MethodAccessor<Void, GroovySandbox> m_GroovySandbox$runScript = ReflectionHelper.getMethodAccessor(GroovySandbox.class, "runScript", "runScript", Script.class);
-    public static final FieldAccessor<LoadStage, GroovyScriptSandbox> f_GroovyScriptSandbox$currentLoadStage = ReflectionHelper.getFieldAccessor(GroovyScriptSandbox.class, "currentLoadStage");
-    public static void load(GroovySandbox sandbox, GroovyScriptEngine engine, Binding binding, Set<File> unused, boolean run){
-        final String GROOVY_ROOT = GroovyScript.getScriptPath() + "/";
-        HashSet<ResourceLocation> executedClasses = new HashSet<>();
-        String loader = f_GroovyScriptSandbox$currentLoadStage.get(GroovyScript.getSandbox()).getName();
+    public static final MethodAccessor<Void, GroovyScriptSandbox> m_runScript = ReflectionHelper.getMethodAccessor(GroovyScriptSandbox.class, "runScript", "runScript", Script.class);
+    public static final MethodAccessor<Void, GroovyScriptSandbox> m_runClass = ReflectionHelper.getMethodAccessor(GroovyScriptSandbox.class, "runClass", "runClass", Class.class);
+    public static final FieldAccessor<LoadStage, GroovyScriptSandbox> f_currentLoadStage = ReflectionHelper.getFieldAccessor(GroovyScriptSandbox.class, "currentLoadStage");
+    public static final FieldAccessor<Long, GroovyScriptSandbox> f_compileTime = ReflectionHelper.getFieldAccessor(GroovyScriptSandbox.class, "compileTime");
+    public static final FieldAccessor<Long, GroovyScriptSandbox> f_runTime = ReflectionHelper.getFieldAccessor(GroovyScriptSandbox.class, "runTime");
+    private static Method parseClassRaw;
+
+    private static Method parseClassRaw(GroovyScriptClassLoader classLoader) {
+        if (parseClassRaw == null) {
+            try {
+                parseClassRaw = classLoader.getClass().getDeclaredMethod("parseClassRaw", String.class, String.class);
+                parseClassRaw.setAccessible(true);
+            } catch (NoSuchMethodException e) {
+                throw new IllegalStateException("GroovyScript 1.4 CustomGroovyScriptEngine$ScriptClassLoader.parseClassRaw(String, String) is missing", e);
+            }
+        }
+        return parseClassRaw;
+    }
+
+    public static void load(GroovyScriptSandbox sandbox, Binding binding, Set<String> executedClasses, boolean run){
+        String loader = f_currentLoadStage.get(sandbox).getName();
         HashSet<NamedScript> files = new HashSet<>();
         for(Map.Entry<ContainerHolder, RMLGrsLoader.RunConfig> entry : RMLGrsLoader.MOD.entrySet()){
             for(String classPath : entry.getValue().getClasses(loader)){
                 ResourceLocation name = new ResourceLocation(entry.getKey().getContainer().getModId(), classPath);
                 byte[] file = FileHelper.findFile(entry.getKey().getContainer(), classPath);
-                if (Preprocessor.validatePreprocessor(name, file))
-                    files.add(new NamedScript(new ResourceLocation(entry.getKey().getContainer().getModId(), classPath), FileHelper.findFile(entry.getKey().getContainer(), classPath)));
-
+                if (file == null) {
+                    GroovyLog.get().errorMC("RML Groovy script '{}' was not found in pack '{}'", classPath, entry.getKey().getContainer().getModId());
+                    continue;
+                }
+                if (Preprocessor.validatePreprocessor(name, file)) {
+                    files.add(new NamedScript(name, file));
+                }
             }
         }
 
-        GroovyClassLoader groovyClassLoader = engine.getGroovyClassLoader();
-
-        // load and run any configured class files
-        //loadClassScripts
-        for(NamedScript file : files){
-            Class<?> clazz = compile(makeFakeRelativePath(file.getName(), GROOVY_ROOT), file, groovyClassLoader);
-            if (clazz.getSuperclass() != Script.class){
-                executedClasses.add(file.getName());
-                Script script = InvokerHelper.createScript(clazz, binding);
-                if (run) runScript(script);
-            }
+        if (files.isEmpty()) {
+            return;
         }
 
-        // now run all script files
-        //loadScripts
+        CustomGroovyScriptEngine engine = sandbox.getEngine();
+        GroovyScriptClassLoader groovyClassLoader = engine.getClassLoader();
+        String scriptRoot = GroovyScript.getScriptPath().replace('\\', '/') + "/";
+
         for(NamedScript file : files){
-            if (!executedClasses.contains(file.getName())){
-                Class<?> clazz = compile(makeFakeRelativePath(file.getName(), GROOVY_ROOT), file, groovyClassLoader);
-                if (clazz == GroovyLog.class) continue; // preprocessor returned false
-                if (clazz == null) {
-                    GroovyLog.get().errorMC("Error loading script for {}", file.getName());
-                    GroovyLog.get().errorMC("Did you forget to register your class file in your run config?");
-                    continue;
-                }
-                if (clazz.getSuperclass() != Script.class) {
-                    GroovyLog.get().errorMC("RClass file '{}' should be defined in the runConfig in the classes property!", file.getName());
-                    continue;
-                }
-                Script script = InvokerHelper.createScript(clazz, binding);
-                if (run) runScript(script);
+            String scriptName = makeFakeRelativePath(file.getName(), scriptRoot);
+            if (executedClasses.contains(scriptName)) {
+                continue;
             }
+            long t = System.currentTimeMillis();
+            Class<?> clazz = compile(scriptName, file, groovyClassLoader);
+            f_compileTime.set(sandbox, f_compileTime.get(sandbox) + (System.currentTimeMillis() - t));
+            if (clazz == null) {
+                GroovyLog.get().errorMC("Error loading RML Groovy script {}", file.getName());
+                continue;
+            }
+            executedClasses.add(scriptName);
+            if (!run) {
+                continue;
+            }
+            t = System.currentTimeMillis();
+            if (clazz.getSuperclass() != Script.class) {
+                m_runClass.invoke(sandbox, clazz);
+            } else {
+                Script script = InvokerHelper.createScript(clazz, binding);
+                m_runScript.invoke(sandbox, script);
+            }
+            f_runTime.set(sandbox, f_runTime.get(sandbox) + (System.currentTimeMillis() - t));
         }
     }
 
     public static String makeFakeRelativePath(ResourceLocation resourceLocation, String root){
-        return root + resourceLocation.toString().replace(':', '/');
+        return root + resourceLocation.getNamespace() + "/" + resourceLocation.getPath();
     }
 
-    private static String fixPathSeparatorChar(String path) {
+    public static Class<?> compile(String name, NamedScript namedScript, GroovyScriptClassLoader classLoader){
         try {
-            path = URLDecoder.decode(path, "UTF-8");
-        } catch (UnsupportedEncodingException ignored) {
+            String source = new String(namedScript.getFile(), StandardCharsets.UTF_8);
+            return (Class<?>) parseClassRaw(classLoader).invoke(classLoader, source, name);
+        } catch (Throwable e) {
+            GroovyLog.get().exception("An error occurred while trying to compile RML Groovy script " + namedScript.getName(), e);
+            return null;
         }
-
-        if (File.separatorChar != '/') {
-            path = path.replace('/', File.separatorChar);
-        }
-        return path;
-    }
-
-    public static void runScript(Script script){
-        m_GroovySandbox$runScript.invoke(GroovyScript.getSandbox(), script);
-    }
-
-    public static Class<?> compile(String name, NamedScript namedScript, GroovyClassLoader classLoader){
-        return namedScript.compile(name, classLoader);
     }
 }
