@@ -10,6 +10,8 @@ import com.sun.net.httpserver.HttpServer;
 import net.minecraft.command.ICommandSender;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import rml.loader.runtime.FunctionModule;
 import rml.loader.runtime.LoaderRuntime;
 import rml.runtime.ContentException;
@@ -176,6 +178,7 @@ public final class AgentBridge implements AutoCloseable {
             switch (operation) {
                 case "inspect":
                     JsonObject inspected = runtime.getTools().execute(server, "inspect");
+                    inspected.getAsJsonObject("result").add("scenario_runs", runtime.getTimeTests().scenarioRuns(server, scenarioOwner(entry)));
                     lastState = inspected.get("state");
                     entry.complete(bound(inspected));
                     return;
@@ -213,6 +216,16 @@ public final class AgentBridge implements AutoCloseable {
                         result.add("messages", capture.messages());
                         result.addProperty("messages_truncated", capture.truncated());
                     }
+                    break;
+                case "scenario_start":
+                    result = runtime.getTimeTests().startScenario(server, sender, scenarioOwner(entry), string(arguments, "run_id"),
+                            new ResourceLocation(string(arguments, "scenario")), new BlockPos(integer(arguments, "x"), integer(arguments, "y"), integer(arguments, "z")));
+                    break;
+                case "scenario_status":
+                    result = runtime.getTimeTests().scenarioStatus(server, scenarioOwner(entry), string(arguments, "run_id"));
+                    break;
+                case "scenario_cancel":
+                    result = runtime.getTimeTests().cancelScenario(server, scenarioOwner(entry), string(arguments, "run_id"));
                     break;
                 case "install":
                     refreshState();
@@ -320,6 +333,10 @@ public final class AgentBridge implements AutoCloseable {
         return error instanceof IOException ? "invalid_archive" : "invalid_request";
     }
 
+    private static String scenarioOwner(BridgeJournal.Entry entry) {
+        return "agent:" + entry.principal + ":" + entry.session;
+    }
+
     private static void validate(String operation, JsonObject arguments) {
         switch (operation) {
             case "inspect": break;
@@ -339,6 +356,15 @@ public final class AgentBridge implements AutoCloseable {
                 String command = string(arguments, "command");
                 if (command.trim().isEmpty() || command.length() > 8192 || command.indexOf('\n') >= 0 || command.indexOf('\r') >= 0 || command.indexOf('\0') >= 0)
                     throw new IllegalArgumentException("Invalid command");
+                break;
+            case "scenario_start":
+                BridgeArchives.uuid(string(arguments, "run_id"));
+                String scenario = string(arguments, "scenario");
+                if (!scenario.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")) throw new IllegalArgumentException("Invalid scenario id");
+                integer(arguments, "x"); integer(arguments, "y"); integer(arguments, "z");
+                break;
+            case "scenario_status": case "scenario_cancel":
+                BridgeArchives.uuid(string(arguments, "run_id"));
                 break;
             default: throw new IllegalArgumentException("Unknown operation");
         }
@@ -361,6 +387,13 @@ public final class AgentBridge implements AutoCloseable {
         if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()
                 || !value.getAsString().matches("0|[1-9][0-9]*")) throw new IllegalArgumentException("Expected nonnegative revision");
         return Long.parseLong(value.getAsString());
+    }
+
+    private static int integer(JsonObject arguments, String name) {
+        JsonElement value = arguments.get(name);
+        if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()
+                || !value.getAsString().matches("-?(0|[1-9][0-9]*)")) throw new IllegalArgumentException("Expected integer: " + name);
+        return Integer.parseInt(value.getAsString());
     }
 
     private void send(HttpExchange exchange, int status, JsonObject response) throws IOException {

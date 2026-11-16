@@ -191,6 +191,11 @@ class Engine:
                 "install for next restart; never promise a live registry change. Native revisions are global, so "
                 "inspect again after a revision conflict. Never blindly retry a native operation with unknown outcome. "
                 "Cancellation/disconnection may leave already committed operations; inspect before retrying. "
+                "Use run_scenario for installed test_instance definitions in inspect_runtime.scenarios; it waits for the "
+                "native terminal result and cleanup. A started or running test is not a pass. Failed/cancelled tests "
+                "and cleanup failures are not passes. Tests restore only declared blocks, block entities and world time; "
+                "use an appropriate test area, since entity/inventory changes and external tasks are not rolled back. "
+                "After interruption, inspect_runtime.scenario_runs and scenario_status recover retained results without rerunning. "
                 "Use the operator's actual request to determine intended edits, commands and deployment."), tools=tools)
             runner = Runner(app_name=APP_NAME, agent=agent, session_service=self.sessions, artifact_service=self.artifacts)
             async with aclosing(runner.run_async(
@@ -338,6 +343,37 @@ class Engine:
             """Execute a real Minecraft command as the authenticated operator and return its actual messages/result."""
             return await perform("game_command", {"command": command}, lambda: native("command", {"command": command}))
 
+        async def run_scenario(scenario: str, x: int, y: int, z: int) -> dict:
+            """Run an installed world test at an explicit origin, await its assertions/cleanup, and cancel native work on interruption."""
+            scenario_run = str(uuid.uuid4())
+            arguments = {"run_id": scenario_run, "scenario": scenario, "x": x, "y": y, "z": z}
+            async def action():
+                try:
+                    response = await native("scenario_start", arguments)
+                    while response.get("ok") and response["result"]["status"] == "running":
+                        emit("scenario", response["result"])
+                        await asyncio.sleep(1)
+                        response = await native("scenario_status", {"run_id": scenario_run})
+                    if response.get("ok"):
+                        emit("scenario", response["result"])
+                    return dict(response, scenario_run_id=scenario_run)
+                except asyncio.CancelledError:
+                    # The id is known before start dispatch, including a lost start response.
+                    cancellation = await native("scenario_cancel", {"run_id": scenario_run})
+                    emit("scenario_cancel", {"run_id": scenario_run, "response": cancellation})
+                    raise
+            return await perform("run_scenario", arguments, action)
+
+        async def scenario_status(run_id: str) -> dict:
+            """Read this session's retained native scenario result without starting another test."""
+            arguments = {"run_id": str(uuid.UUID(run_id))}
+            return await perform("scenario_status", arguments, lambda: native("scenario_status", arguments))
+
+        async def cancel_scenario(run_id: str) -> dict:
+            """Cancel an owned native scenario and return its actual cleanup result; completed results remain unchanged."""
+            arguments = {"run_id": str(uuid.UUID(run_id))}
+            return await perform("cancel_scenario", arguments, lambda: native("scenario_cancel", arguments))
+
         async def install_build(build_id: str) -> dict:
             """Install an owned immutable build for the next JVM restart; this does not activate native registry definitions live."""
             async def action():
@@ -345,4 +381,5 @@ class Engine:
             return await perform("install_build", {"build_id": build_id}, action)
 
         return [inspect_runtime, list_files, read_file, write_file, delete_file, compile_project,
-                check_build, apply_candidate, deactivate_pack, game_command, install_build]
+                check_build, apply_candidate, deactivate_pack, game_command, install_build,
+                run_scenario, scenario_status, cancel_scenario]

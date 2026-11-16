@@ -1,5 +1,6 @@
 package rml.loader.content.time;
 
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.command.ICommandSender;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.BiFunction;
+import java.util.UUID;
 
 /** Standalone composition checks and an explicit real-server integration entrypoint. */
 public final class TimeCompositionContractTest {
@@ -102,6 +104,8 @@ public final class TimeCompositionContractTest {
                     timelineEffects[0]++;
                     context.getWorld().setBlockState(context.getOrigin(), Blocks.DIAMOND_BLOCK.getDefaultState(), 2);
                 }));
+        fixture.manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "throw_effect"), DataRules.Effect.class,
+                json -> (context, target) -> { throw new IllegalStateException(); }));
         BlockPos offset = origin.subtract(world.getSpawnPoint());
         fixture.resource("world_clock", "clock", "{\"initial_time\":0,\"rate\":0.5,\"dimension\":" + world.provider.getDimension() + "}");
         fixture.resource("timeline", "timeline", "{\"clock\":\"contract:clock\",\"loop\":false,\"events\":[{\"at\":{\"ticks\":{\"type\":\"rml:add\",\"inputs\":[1,1]}},\"origin\":[" + offset.getX() + "," + offset.getY() + "," + offset.getZ() + "],\"condition\":{\"type\":\"contract:boundary\"},\"function\":\"contract:gold\",\"effects\":[{\"type\":\"contract:after_function\"}]}]}");
@@ -109,6 +113,9 @@ public final class TimeCompositionContractTest {
         fixture.resource("test_instance", "retry", "{\"environment\":\"contract:env\",\"seed\":73,\"timeout\":2,\"retries\":1,\"sequence\":[{\"delay\":1,\"effects\":[{\"type\":\"contract:place\"}],\"assertions\":[{\"condition\":{\"type\":\"contract:retry\"}}]}]}");
         fixture.resource("test_instance", "fail", "{\"environment\":\"contract:env\",\"seed\":73,\"timeout\":1,\"setup\":[{\"type\":\"contract:place\"}],\"assertions\":[{\"condition\":{\"type\":\"contract:never\"}}]}");
         fixture.resource("test_instance", "cancel", "{\"environment\":\"contract:env\",\"timeout\":20,\"sequence\":[{\"delay\":2,\"effects\":[{\"type\":\"contract:place\"}]}],\"assertions\":[{\"condition\":{\"type\":\"contract:never\"}}]}");
+        fixture.resource("test_instance", "setup_failure", "{\"environment\":\"contract:env\",\"setup\":[{\"type\":\"contract:place\"},{\"type\":\"contract:throw_effect\"}],\"assertions\":[{\"pos\":[0,0,0],\"block\":\"minecraft:gold_block\"}]}");
+        fixture.resource("test_instance", "cleanup_failure", "{\"environment\":\"contract:env\",\"setup\":[{\"type\":\"contract:place\"}],\"cleanup\":[{\"type\":\"contract:throw_effect\"}],\"assertions\":[{\"pos\":[0,0,0],\"block\":\"minecraft:gold_block\"}]}");
+        fixture.resource("test_instance", "cleanup_retry_failure", "{\"environment\":\"contract:env\",\"timeout\":1,\"retries\":1,\"setup\":[{\"type\":\"contract:place\"}],\"cleanup\":[{\"type\":\"contract:throw_effect\"}],\"assertions\":[{\"condition\":{\"type\":\"contract:never\"}}]}");
         try {
             fixture.publish(); fixture.module.initialize();
             tick(fixture.module, world);
@@ -131,22 +138,53 @@ public final class TimeCompositionContractTest {
             TileEntityChest chest = (TileEntityChest) world.getTileEntity(origin);
             chest.setInventorySlotContents(4, new ItemStack(Items.DIAMOND, 17));
             NBTTagCompound chestBefore = chest.writeToNBT(new NBTTagCompound());
-            run(fixture.module, world, sender, origin, "retry");
+            JsonObject retry = run(fixture.module, world, sender, origin, "retry");
+            try {
+                fixture.module.cancelScenario(world.getMinecraftServer(), "different-owner", retry.get("run_id").getAsString());
+                throw new AssertionError("Another owner must not cancel an active scenario");
+            } catch (net.minecraft.command.CommandException expected) { }
             tick(fixture.module, world); tick(fixture.module, world); tick(fixture.module, world);
             check(effects[0] == 2 && cleanups[0] == 2, "Timeout retries apply each step and cleanup exactly once per attempt");
             check(samples.get(0) == new Random(73).nextInt() && samples.get(1) == new Random(74).nextInt(), "Attempt seeds must reproduce 73 then 74");
             check(chestBefore.equals(world.getTileEntity(origin).writeToNBT(new NBTTagCompound())), "Passing retry must restore native chest inventory NBT");
-            run(fixture.module, world, sender, origin, "fail"); tick(fixture.module, world);
+            JsonObject retried = status(fixture.module, world, retry);
+            check("running".equals(retry.get("status").getAsString()) && "passed".equals(retried.get("status").getAsString()), "Initial snapshots must not masquerade as terminal results");
+            check(retried.get("attempt").getAsInt() == 2 && retried.get("attempt_seed").getAsLong() == 74 && retried.get("assertions_passed").getAsInt() == 1,
+                    "Scenario report must preserve actual retry seed and completed assertions");
+            check("restored".equals(retried.get("cleanup").getAsString()), "Pass is published after snapshot cleanup");
+            JsonObject failed = run(fixture.module, world, sender, origin, "fail"); tick(fixture.module, world);
+            failed = status(fixture.module, world, failed);
+            check("failed".equals(failed.get("status").getAsString()) && "assertions[0]".equals(failed.get("pending_assertion").getAsString()), "Timeout reports the unsatisfied assertion");
             check(cleanups[0] == 3 && chestBefore.equals(world.getTileEntity(origin).writeToNBT(new NBTTagCompound())), "Failed test must restore tile NBT and execute cleanup");
             int count = effects[0];
-            run(fixture.module, world, sender, origin, "cancel"); fixture.module.stop();
+            JsonObject stopped = run(fixture.module, world, sender, origin, "cancel"); fixture.module.stop();
+            check("cancelled".equals(status(fixture.module, world, stopped).get("status").getAsString()), "Stopping the module publishes cancellation");
             for (int i = 0; i < 3; i++) tick(fixture.module, world);
             check(effects[0] == count && cleanups[0] == 4, "Stop cancels delayed steps and cleans once");
-            fixture.module.initialize(); run(fixture.module, world, sender, origin, "cancel");
+            fixture.module.initialize(); JsonObject unloaded = run(fixture.module, world, sender, origin, "cancel");
             fixture.module.onWorldUnload(new WorldEvent.Unload(world));
             for (int i = 0; i < 3; i++) tick(fixture.module, world);
             check(effects[0] == count && cleanups[0] == 5, "Unload cancels delayed steps and ignores late ticks");
             check(chestBefore.equals(world.getTileEntity(origin).writeToNBT(new NBTTagCompound())), "Cancellation must restore native tile data");
+            check("cancelled".equals(status(fixture.module, world, unloaded).get("status").getAsString()), "World unload publishes cancellation");
+            fixture.module.onWorldLoad(new WorldEvent.Load(world));
+            JsonObject cancelled = run(fixture.module, world, sender, origin, "cancel");
+            int beforeCancel = cleanups[0];
+            cancelled = fixture.module.cancelScenario(world.getMinecraftServer(), "contract", cancelled.get("run_id").getAsString());
+            check("cancelled".equals(cancelled.get("status").getAsString()) && "restored".equals(cancelled.get("cleanup").getAsString()), "Explicit cancellation returns completed cleanup");
+            fixture.module.cancelScenario(world.getMinecraftServer(), "contract", cancelled.get("run_id").getAsString());
+            check(cleanups[0] == beforeCancel + 1, "Cancelling a completed scenario must not repeat cleanup");
+            JsonObject setupFailed = run(fixture.module, world, sender, origin, "setup_failure");
+            check("failed".equals(setupFailed.get("status").getAsString()) && "restored".equals(setupFailed.get("cleanup").getAsString()), "Setup failure is a terminal result with restored blocks");
+            JsonObject cleanupFailed = run(fixture.module, world, sender, origin, "cleanup_failure"); tick(fixture.module, world);
+            cleanupFailed = status(fixture.module, world, cleanupFailed);
+            check("failed".equals(cleanupFailed.get("status").getAsString()) && "failed".equals(cleanupFailed.get("cleanup").getAsString()), "Passing assertions cannot conceal a cleanup failure");
+            check(chestBefore.equals(world.getTileEntity(origin).writeToNBT(new NBTTagCompound())), "Failed effects must still restore the captured inventory");
+            JsonObject cleanupRetry = run(fixture.module, world, sender, origin, "cleanup_retry_failure"); tick(fixture.module, world);
+            cleanupRetry = status(fixture.module, world, cleanupRetry);
+            check("failed".equals(cleanupRetry.get("status").getAsString()) && cleanupRetry.get("attempt").getAsInt() == 1
+                    && chestBefore.equals(world.getTileEntity(origin).writeToNBT(new NBTTagCompound())),
+                    "Cleanup failure without a message must stop retries and restore the captured inventory");
         } finally {
             fixture.module.stop(); data.readFromNBT(beforeClocks); data.markDirty();
             world.removeTileEntity(origin); world.setBlockState(origin, before, 2);
@@ -155,9 +193,11 @@ public final class TimeCompositionContractTest {
         }
     }
 
-    private static void run(TimeTestModule module, WorldServer world, ICommandSender sender, BlockPos origin, String name) throws Exception {
-        module.execute(world.getMinecraftServer(), sender, new String[]{"test", "run", "contract:" + name,
-                Integer.toString(origin.getX()), Integer.toString(origin.getY()), Integer.toString(origin.getZ())});
+    private static JsonObject run(TimeTestModule module, WorldServer world, ICommandSender sender, BlockPos origin, String name) throws Exception {
+        return module.startScenario(world.getMinecraftServer(), sender, "contract", UUID.randomUUID().toString(), new ResourceLocation("contract", name), origin);
+    }
+    private static JsonObject status(TimeTestModule module, WorldServer world, JsonObject started) throws Exception {
+        return module.scenarioStatus(world.getMinecraftServer(), "contract", started.get("run_id").getAsString());
     }
     private static void tick(TimeTestModule module, WorldServer world) {
         module.onWorldTick(new TickEvent.WorldTickEvent(Side.SERVER, TickEvent.Phase.END, world));

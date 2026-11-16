@@ -75,5 +75,7 @@ The `agent/` Python 3.11+ package runs Google ADK 2.14.1 in a process owned by t
 
 Each operator has an isolated, persistent workspace and conversation. Compiled builds enter the real runtime through checked candidates and revision protection. Native commands retain the player's identity and return their actual messages. Registry additions require installing the build for the next JVM launch. Durable request receipts prevent repeated game mutations after reconnects or service restarts.
 
+`run_scenario` waits for an installed world test's assertions and cleanup, returning its native pass/fail/cancel result. Cancelling the Agent request cancels that scenario. Retained results can be queried or cancelled within the owning session; the game exposes the same behavior through `/rml test run|status|cancel`. Tests restore captured blocks, block entities and world time; use an appropriate test area because this is not an isolated preview world.
+
 See [Agent setup, sessions and verification](docs/zh_cn/2_RML_2.0_Plan.md#15-服务端托管-agent-与-tui-会话) for model configuration, SSH connections, artifact access and the distinction between live application and startup installation.
 

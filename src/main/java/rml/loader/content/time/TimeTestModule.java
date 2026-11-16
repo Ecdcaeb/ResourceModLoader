@@ -1,5 +1,6 @@
 package rml.loader.content.time;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.block.Block;
@@ -41,11 +42,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 
 /** Native ticking, persistent clocks, scheduled timelines, and asynchronous in-world tests. */
 public final class TimeTestModule {
@@ -64,6 +67,8 @@ public final class TimeTestModule {
     private final Map<ResourceLocation, Environment> environments = new LinkedHashMap<>();
     private final Map<ResourceLocation, TestDef> tests = new LinkedHashMap<>();
     private final Map<WorldServer, List<RunningTest>> running = new IdentityHashMap<>();
+    private final Map<String, ScenarioResult> scenarioResults = new LinkedHashMap<>();
+    private static final int MAX_SCENARIO_RESULTS = 128;
     private boolean initialized;
     private DeserializerManager deserializers;
     private final Set<WorldServer> unloaded = Collections.newSetFromMap(new IdentityHashMap<WorldServer, Boolean>());
@@ -187,19 +192,91 @@ public final class TimeTestModule {
     }
 
     private void executeTest(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
-        if ((args.length != 3 && args.length != 6) || !"run".equals(args[1])) throw new WrongUsageException("test run <id> [x y z]");
-        ResourceLocation id=id(args[2]); TestDef def=require(tests,id,"test_instance");
-        BlockPos requestedOrigin=args.length==6?new BlockPos(commandInteger(args[3]),commandInteger(args[4]),commandInteger(args[5])):null;
-        WorldServer world=sender.getEntityWorld() instanceof WorldServer?(WorldServer)sender.getEntityWorld():server.getWorld(0);
+        String owner = "command:" + (sender.getCommandSenderEntity() == null ? "console" : sender.getCommandSenderEntity().getUniqueID());
+        JsonObject result;
+        if ((args.length == 3 || args.length == 6) && "run".equals(args[1])) {
+            BlockPos origin = args.length == 6 ? new BlockPos(commandInteger(args[3]), commandInteger(args[4]), commandInteger(args[5])) : null;
+            result = startScenario(server, sender, owner, UUID.randomUUID().toString(), id(args[2]), origin);
+        } else if (args.length == 3 && "status".equals(args[1])) {
+            result = scenarioStatus(server, owner, args[2]);
+        } else if (args.length == 3 && "cancel".equals(args[1])) {
+            result = cancelScenario(server, owner, args[2]);
+        } else throw new WrongUsageException("test run <scenario> [x y z] | test <status|cancel> <run_id>");
+        sender.sendMessage(new net.minecraft.util.text.TextComponentString(result.toString()));
+    }
+
+    /** Start/query/cancel on the server thread. The opaque owner is supplied by the authorized caller. */
+    public JsonObject startScenario(MinecraftServer server, ICommandSender sender, String owner, String runId,
+                                    ResourceLocation id, BlockPos requestedOrigin) throws CommandException {
+        requireServerThread(server);
+        if (!initialized) throw new CommandException("Time module is stopped");
+        Objects.requireNonNull(owner, "owner");
+        if (!UUID.fromString(runId).toString().equals(runId)) throw new CommandException("Invalid scenario run id");
+        if (scenarioResults.containsKey(runId)) throw new CommandException("scenario_run_exists");
+        TestDef def = require(tests, id, "test_instance");
+        WorldServer world = sender.getEntityWorld() instanceof WorldServer ? (WorldServer) sender.getEntityWorld() : server.getWorld(0);
         if (world == null) throw new CommandException("No server world is available");
-        List<RunningTest> list=running.get(world);
-        if(unloaded.contains(world))throw new CommandException("World is unloading");
-        if(list!=null&&!list.isEmpty())throw new CommandException("A test is already running in this dimension");
-        RunningTest run=new RunningTest(id,def,environments.get(def.environment),sender,requestedOrigin);
-        list=running.computeIfAbsent(world,key->new ArrayList<>()); list.add(run);
-        try { run.begin(world); } catch(RuntimeException failure) { list.remove(run); if(list.isEmpty())running.remove(world); throw new CommandException("Test setup failed: "+failure.getMessage()); }
-        if(run.cancelled)return;
-        sender.sendMessage(new net.minecraft.util.text.TextComponentString("Started test " + id + " in dimension " + world.provider.getDimension()));
+        if (unloaded.contains(world)) throw new CommandException("World is unloading");
+        List<RunningTest> active = running.get(world);
+        if (active != null && !active.isEmpty()) throw new CommandException("A test is already running in this dimension");
+        if (scenarioResults.size() >= MAX_SCENARIO_RESULTS) {
+            Iterator<ScenarioResult> retained = scenarioResults.values().iterator();
+            while (retained.hasNext()) {
+                if (!"running".equals(retained.next().status)) { retained.remove(); break; }
+            }
+            if (scenarioResults.size() >= MAX_SCENARIO_RESULTS) throw new CommandException("scenario_capacity_reached");
+        }
+        ScenarioResult result = new ScenarioResult(runId, owner, id, def, world.provider.getDimension());
+        RunningTest run = new RunningTest(id, def, environments.get(def.environment), sender, requestedOrigin, result);
+        scenarioResults.put(runId, result);
+        active = running.computeIfAbsent(world, key -> new ArrayList<>());
+        active.add(run);
+        run.begin(world);
+        if (run.cancelled) { active.remove(run); if (active.isEmpty()) running.remove(world); }
+        return result.snapshot();
+    }
+
+    public JsonObject scenarioStatus(MinecraftServer server, String owner, String runId) throws CommandException {
+        requireServerThread(server);
+        return ownedScenario(owner, runId).snapshot();
+    }
+
+    public JsonArray scenarioRuns(MinecraftServer server, String owner) {
+        requireServerThread(server);
+        JsonArray result = new JsonArray();
+        for (ScenarioResult run : scenarioResults.values()) if (run.owner.equals(owner)) result.add(run.snapshot());
+        return result;
+    }
+
+    public JsonObject cancelScenario(MinecraftServer server, String owner, String runId) throws CommandException {
+        requireServerThread(server);
+        ScenarioResult result = ownedScenario(owner, runId);
+        if ("running".equals(result.status)) {
+            Iterator<Map.Entry<WorldServer, List<RunningTest>>> worlds = running.entrySet().iterator();
+            while (worlds.hasNext()) {
+                Map.Entry<WorldServer, List<RunningTest>> entry = worlds.next();
+                List<RunningTest> active = entry.getValue();
+                for (int i = 0; i < active.size(); i++) if (active.get(i).result == result) {
+                    RunningTest run = active.remove(i);
+                    WorldServer world = entry.getKey();
+                    if (active.isEmpty()) worlds.remove();
+                    run.cancel(world);
+                    return result.snapshot();
+                }
+            }
+            throw new IllegalStateException("Running scenario has no active test");
+        }
+        return result.snapshot();
+    }
+
+    private ScenarioResult ownedScenario(String owner, String runId) throws CommandException {
+        ScenarioResult result = scenarioResults.get(runId);
+        if (result == null || !result.owner.equals(owner)) throw new CommandException("scenario_not_found");
+        return result;
+    }
+
+    private static void requireServerThread(MinecraftServer server) {
+        if (server == null || !server.isCallingFromMinecraftThread()) throw new IllegalStateException("Scenario operations require the server thread");
     }
 
     private void configureClock(WorldServer world,ResourceLocation id,ClockDef definition,TimeWorldData.Clock clock) {
@@ -465,18 +542,54 @@ public final class TimeTestModule {
             ResourceLocation actualId=Block.REGISTRY.getNameForObject(actual.getBlock());return actualId!=null&&tags.contains("block",tag,actualId);
         }
     }
+    /** Retained results contain no world, player, context, or block snapshot references. */
+    private static final class ScenarioResult {
+        final String runId, owner;
+        final ResourceLocation scenario;
+        final long seed;
+        final int dimension, assertionsTotal;
+        BlockPos origin;
+        String status = "running", message = "", cleanup = "pending";
+        int ticks, attemptTicks, attempt = 1, timeout, retries, step, assertionsPassed;
+        int pendingStep = -1, pendingAssertion = -1;
+        ScenarioResult(String runId, String owner, ResourceLocation scenario, TestDef definition, int dimension) {
+            this.runId = runId; this.owner = owner; this.scenario = scenario; this.seed = definition.seed; this.dimension = dimension;
+            int total = definition.assertions.size();
+            for (TestStep item : definition.sequence) total += item.assertions.length;
+            assertionsTotal = total;
+        }
+        JsonObject snapshot() {
+            JsonObject value = new JsonObject();
+            value.addProperty("run_id", runId); value.addProperty("scenario", scenario.toString());
+            value.addProperty("status", status); value.addProperty("message", message); value.addProperty("cleanup", cleanup);
+            value.addProperty("dimension", dimension); value.addProperty("seed", seed); value.addProperty("attempt_seed", seed + attempt - 1);
+            value.addProperty("ticks", ticks); value.addProperty("attempt_ticks", attemptTicks); value.addProperty("attempt", attempt);
+            value.addProperty("timeout_ticks", timeout); value.addProperty("retries", retries); value.addProperty("completed_steps", step);
+            value.addProperty("assertions_passed", assertionsPassed); value.addProperty("assertions_total", assertionsTotal);
+            value.addProperty("pending_assertion", pendingAssertion < 0 ? null :
+                    (pendingStep < 0 ? "assertions[" : "sequence[" + pendingStep + "].assertions[") + pendingAssertion + "]");
+            if (origin != null) {
+                JsonArray coordinates = new JsonArray(); coordinates.add(origin.getX()); coordinates.add(origin.getY()); coordinates.add(origin.getZ());
+                value.add("origin", coordinates);
+            }
+            return value;
+        }
+    }
     private final class RunningTest {
         final ResourceLocation id; final TestDef def; final Environment environment; final ICommandSender sender; final BlockPos requestedOrigin;
+        final ScenarioResult result;
+        int completedAssertions;
         final Map<BlockPos,BlockSnapshot> original=new LinkedHashMap<>();
         final List<Environment> entered=new ArrayList<>();
         BlockPos origin; DataContext context; int age,attempt,timeout,retries,step,stepDue; long originalTime;
         final NBTTagCompound inputs=new NBTTagCompound();
         boolean placed,cancelled,stepApplied,testSetup,cleaning;
-        RunningTest(ResourceLocation id,TestDef def,Environment env,ICommandSender sender,BlockPos requestedOrigin){this.id=id;this.def=def;this.environment=env;this.sender=sender;this.requestedOrigin=requestedOrigin;}
+        RunningTest(ResourceLocation id,TestDef def,Environment env,ICommandSender sender,BlockPos requestedOrigin,ScenarioResult result){this.id=id;this.def=def;this.environment=env;this.sender=sender;this.requestedOrigin=requestedOrigin;this.result=result;}
         void begin(WorldServer world) {
             origin=requestedOrigin!=null?requestedOrigin:(sender.getEntityWorld()==world?sender.getPosition():world.getSpawnPoint()).add(2,0,2);
-            retries=def.retries.sample(new Random(def.seed));
-            try { startAttempt(world); } catch(RuntimeException failure) { cancel(world); throw failure; }
+            result.origin=origin;
+            try { retries=def.retries.sample(new Random(def.seed)); result.retries=retries; startAttempt(world); }
+            catch(RuntimeException failure) { finish(world,false,"setup failed: "+failure.getMessage()); }
         }
         void startAttempt(WorldServer world) {
             while(!cancelled) {
@@ -492,9 +605,12 @@ public final class TimeTestModule {
         }
         void captureAndPlace(WorldServer world) {
             original.clear();entered.clear();age=0;step=0;stepApplied=false;testSetup=false;
+            completedAssertions=0; result.assertionsPassed=0; result.pendingAssertion=-1; result.pendingStep=-1; result.step=0;
+            result.attempt=attempt+1; result.attemptTicks=0;
             inputs.setInteger("age",0);inputs.setInteger("attempt",attempt);inputs.setLong("seed",def.seed+attempt);
             context=new DataContext(world,null,origin,new Random(def.seed+attempt),attempt).withInputs(inputs);
             timeout=def.timeout.sample(context.getRandom()); originalTime=world.getWorldTime();
+            result.timeout=timeout;
             captureEnvironment(world,environment);
             for(Assertion assertion:def.assertions)if(assertion.pos!=null)captureBlock(world,origin.add(assertion.pos));
             for(TestStep item:def.sequence)for(Assertion assertion:item.assertions)if(assertion.pos!=null)captureBlock(world,origin.add(assertion.pos));
@@ -542,8 +658,16 @@ public final class TimeTestModule {
             }
         }
         boolean matches(Assertion[] assertions) {
-            for(Assertion assertion:assertions)if(cancelled||!assertion.matches(context,tags))return false;
-            return !cancelled;
+            result.assertionsPassed=completedAssertions;
+            for(int i=0;i<assertions.length;i++) {
+                if(cancelled)return false;
+                result.pendingStep=step; result.pendingAssertion=i;
+                if(!assertions[i].matches(context,tags))return false;
+                result.assertionsPassed=completedAssertions+i+1;
+            }
+            if(cancelled)return false;
+            completedAssertions+=assertions.length; result.pendingAssertion=-1;
+            return true;
         }
         void advanceSequence() {
             while(!cancelled&&step<def.sequence.length&&age>=stepDue) {
@@ -551,16 +675,26 @@ public final class TimeTestModule {
                 if(!stepApplied){stepApplied=true;applyActive(current.effects);}
                 if(cancelled||!matches(current.assertions))return;
                 step++;stepApplied=false;
+                result.step=step;
                 if(step<def.sequence.length)stepDue=Math.addExact(age,def.sequence[step].delay.sample(context.getRandom()));
             }
         }
         boolean tick(WorldServer world) {
             if(cancelled)return true;
             try {
-                age++;inputs.setInteger("age",age);context=context.withInputs(inputs);advanceSequence();
+                age++;result.ticks++;result.attemptTicks=age;inputs.setInteger("age",age);context=context.withInputs(inputs);advanceSequence();
                 if(cancelled)return true;
                 boolean passed=step==def.sequence.length;
-                if(passed)for(Assertion assertion:def.assertions)if(cancelled||!assertion.matches(context,tags)){passed=false;break;}
+                if(passed) {
+                    result.assertionsPassed=completedAssertions;
+                    for(int i=0;i<def.assertions.size();i++) {
+                        if(cancelled)return true;
+                        result.pendingStep=-1; result.pendingAssertion=i;
+                        if(!def.assertions.get(i).matches(context,tags)){passed=false;break;}
+                        result.assertionsPassed++;
+                    }
+                    if(passed)result.pendingAssertion=-1;
+                }
                 if(cancelled)return true;
                 if(passed){finish(world,true,"passed in "+age+" ticks after "+(attempt+1)+" attempts");return true;}
                 if(age<timeout)return false;
@@ -597,16 +731,27 @@ public final class TimeTestModule {
                 world.notifyBlockUpdate(entry.getKey(),entry.getValue().state,entry.getValue().state,3);
             }catch(RuntimeException error){failure=error;}
             world.setWorldTime(originalTime);original.clear();entered.clear();testSetup=false;cleaning=false;
-            return failure==null?null:failure.getMessage();
+            if(failure!=null)result.cleanup="failed";
+            return failure==null?null:failure.toString();
         }
         void cancel(WorldServer world) {
+            if(cancelled)return;
             cancelled=true;String failure=cleanup(world);
+            boolean restored=failure==null&&!"failed".equals(result.cleanup);
+            result.status=restored?"cancelled":"failed";
+            result.cleanup=restored?"restored":"failed";
+            result.message=restored?"Scenario cancelled":"Cancellation cleanup failed: "+failure;
             if(failure!=null)sender.sendMessage(new net.minecraft.util.text.TextComponentString("Test "+id+" cleanup failed: "+failure));
         }
-        void finish(WorldServer world,boolean passed,String result) {
+        void finish(WorldServer world,boolean passed,String message) {
+            if(cancelled)return;
             cancelled=true;String failure=cleanup(world);
-            if(failure!=null){passed=false;result+="; cleanup failed: "+failure;}
-            sender.sendMessage(new net.minecraft.util.text.TextComponentString("Test "+id+" "+(passed?"PASSED":"FAILED")+": "+result));
+            if(failure!=null){passed=false;message+="; cleanup failed: "+failure;}
+            if("failed".equals(result.cleanup))passed=false;
+            result.status=passed?"passed":"failed";
+            if(!"failed".equals(result.cleanup))result.cleanup=failure==null?"restored":"failed";
+            result.message=message.length()>4096?message.substring(0,4096):message;
+            sender.sendMessage(new net.minecraft.util.text.TextComponentString("Test "+id+" "+(passed?"PASSED":"FAILED")+": "+message));
         }
     }
     private static final class BlockSnapshot {
