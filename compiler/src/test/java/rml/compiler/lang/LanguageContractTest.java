@@ -134,13 +134,18 @@ public final class LanguageContractTest {
                     "rml execute as @a at @s if entity @s run say context"), compiled.get("demo:main"));
             equal(Collections.singletonList("$say $(name)"), compiled.get("demo:echo"));
         }
+        try (Pack pack = new Pack()) {
+            pack.put("function/dialog", "$data modify storage demo:dialog value set value $(value)\n");
+            equal(Collections.singletonList("$data modify storage demo:dialog value set value $(value)"),
+                    FunctionCompiler.compile(pack.read(), Collections.emptyMap()).get("demo:dialog"));
+        }
     }
 
     private static void functionFailures() throws Exception {
         functionError("\n/say bad\n", "leading_slash", 2);
         functionError("say broken \\\n", "dangling_continuation", 1);
         functionError("say broken \\" , "dangling_continuation", 1);
-        functionError("$say $(missing)\n", "missing_constant", 1);
+        functionError("$say $()\n", "invalid_macro", 1);
         functionError("$say $(greeting\n", "invalid_macro", 1);
         functionError("#include demo:missing\n", "missing_include", 1);
         functionError("#include outside\n", "missing_include", 1);

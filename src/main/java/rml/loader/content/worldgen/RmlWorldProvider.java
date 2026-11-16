@@ -59,7 +59,7 @@ public final class RmlWorldProvider extends WorldProvider {
             }
             ResourceLocation biomeId = reference(biomeDefinition, "biome");
             Biome biome = Biome.REGISTRY.getObject(biomeId);
-            if (biome == null) throw new IllegalStateException("Dimension " + definition.id + " refers to unavailable biome " + biomeId);
+            if (!Biome.REGISTRY.containsKey(biomeId) || biome == null) throw new IllegalStateException("Dimension " + definition.id + " refers to unavailable biome " + biomeId);
             this.biomeProvider = new RmlBiomeProvider(biome, world.getSeed());
         }
     }

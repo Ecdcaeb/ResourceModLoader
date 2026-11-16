@@ -1,0 +1,7 @@
+{
+  "sound": "minecraft:entity.enderdragon.growl",
+  "duration": 80,
+  "range": 24,
+  "volume": 1,
+  "pitch": 0.8
+}

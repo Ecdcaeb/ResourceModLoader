@@ -21,7 +21,8 @@ public final class NativeBlockDefinition {
     public final int harvestLevel;
     public final int variants;
     public final int defaultVariant;
-    public final DataRules.Effect interactEffect;
+    public DataRules.Effect interactEffect;
+    private JsonElement pendingInteractEffect;
 
     private NativeBlockDefinition(ResourceLocation id, ResourceLocation model, Material material, SoundType sound,
                                   float hardness, float resistance, float light, int lightOpacity,
@@ -35,6 +36,22 @@ public final class NativeBlockDefinition {
 
     public static NativeBlockDefinition decode(DeserializerManager manager, ResourceLocation id, JsonObject json)
             throws rml.deserializer.JsonDeserializeException {
+        return decode(manager, id, json, false);
+    }
+
+    static NativeBlockDefinition decodeForRegistration(DeserializerManager manager, ResourceLocation id, JsonObject json) throws rml.deserializer.JsonDeserializeException {
+        return decode(manager, id, json, true);
+    }
+
+    void resolveDependencies(DeserializerManager manager) throws rml.deserializer.JsonDeserializeException {
+        if (pendingInteractEffect != null) {
+            interactEffect = manager.decode(DataRules.Effect.class, pendingInteractEffect);
+            pendingInteractEffect = null;
+        }
+    }
+
+    private static NativeBlockDefinition decode(DeserializerManager manager, ResourceLocation id, JsonObject json, boolean deferred) throws rml.deserializer.JsonDeserializeException {
+        GameplayFields.only(json, "id", "model", "material", "sound", "hardness", "resistance", "light", "light_opacity", "harvest_tool", "harvest_level", "variants", "default_variant", "on_interact");
         ResourceLocation model = manager.decode(ResourceLocation.class, required(json, "model"));
         Material material = material(required(json, "material").getAsString());
         SoundType sound = sound(json.has("sound") ? json.get("sound").getAsString() : "stone");
@@ -46,7 +63,7 @@ public final class NativeBlockDefinition {
         int harvestLevel = integer(json, "harvest_level", -1);
         int variants = integer(json, "variants", 1);
         int defaultVariant = integer(json, "default_variant", 0);
-        DataRules.Effect interact = json.has("on_interact") ? manager.decode(DataRules.Effect.class, json.get("on_interact")) : null;
+        DataRules.Effect interact = !deferred && json.has("on_interact") ? manager.decode(DataRules.Effect.class, json.get("on_interact")) : null;
         if (model == null || (hardness < 0 && hardness != -1) || Float.isNaN(hardness) || Float.isInfinite(hardness)
                 || resistance < 0 || Float.isNaN(resistance) || Float.isInfinite(resistance)
                 || light < 0 || light > 1 || Float.isNaN(light) || Float.isInfinite(light) || opacity < 0 || opacity > 255
@@ -54,8 +71,10 @@ public final class NativeBlockDefinition {
             throw new IllegalArgumentException("invalid block material, light, harvest, or state values");
         }
         if (harvestLevel >= 0 && harvestTool.isEmpty()) throw new IllegalArgumentException("harvest_tool is required when harvest_level is set");
-        return new NativeBlockDefinition(id, model, material, sound, hardness, resistance, light, opacity,
+        NativeBlockDefinition result = new NativeBlockDefinition(id, model, material, sound, hardness, resistance, light, opacity,
                 harvestTool, harvestLevel, variants, defaultVariant, interact);
+        if (deferred) result.pendingInteractEffect = json.get("on_interact");
+        return result;
     }
 
     private static Material material(String key) {

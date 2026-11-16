@@ -79,6 +79,24 @@ public class RMLTransformer implements IClassTransformer {
     private static final MethodName ADVANCEMENT_LOAD = MethodName.of()
             .mcp("loadAdvancements", "(Ljava/util/Map;)V").srg("func_192083_a", "(Ljava/util/Map;)V")
             .notch("a", "(Ljava/util/Map;)V").classes("net/minecraft/advancements/AdvancementList", "j").build();
+    private static final MethodName ITEM_DAMAGE = MethodName.of()
+            .mcp("damageItem", "(ILnet/minecraft/entity/EntityLivingBase;)V")
+            .srg("func_77972_a", "(ILnet/minecraft/entity/EntityLivingBase;)V")
+            .notch("a", "(ILvp;)V").classes("net/minecraft/item/ItemStack", "aip").build();
+    private static final MethodName BOW_RELEASE = MethodName.of()
+            .mcp("onPlayerStoppedUsing", "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;I)V")
+            .srg("func_77615_a", "(Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lnet/minecraft/entity/EntityLivingBase;I)V")
+            .notch("a", "(Laip;Lamu;Lvp;I)V").build();
+    private static final MethodName BOW_AMMUNITION = MethodName.of()
+            .mcp("findAmmo", "(Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;")
+            .srg("func_185060_a", "(Lnet/minecraft/entity/player/EntityPlayer;)Lnet/minecraft/item/ItemStack;")
+            .notch("a", "(Laed;)Laip;").classes("net/minecraft/item/ItemBow", "ahg").build();
+    private static final MethodName WORLD_SPAWN = MethodName.of()
+            .mcp("spawnEntity", "(Lnet/minecraft/entity/Entity;)Z").srg("func_72838_d", "(Lnet/minecraft/entity/Entity;)Z")
+            .notch("a", "(Lvg;)Z").classes("net/minecraft/world/World", "amu").build();
+    private static final MethodName ITEM_SHRINK = MethodName.of()
+            .mcp("shrink", "(I)V").srg("func_190918_g", "(I)V").notch("g", "(I)V")
+            .classes("net/minecraft/item/ItemStack", "aip").build();
 
 
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
@@ -429,6 +447,81 @@ public class RMLTransformer implements IClassTransformer {
             });
         }
         public static void initMinecraftTransformers(){
+            register("net.minecraft.item.ItemStack", cn -> {
+                Tasks tasks = new Tasks("dataItemDamage");
+                for (MethodNode method : cn.methods) {
+                    if (!ITEM_DAMAGE.is(method)) continue;
+                    InsnList hook = new InsnList();
+                    hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                    hook.add(new VarInsnNode(Opcodes.ILOAD, 1));
+                    hook.add(new VarInsnNode(Opcodes.ALOAD, 2));
+                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "modifyItemDamage",
+                            "(Lnet/minecraft/item/ItemStack;ILnet/minecraft/entity/EntityLivingBase;)I", false));
+                    hook.add(new VarInsnNode(Opcodes.ISTORE, 1));
+                    method.instructions.insert(hook);
+                    tasks.complete("dataItemDamage");
+                }
+                if (!tasks.isCompleted()) tasks.throwError();
+                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+            });
+            register("net.minecraft.item.ItemBow", cn -> {
+                Tasks tasks = new Tasks("projectileAmmunition", "projectileSnapshot", "dataProjectile", "dataAmmunition");
+                for (MethodNode method : cn.methods) {
+                    if (!BOW_RELEASE.is(method)) continue;
+                    int weapon = method.maxLocals++;
+                    int ammunition = -1;
+                    InsnList initialize = new InsnList();
+                    initialize.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                    initialize.add(new VarInsnNode(Opcodes.ASTORE, weapon));
+                    method.instructions.insert(initialize);
+                    for (AbstractInsnNode node = method.instructions.getFirst(); node != null; node = node.getNext()) {
+                        if (!(node instanceof MethodInsnNode)) continue;
+                        MethodInsnNode call = (MethodInsnNode) node;
+                        if (BOW_AMMUNITION.is(call)) {
+                            AbstractInsnNode store = call.getNext();
+                            while (store != null && store.getOpcode() < 0) store = store.getNext();
+                            if (!(store instanceof VarInsnNode) || store.getOpcode() != Opcodes.ASTORE)
+                                throw new IllegalStateException("Cannot identify ItemBow ammunition storage");
+                            ammunition = ((VarInsnNode) store).var;
+                            tasks.complete("projectileAmmunition");
+                        } else if (ITEM_DAMAGE.is(call)) {
+                            InsnList snapshot = new InsnList();
+                            snapshot.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                            snapshot.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "projectileWeapon",
+                                    "(Lnet/minecraft/item/ItemStack;)Lnet/minecraft/item/ItemStack;", false));
+                            snapshot.add(new VarInsnNode(Opcodes.ASTORE, weapon));
+                            method.instructions.insertBefore(call, snapshot);
+                            tasks.complete("projectileSnapshot");
+                        } else if (WORLD_SPAWN.is(call)) {
+                            if (ammunition < 0) throw new IllegalStateException("ItemBow spawns a projectile before selecting ammunition");
+                            InsnList arguments = new InsnList();
+                            arguments.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                            arguments.add(new VarInsnNode(Opcodes.ALOAD, weapon));
+                            arguments.add(new VarInsnNode(Opcodes.ALOAD, ammunition));
+                            method.instructions.insertBefore(call, arguments);
+                            call.setOpcode(Opcodes.INVOKESTATIC);
+                            call.owner = "rml/layer/compat/fml/RMLFMLHooks$LateHooks";
+                            call.name = "spawnEnchantedProjectile";
+                            call.desc = "(Lnet/minecraft/world/World;Lnet/minecraft/entity/Entity;Lnet/minecraft/entity/EntityLivingBase;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemStack;)Z";
+                            call.itf = false;
+                            tasks.complete("dataProjectile");
+                        } else if (ITEM_SHRINK.is(call)) {
+                            InsnList arguments = new InsnList();
+                            arguments.add(new VarInsnNode(Opcodes.ALOAD, weapon));
+                            arguments.add(new VarInsnNode(Opcodes.ALOAD, 3));
+                            method.instructions.insertBefore(call, arguments);
+                            call.setOpcode(Opcodes.INVOKESTATIC);
+                            call.owner = "rml/layer/compat/fml/RMLFMLHooks$LateHooks";
+                            call.name = "consumeEnchantedAmmunition";
+                            call.desc = "(Lnet/minecraft/item/ItemStack;ILnet/minecraft/item/ItemStack;Lnet/minecraft/entity/EntityLivingBase;)V";
+                            call.itf = false;
+                            tasks.complete("dataAmmunition");
+                        }
+                    }
+                }
+                if (!tasks.isCompleted()) tasks.throwError();
+                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+            });
             register("net.minecraft.world.storage.loot.LootTableManager", cn -> {
                 Tasks tasks = new Tasks("compiledLoot");
                 for (MethodNode method : cn.methods) {

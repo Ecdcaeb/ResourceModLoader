@@ -139,6 +139,20 @@ task timeWorldDataContractTest(type: JavaExec, dependsOn: testClasses) {
     main = 'rml.loader.content.time.TimeWorldDataContractTest'
 }
 
+['dataCompositionContractTest': 'rml.loader.content.data.DataCompositionContractTest',
+ 'nativeEnchantmentContractTest': 'rml.loader.content.gameplay.NativeEnchantmentContractTest',
+ 'gameplayCompositionContractTest': 'rml.loader.content.gameplay.GameplayCompositionContractTest',
+ 'worldgenCapabilityContractTest': 'rml.loader.content.worldgen.WorldgenCapabilityContractTest',
+ 'presentationSubmissionContractTest': 'rml.loader.content.presentation.PresentationSubmissionContractTest',
+ 'presentationRegistryPhaseContractTest': 'rml.loader.content.presentation.PresentationRegistryPhaseContractTest',
+ 'timeCompositionContractTest': 'rml.loader.content.time.TimeCompositionContractTest'].each { taskName, entrypoint ->
+    tasks.create(name: taskName, type: JavaExec, dependsOn: testClasses) {
+        classpath = sourceSets.test.runtimeClasspath
+        main = entrypoint
+    }
+    check.dependsOn taskName
+}
+
 check.dependsOn deserializerContractTest, compiledLootContractTest, functionDataPathContractTest, damageDefinitionContractTest, functionNbtContractTest, timeWorldDataContractTest
 
 

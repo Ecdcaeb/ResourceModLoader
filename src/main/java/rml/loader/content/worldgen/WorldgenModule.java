@@ -50,8 +50,11 @@ public final class WorldgenModule {
     private final Map<Integer, DimensionType> dimensionTypes = new HashMap<>();
     private final Map<ResourceLocation, Integer> dimensionIds = new HashMap<>();
     private final Map<ResourceLocation, DimensionType> namedDimensionTypes = new HashMap<>();
-    private final Map<ResourceLocation, WorldgenCodecs.Noise> noises = new HashMap<>();
     private rml.deserializer.DeserializerManager decoderManager;
+    private final Map<ResourceLocation, WorldgenCodecs.DensityFunction> densityFunctions = new HashMap<>();
+    private final Map<String, Object> compiledExpressions = new HashMap<>();
+    private final Set<String> compilingExpressions = new HashSet<>();
+    private Map<String, Definition> compilingDefinitions;
     private boolean initialized;
 
     public WorldgenModule(ContentCatalog catalog, DataRules rules, CompiledStructureModule structures, CompiledTagModule tags) {
@@ -59,11 +62,21 @@ public final class WorldgenModule {
     }
 
     public Set<String> getTypes() { return TYPES; }
-    public void registerDecoders(rml.deserializer.DeserializerManager manager) { this.decoderManager = manager; WorldgenCodecs.registerDecoders(manager, noises::get); }
+    public void registerDecoders(rml.deserializer.DeserializerManager manager) {
+        this.decoderManager = manager;
+        WorldgenCodecs.registerDecoders(manager, id -> compileExpression(WorldgenCodecs.Noise.class, "worldgen/noise", id));
+        reference(manager, WorldgenCodecs.DensityFunction.class, "density_reference", "worldgen/density_function");
+        reference(manager, WorldgenCodecs.Noise.class, "noise_reference", "worldgen/noise");
+        reference(manager, WorldgenCodecs.BlockStateProvider.class, "state_reference", "worldgen/block_state_provider");
+        reference(manager, WorldgenCodecs.MaterialCondition.class, "condition_reference", "worldgen/material_condition");
+        reference(manager, WorldgenCodecs.MaterialRule.class, "material_reference", "worldgen/material_rule");
+        WorldgenPlacement.register(manager, id -> ForgeRegistries.BIOMES.containsKey(id)
+                || compilingDefinitions != null && find(compilingDefinitions, "worldgen/biome", id) != null);
+    }
     public Integer getDimensionId(ResourceLocation id) { return dimensionIds.get(id); }
     public Set<String> getCommands() { return Collections.singleton("worldgen"); }
 
-    /** Parses every source before touching native registries. Call during preInit. */
+    /** Parses sources before registering biomes; called by the biome registry event after blocks and items exist. */
     public synchronized void initialize() {
         if (initialized) return;
         Map<String, Definition> parsed = new HashMap<>();
@@ -91,7 +104,7 @@ public final class WorldgenModule {
         }
         for (Definition definition : parsed.values()) if ("worldgen/world_preset".equals(definition.type)) {
             for (Map.Entry<String,JsonElement> entry : definition.json.getAsJsonObject("dimensions").entrySet()) {
-                JsonElement selected=entry.getValue(); if(selected.isJsonObject()) selected=selected.getAsJsonObject().get("dimension");
+                JsonElement selected=entry.getValue(); if(selected.isJsonObject()) { WorldgenNodes.fields(selected.getAsJsonObject(), "dimension"); selected=selected.getAsJsonObject().get("dimension"); }
                 if(selected==null||!selected.isJsonPrimitive()) throw new IllegalArgumentException("Invalid dimension selection " + entry.getKey() + " in world preset " + definition.id);
                 ResourceLocation dimensionId=new ResourceLocation(selected.getAsString());
                 if(find(parsed,"dimension",dimensionId)==null) throw new IllegalArgumentException("World preset " + definition.id + " refers to unknown dimension " + dimensionId);
@@ -104,14 +117,15 @@ public final class WorldgenModule {
                 if(find(parsed,"worldgen/biome",biomeId)==null&&!ForgeRegistries.BIOMES.containsKey(biomeId)) throw new IllegalArgumentException("Flat preset " + definition.id + " refers to unknown biome " + biomeId);
             }
         }
-        for (Definition definition : parsed.values()) if ("worldgen/noise".equals(definition.type)) {
-            try { noises.put(definition.id, decoderManager.decode(WorldgenCodecs.Noise.class, definition.json)); }
-            catch (Exception error) { throw new IllegalArgumentException("Invalid noise " + definition.id + " from " + definition.source + ": " + error.getMessage(), error); }
-        }
-        Map<ResourceLocation, WorldgenCodecs.DensityFunction> densityFunctions = new HashMap<>();
-        for (Definition definition : parsed.values()) if ("worldgen/density_function".equals(definition.type)) {
-            try { densityFunctions.put(definition.id, WorldgenCodecs.decodeDensityFunction(decoderManager, definition.json)); }
-            catch (Exception error) { throw new IllegalArgumentException("Invalid density function " + definition.id + " from " + definition.source + ": " + error.getMessage(), error); }
+        compilingDefinitions = parsed;
+        for (Definition definition : parsed.values()) {
+            switch (definition.type) {
+                case "worldgen/noise": compileExpression(WorldgenCodecs.Noise.class, definition.type, definition.id); break;
+                case "worldgen/density_function": densityFunctions.put(definition.id, compileExpression(WorldgenCodecs.DensityFunction.class, definition.type, definition.id)); break;
+                case "worldgen/block_state_provider": compileExpression(WorldgenCodecs.BlockStateProvider.class, definition.type, definition.id); break;
+                case "worldgen/material_condition": compileExpression(WorldgenCodecs.MaterialCondition.class, definition.type, definition.id); break;
+                default: break;
+            }
         }
         Map<ResourceLocation, WorldgenCodecs.DensityFunction> decodedDensities = new HashMap<>();
         for (Definition definition : parsed.values()) if ("worldgen/noise_settings".equals(definition.type) && definition.json.has("density_function")) {
@@ -126,7 +140,7 @@ public final class WorldgenModule {
         }
         Map<ResourceLocation, WorldgenCodecs.MaterialRule> materialRules = new HashMap<>();
         for (Definition definition : parsed.values()) if ("worldgen/material_rule".equals(definition.type)) {
-            try { materialRules.put(definition.id, WorldgenCodecs.decodeMaterialRule(decoderManager, definition.json)); }
+            try { materialRules.put(definition.id, compileExpression(WorldgenCodecs.MaterialRule.class, definition.type, definition.id)); }
             catch (Exception error) { throw new IllegalArgumentException("Invalid material rule " + definition.id + " from " + definition.source + ": " + error.getMessage(), error); }
         }
         Map<ResourceLocation, WorldgenCodecs.MaterialRule> settingsRules = new HashMap<>();
@@ -167,6 +181,25 @@ public final class WorldgenModule {
         MinecraftForge.EVENT_BUS.register(this);
         initialized = true;
     }
+    private <T> void reference(rml.deserializer.DeserializerManager manager, Class<T> target, String name, String registry) {
+        manager.addEntry(new rml.deserializer.AbstractDeserializer<>(new ResourceLocation("rml", name), target,
+                json -> { WorldgenNodes.fields(json.getAsJsonObject(), "type", "name"); return compileExpression(target, registry, new ResourceLocation(json.getAsJsonObject().get("name").getAsString())); }));
+    }
+    private <T> T compileExpression(Class<T> target, String registry, ResourceLocation id) {
+        String key = definitionKey(registry, id);
+        Object existing = compiledExpressions.get(key);
+        if (existing != null) return target.cast(existing);
+        Definition definition = compilingDefinitions == null ? null : find(compilingDefinitions, registry, id);
+        if (definition == null) throw new IllegalArgumentException("Unknown " + registry + " " + id);
+        if (!compilingExpressions.add(key)) throw new IllegalArgumentException("Cyclic worldgen reference " + key);
+        try {
+            T compiled = decoderManager.decode(target, definition.json);
+            compiledExpressions.put(key, compiled);
+            return compiled;
+        } catch (rml.deserializer.JsonDeserializeException error) {
+            throw new IllegalArgumentException("Invalid " + key + ": " + error.getMessage(), error);
+        } finally { compilingExpressions.remove(key); }
+    }
     static String definitionKey(String type,ResourceLocation id) { return type + "|" + id; }
     static Definition find(Map<String,Definition> definitions,String type,ResourceLocation id) { return definitions.get(definitionKey(type,id)); }
     static Definition findAny(Map<String,Definition> definitions,ResourceLocation id) { for(Definition definition:definitions.values()) if(definition.id.equals(id)) return definition; return null; }
@@ -175,7 +208,10 @@ public final class WorldgenModule {
             JsonElement value = d.json.get(field);
             if (value != null && value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
                 ResourceLocation id = new ResourceLocation(value.getAsString());
-                if (findAny(all,id) == null && !ForgeRegistries.BIOMES.containsKey(id) && !Block.REGISTRY.containsKey(id))
+                String registry = "biome_source".equals(field) ? "worldgen/multi_noise_biome_source_parameter_list"
+                        : "flat_preset".equals(field) ? "worldgen/flat_level_generator_preset"
+                        : "dimension_type".equals(field) ? field : "worldgen/" + field;
+                if (find(all,registry,id) == null && !("biome".equals(field) && ForgeRegistries.BIOMES.containsKey(id)))
                     throw new IllegalArgumentException("unknown " + field + " reference " + id);
             }
         }
@@ -292,7 +328,7 @@ public final class WorldgenModule {
 
     private static int parseInt(String text) throws CommandException { try { return Integer.parseInt(text); } catch (NumberFormatException e) { throw new CommandException("Expected integer: " + text); } }
     private static String requiredString(JsonObject json, String key) { if (!json.has(key) || !json.get(key).isJsonPrimitive()) throw new IllegalArgumentException("missing string '" + key + "'"); return json.get(key).getAsString(); }
-    private static int requiredInt(JsonObject json, String key) { if (!json.has(key) || !json.get(key).isJsonPrimitive()) throw new IllegalArgumentException("missing integer '" + key + "'"); return json.get(key).getAsInt(); }
+    private static int requiredInt(JsonObject json, String key) { if (!json.has(key) || !json.get(key).isJsonPrimitive() || !json.getAsJsonPrimitive(key).isNumber()) throw new IllegalArgumentException("missing integer '" + key + "'"); return json.get(key).getAsBigDecimal().intValueExact(); }
 
     static final class Definition {
         final String type; final ResourceLocation id; final String source; final JsonObject json;
@@ -300,42 +336,65 @@ public final class WorldgenModule {
         static Definition parse(String type, ResourceLocation id, String source, JsonObject json) {
             if (source == null || source.isEmpty()) source = id.toString();
             if (type.equals("worldgen/noise_settings")) {
+                WorldgenNodes.fields(json, "sea_level", "default_block", "default_fluid", "base_height", "amplitude", "density_function", "material_rule", "min_y", "height");
+                if (json.has("base_height")) WorldgenNodes.finite(json, "base_height");
+                if (json.has("amplitude") && WorldgenNodes.finite(json, "amplitude") < 0) throw new IllegalArgumentException("amplitude must be nonnegative");
                 if (!json.has("sea_level") || !json.has("default_block") || !json.has("default_fluid")) throw new IllegalArgumentException("noise_settings requires sea_level, default_block, default_fluid");
+                int seaLevel = requiredInt(json, "sea_level");
+                if (seaLevel < 0 || seaLevel > 255) throw new IllegalArgumentException("sea_level must be within 0..255");
+                if (json.has("min_y") && requiredInt(json, "min_y") != 0) throw new IllegalArgumentException("Platform min_y must be zero");
+                if (json.has("height") && requiredInt(json, "height") != 256) throw new IllegalArgumentException("Platform height must be 256");
                 resolveBlockState(json.get("default_block")); resolveBlockState(json.get("default_fluid"));
             } else if (type.equals("worldgen/biome")) {
+                WorldgenNodes.fields(json, "description", "temperature", "downfall", "has_precipitation", "depth", "scale", "effects");
+                if (json.has("effects")) WorldgenNodes.fields(json.getAsJsonObject("effects"), "sky_color");
                 if (!json.has("description") || !json.get("description").isJsonObject()) throw new IllegalArgumentException("biome requires description object");
             } else if (type.equals("dimension")) {
+                WorldgenNodes.fields(json, "id", "type", "type_id", "dimension_type", "noise_settings", "biome", "biome_source", "flat_preset", "features", "structure_sets", "carvers", "has_skylight", "ultrawarm");
+                if (json.has("biome") && json.has("biome_source")) throw new IllegalArgumentException("dimension must select biome or biome_source, not both");
+                if (json.has("dimension_type") && (json.has("type") || json.has("type_id") || json.has("has_skylight") || json.has("ultrawarm"))) throw new IllegalArgumentException("Named dimension_type cannot be mixed with inline type properties");
                 requiredInt(json, "id");
                 if (!json.has("noise_settings") || (!json.has("biome") && !json.has("biome_source") && !json.has("flat_preset"))) throw new IllegalArgumentException("dimension requires noise_settings and biome, biome_source, or flat_preset");
             } else if (type.equals("dimension_type")) {
+                WorldgenNodes.fields(json, "name", "suffix", "type_id", "keep_loaded", "has_skylight", "ultrawarm", "min_y", "height");
+                if (json.has("min_y") && requiredInt(json, "min_y") != 0 || json.has("height") && requiredInt(json, "height") != 256) throw new IllegalArgumentException("Dimension platform height is 0..255");
                 if (json.has("type_id")) requiredInt(json, "type_id");
             } else if (type.equals("worldgen/multi_noise_biome_source_parameter_list")) {
+                WorldgenNodes.fields(json, "biomes");
                 if (!json.has("biomes") || json.getAsJsonArray("biomes").size() == 0) throw new IllegalArgumentException("multi-noise parameter list requires non-empty biomes array");
                 for (JsonElement entry : json.getAsJsonArray("biomes")) if (!entry.isJsonObject() || (!entry.getAsJsonObject().has("biome") && !entry.getAsJsonObject().has("tag"))) throw new IllegalArgumentException("multi-noise entries require biome or tag");
             } else if (type.equals("worldgen/feature")) {
                 String featureType = requiredString(json, "type");
-                if (!Arrays.asList("minecraft:ore", "minecraft:disk", "minecraft:random_patch").contains(featureType)) throw new IllegalArgumentException("unsupported feature type " + featureType);
+                if (!Arrays.asList("minecraft:ore", "minecraft:disk", "minecraft:random_patch", "rml:simple_block").contains(featureType)) throw new IllegalArgumentException("unsupported feature type " + featureType);
             } else if (type.equals("worldgen/carver")) {
+                WorldgenNodes.fields(json, "type", "config");
                 String carverType = requiredString(json, "type");
                 if (!"minecraft:cave".equals(carverType)) throw new IllegalArgumentException("unsupported carver type " + carverType);
                 if (!json.has("config") || !json.getAsJsonObject("config").has("probability")) throw new IllegalArgumentException("cave carver requires config.probability");
+                WorldgenNodes.fields(json.getAsJsonObject("config"), "probability");
                 double probability=json.getAsJsonObject("config").get("probability").getAsDouble();
-                if (probability<0||probability>1) throw new IllegalArgumentException("carver probability must be between zero and one");
+                if (!Double.isFinite(probability)||probability<0||probability>1) throw new IllegalArgumentException("carver probability must be between zero and one");
             } else if (type.equals("worldgen/structure")) {
                 if (!json.has("template") && !json.has("template_pool")) throw new IllegalArgumentException("structure requires template or template_pool");
             } else if (type.equals("worldgen/template_pool")) {
-                if (!json.has("elements") || !json.get("elements").isJsonArray() || json.getAsJsonArray("elements").size() == 0) throw new IllegalArgumentException("template_pool requires non-empty elements array");
+                WorldgenNodes.fields(json, "elements", "fallback");
+                if (!json.has("elements") || !json.get("elements").isJsonArray()) throw new IllegalArgumentException("template_pool requires elements array");
                 for (JsonElement element : json.getAsJsonArray("elements")) if (!element.isJsonObject() || !element.getAsJsonObject().has("template")) throw new IllegalArgumentException("template_pool elements require template");
             } else if (type.equals("worldgen/structure_set")) {
+                WorldgenNodes.fields(json, "structures", "placement");
                 if (!json.has("structures") || !json.get("structures").isJsonArray() || !json.has("placement")) throw new IllegalArgumentException("structure_set requires structures and placement");
                 JsonObject placement=json.getAsJsonObject("placement"); requiredInt(placement,"spacing"); requiredInt(placement,"separation"); requiredInt(placement,"salt");
             } else if (type.equals("worldgen/flat_level_generator_preset")) {
                 JsonObject settings=json.has("settings")?json.getAsJsonObject("settings"):json;
+                if (json.has("settings")) WorldgenNodes.fields(json, "settings");
+                WorldgenNodes.fields(settings, "layers", "biome", "features", "structure_sets");
                 if(!settings.has("layers")||!settings.get("layers").isJsonArray()||settings.getAsJsonArray("layers").size()==0) throw new IllegalArgumentException("flat preset requires nonempty layers");
                 for(JsonElement layer:settings.getAsJsonArray("layers")) if(!layer.isJsonObject()||(!layer.getAsJsonObject().has("block")&&!layer.getAsJsonObject().has("block_state"))||!layer.getAsJsonObject().has("height")) throw new IllegalArgumentException("flat layers require block/block_state and height");
             } else if (type.equals("worldgen/world_preset")) {
+                WorldgenNodes.fields(json, "dimensions");
                 if(!json.has("dimensions")||!json.get("dimensions").isJsonObject()||json.getAsJsonObject("dimensions").size()==0) throw new IllegalArgumentException("world_preset requires a nonempty dimensions object");
             } else if (type.equals("worldgen/processor_list")) {
+                WorldgenNodes.fields(json, "processors");
                 if(!json.has("processors")||!json.get("processors").isJsonArray()) throw new IllegalArgumentException("processor_list requires processors array");
                 for(JsonElement processor:json.getAsJsonArray("processors")) if(!processor.isJsonObject()||!processor.getAsJsonObject().has("type")) throw new IllegalArgumentException("processor entries require a type");
             }
@@ -346,9 +405,10 @@ public final class WorldgenModule {
     static IBlockState resolveBlockState(JsonElement e) {
         if (!e.isJsonObject()) throw new IllegalArgumentException("block state must be an object");
         JsonObject state = e.getAsJsonObject();
+        WorldgenNodes.fields(state, "Name", "Properties");
         ResourceLocation id = new ResourceLocation(requiredString(state, "Name"));
         Block block = Block.REGISTRY.getObject(id);
-        if (block == null) throw new IllegalArgumentException("unknown block " + id);
+        if (!Block.REGISTRY.containsKey(id) || block == null) throw new IllegalArgumentException("unknown block " + id);
         IBlockState result = block.getDefaultState();
         if (state.has("Properties")) for (Map.Entry<String, JsonElement> property : state.getAsJsonObject("Properties").entrySet()) {
             net.minecraft.block.properties.IProperty<?> nativeProperty = block.getBlockState().getProperty(property.getKey());

@@ -1,0 +1,11 @@
+{
+  "asset_id": "rml_presentation_repair:chain",
+  "texture": "minecraft:textures/models/armor/chainmail_layer_1.png",
+  "leggings_texture": "minecraft:textures/models/armor/chainmail_layer_2.png",
+  "decal": true,
+  "template_item": "minecraft:paper",
+  "description": {
+    "translate": "item.paper.name",
+    "color": "ffffff"
+  }
+}

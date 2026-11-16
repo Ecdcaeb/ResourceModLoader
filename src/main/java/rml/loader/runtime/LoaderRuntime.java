@@ -139,9 +139,7 @@ public final class LoaderRuntime {
         presentation.registerDecoders(decoders);
         timeTests.registerDecoders(decoders);
         dataRules.registerNative();
-        worldgen.initialize();
         presentation.initialize();
         gameplay.initialize();
-        timeTests.initialize();
     }
 }

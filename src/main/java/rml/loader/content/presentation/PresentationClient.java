@@ -47,6 +47,7 @@ final class PresentationClient {
     private static final Map<RenderLivingBase<?>, Boolean> TRIM_LAYERS = new WeakHashMap<>();
     private static final Map<ResourceLocation, Map<ResourceLocation, ResourceLocation>> TRIM_TEXTURES = new HashMap<>();
     private static final Map<ResourceLocation, Map<ResourceLocation, ResourceLocation>> TRIM_LEGGINGS_TEXTURES = new HashMap<>();
+    private static final java.util.Set<ResourceLocation> SOUNDS = new java.util.HashSet<>();
     private static boolean renderingVariant;
 
     private PresentationClient() { }
@@ -55,7 +56,7 @@ final class PresentationClient {
                           Map<ResourceLocation, PresentationCodecs.PaintingVariant> paintings,
                           Map<ResourceLocation, PresentationCodecs.TrimMaterial> trimMaterials,
                           Map<ResourceLocation, PresentationCodecs.TrimPattern> trimPatterns,
-                          Map<ResourceLocation, ResourceLocation> defaultTextures) {
+                          Map<ResourceLocation, ResourceLocation> defaultTextures, java.util.Set<ResourceLocation> sounds) {
         SURFACES.clear(); SURFACES.putAll(surfaces);
         PAINTINGS.clear(); PAINTINGS.putAll(paintings);
         TRIM_MATERIALS.clear(); TRIM_MATERIALS.putAll(trimMaterials);
@@ -63,6 +64,7 @@ final class PresentationClient {
         DEFAULT_TEXTURES.clear(); DEFAULT_TEXTURES.putAll(defaultTextures);
         TRIM_TEXTURES.clear();
         TRIM_LEGGINGS_TEXTURES.clear();
+        SOUNDS.clear(); SOUNDS.addAll(sounds);
     }
 
     static void receiveVariant(int entityId, ResourceLocation variant, String type, ResourceLocation entity, ResourceLocation texture) {
@@ -84,6 +86,58 @@ final class PresentationClient {
     }
     static void bindSurface(ResourceLocation texture) { Minecraft.getMinecraft().getTextureManager().bindTexture(texture); }
 
+    static boolean trimDecal(ResourceLocation id) {
+        PresentationCodecs.TrimPattern pattern = TRIM_PATTERNS.get(PresentationIds.key("trim_pattern", id));
+        return pattern != null && pattern.decal;
+    }
+
+    @SubscribeEvent
+    public static void validateAssets(net.minecraftforge.client.event.TextureStitchEvent.Pre event) {
+        for (Map<ResourceLocation, ResourceLocation> textures : TRIM_TEXTURES.values()) for (ResourceLocation texture : textures.values())
+            if (texture != null) Minecraft.getMinecraft().getTextureManager().deleteTexture(texture);
+        for (Map<ResourceLocation, ResourceLocation> textures : TRIM_LEGGINGS_TEXTURES.values()) for (ResourceLocation texture : textures.values())
+            if (texture != null) Minecraft.getMinecraft().getTextureManager().deleteTexture(texture);
+        TRIM_TEXTURES.clear(); TRIM_LEGGINGS_TEXTURES.clear();
+        try {
+            for (PresentationCodecs.SurfaceDefinition surface : SURFACES.values()) readTexture(surface.texture);
+            for (PresentationCodecs.PaintingVariant painting : PAINTINGS.values()) readTexture(painting.texture);
+            for (ResourceLocation texture : DEFAULT_TEXTURES.values()) readTexture(texture);
+            for (PresentationCodecs.TrimMaterial material : TRIM_MATERIALS.values()) readTexture(material.paletteTexture);
+            for (PresentationCodecs.TrimPattern pattern : TRIM_PATTERNS.values()) { readTexture(pattern.texture); readTexture(pattern.leggingsTexture); }
+        } catch (IOException ex) { throw new IllegalArgumentException("Missing or invalid presentation texture", ex); }
+    }
+
+    @SubscribeEvent
+    public static void validateSounds(net.minecraftforge.client.event.sound.SoundLoadEvent event) {
+        for (ResourceLocation sound : SOUNDS) if (Minecraft.getMinecraft().getSoundHandler().getAccessor(sound) == null)
+            throw new IllegalArgumentException("Missing presentation sound resource " + sound);
+    }
+
+    @SubscribeEvent
+    public static void trimTooltip(net.minecraftforge.event.entity.player.ItemTooltipEvent event) {
+        net.minecraft.nbt.NBTTagCompound tag = event.getItemStack().getTagCompound();
+        if (tag == null || !tag.hasKey("rml_trim", 10)) return;
+        net.minecraft.nbt.NBTTagCompound trim = tag.getCompoundTag("rml_trim");
+        PresentationCodecs.TrimMaterial material = TRIM_MATERIALS.get(PresentationIds.key("trim_material", new ResourceLocation(trim.getString("material"))));
+        PresentationCodecs.TrimPattern pattern = TRIM_PATTERNS.get(PresentationIds.key("trim_pattern", new ResourceLocation(trim.getString("pattern"))));
+        if (pattern != null) event.getToolTip().add(trimDescription(pattern.description, pattern.assetId));
+        if (material != null) event.getToolTip().add(trimDescription(material.description, material.paletteId));
+    }
+
+    private static String trimDescription(PresentationCodecs.TrimDescription description, ResourceLocation fallback) {
+        net.minecraft.util.text.TextFormatting selected = net.minecraft.util.text.TextFormatting.WHITE;
+        int distance = Integer.MAX_VALUE;
+        for (net.minecraft.util.text.TextFormatting color : net.minecraft.util.text.TextFormatting.values()) if (color.isColor()) {
+            String code = color.toString(); int rgb = Minecraft.getMinecraft().fontRenderer.getColorCode(code.charAt(1));
+            int red = ((rgb >> 16) & 255) - ((description.color >> 16) & 255);
+            int green = ((rgb >> 8) & 255) - ((description.color >> 8) & 255);
+            int blue = (rgb & 255) - (description.color & 255);
+            int candidate = red * red + green * green + blue * blue;
+            if (candidate < distance) { selected = color; distance = candidate; }
+        }
+        return selected + (description.translate.isEmpty() ? fallback.toString() : net.minecraft.client.resources.I18n.format(description.translate));
+    }
+
     static ResourceLocation trimTexture(ResourceLocation materialId, ResourceLocation patternId, boolean leggings) {
         Map<ResourceLocation, Map<ResourceLocation, ResourceLocation>> cache = leggings ? TRIM_LEGGINGS_TEXTURES : TRIM_TEXTURES;
         Map<ResourceLocation, ResourceLocation> byPattern = cache.get(materialId);
@@ -99,12 +153,7 @@ final class PresentationClient {
     private static ResourceLocation composeTrimTexture(ResourceLocation materialId, PresentationCodecs.TrimMaterial material,
                                                         ResourceLocation patternId, PresentationCodecs.TrimPattern pattern, boolean leggings) {
         try {
-            ResourceLocation paletteId = material.paletteId;
-            String paletteName = paletteId.getPath().substring(paletteId.getPath().lastIndexOf('/') + 1);
-            ResourceLocation paletteTexture = new ResourceLocation(paletteId.getNamespace(), "textures/trims/color_palettes/" + paletteName + ".png");
-            ResourceLocation patternTexture = new ResourceLocation(pattern.assetId.getNamespace(),
-                    "textures/trims/models/armor/" + pattern.assetId.getPath() + (leggings ? "_leggings" : "") + ".png");
-            BufferedImage palette = readTexture(paletteTexture), mask = readTexture(patternTexture);
+            BufferedImage palette = readTexture(material.paletteTexture), mask = readTexture(leggings ? pattern.leggingsTexture : pattern.texture);
             int width = mask.getWidth(), height = mask.getHeight();
             DynamicTexture combined = new DynamicTexture(width, height);
             int[] pixels = combined.getTextureData();
@@ -119,8 +168,8 @@ final class PresentationClient {
             String name = "rml_trim_" + (leggings ? "leggings_" : "") + materialId.toString().replace(':', '_').replace('/', '_')
                     + "_" + patternId.toString().replace(':', '_').replace('/', '_');
             return Minecraft.getMinecraft().getTextureManager().getDynamicTextureLocation(name, combined);
-        } catch (Exception ignored) {
-            return null;
+        } catch (IOException ex) {
+            throw new IllegalArgumentException("Missing trim texture for " + materialId + " / " + patternId, ex);
         }
     }
 
@@ -129,24 +178,23 @@ final class PresentationClient {
         if (!path.startsWith("textures/")) path = "textures/" + path;
         if (!path.endsWith(".png")) path += ".png";
         try (IResource resource = Minecraft.getMinecraft().getResourceManager().getResource(new ResourceLocation(texture.getNamespace(), path))) {
-            return ImageIO.read(resource.getInputStream());
+            BufferedImage image = ImageIO.read(resource.getInputStream());
+            if (image == null) throw new IOException("Invalid PNG " + texture);
+            return image;
         }
     }
 
     static ResourceLocation entityTexture(EntityLivingBase entity) {
         VariantState variant = VARIANTS.get(entity.getEntityId());
-        if (variant != null && variant.texture != null) return variant.texture;
-        ResourceLocation type = EntityList.getKey(entity);
-        return type == null ? null : DEFAULT_TEXTURES.get(type);
+        return variant == null ? null : variant.texture;
     }
 
-    static void open(ResourceLocation id, String title, String body, String[] actions) {
-        Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().displayGuiScreen(new Dialog(id, title, body, actions)));
-    }
     static void installNetworkHandler() {
+        PresentationPlayback.install(message -> Minecraft.getMinecraft().addScheduledTask(() ->
+                Minecraft.getMinecraft().getSoundHandler().playSound(new PresentationPlayingSound(message))));
         PresentationNetwork.installClientHandler(new PresentationNetwork.ClientHandler() {
-            @Override public void open(ResourceLocation id, String title, String body, String[] actions) {
-                PresentationClient.open(id, title, body, actions);
+            @Override public void open(PresentationNetwork.OpenMessage message) {
+                Minecraft.getMinecraft().addScheduledTask(() -> Minecraft.getMinecraft().displayGuiScreen(new PresentationDialogScreen(message)));
             }
             @Override public void variant(int entityId, ResourceLocation id, String type, ResourceLocation entity, ResourceLocation texture) {
                 PresentationClient.receiveVariant(entityId, id, type, entity, texture);
@@ -167,6 +215,14 @@ final class PresentationClient {
 
     @SubscribeEvent
     public static void registerRecordModels(ModelRegistryEvent event) {
+        net.minecraft.block.Block jukebox = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("rml", "presentation_jukebox"));
+        if (jukebox != null) ModelLoader.setCustomStateMapper(jukebox, new net.minecraft.client.renderer.block.statemap.StateMapperBase() {
+            @Override protected ModelResourceLocation getModelResourceLocation(net.minecraft.block.state.IBlockState state) {
+                return new ModelResourceLocation("minecraft:jukebox", "normal");
+            }
+        });
+        net.minecraft.block.Block pot = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("rml", "decorated_pot"));
+        if (pot != null) ModelLoader.setCustomStateMapper(pot, block -> java.util.Collections.emptyMap());
         for (net.minecraft.item.Item item : ForgeRegistries.ITEMS.getValuesCollection()) {
             ResourceLocation id = item.getRegistryName();
             if (id == null || !"rml".equals(id.getNamespace())) continue;
@@ -222,76 +278,4 @@ final class PresentationClient {
         }
     }
 
-    private static final class Dialog extends GuiScreen {
-        private final ResourceLocation id;
-        private final String title;
-        private final String body;
-        private final String[] actions;
-        private int bodyScroll;
-        private int actionScroll;
-        private int visibleActions;
-
-        Dialog(ResourceLocation id, String title, String body, String[] actions) {
-            this.id = id; this.title = title; this.body = body; this.actions = actions;
-        }
-
-        @Override public void initGui() {
-            buttonList.clear();
-            int panelWidth = Math.min(320, Math.max(1, width - 16));
-            visibleActions = Math.max(1, Math.min(actions.length, Math.max(1, (height - 150) / 22)));
-            actionScroll = Math.max(0, Math.min(actionScroll, actions.length - visibleActions));
-            int left = (width - panelWidth) / 2;
-            int firstY = height / 2 + 50 - visibleActions * 11;
-            for (int i = actionScroll; i < Math.min(actions.length, actionScroll + visibleActions); i++) {
-                buttonList.add(new GuiButton(i, left + 8, firstY + (i - actionScroll) * 22, panelWidth - 16, 20, actions[i]));
-            }
-            if (actionScroll > 0) buttonList.add(new GuiButton(-2, left + 8, firstY - 21, 20, 18, "↑"));
-            if (actionScroll + visibleActions < actions.length) buttonList.add(new GuiButton(-3, left + 8, firstY + visibleActions * 22, 20, 18, "↓"));
-        }
-
-        @Override public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-            drawDefaultBackground();
-            int panelWidth = Math.min(320, Math.max(1, width - 16));
-            int panelHeight = Math.min(height - 16, Math.max(140, Math.min(height - 16, fontRenderer.listFormattedStringToWidth(body, panelWidth - 24).size() * 10 + visibleActions * 22 + 84)));
-            int left = (width - panelWidth) / 2, top = (height - panelHeight) / 2;
-            drawRect(left, top, left + panelWidth, top + panelHeight, 0xFF282828);
-            drawRect(left + 2, top + 2, left + panelWidth - 2, top + panelHeight - 2, 0xFF777777);
-            drawRect(left + 4, top + 4, left + panelWidth - 4, top + panelHeight - 4, 0xFF3C3C3C);
-            fontRenderer.drawString(title, left + 12, top + 12, 0xFFFFFF);
-            List<String> lines = fontRenderer.listFormattedStringToWidth(body, panelWidth - 24);
-            int bodyTop = top + 32;
-            int bodyBottom = Math.min(top + panelHeight - visibleActions * 22 - 18, height / 2 + 34 - visibleActions * 11);
-            int lineCount = Math.max(1, (bodyBottom - bodyTop) / 10);
-            bodyScroll = Math.max(0, Math.min(bodyScroll, Math.max(0, lines.size() - lineCount)));
-            for (int i = bodyScroll; i < lines.size() && i < bodyScroll + lineCount; i++)
-                fontRenderer.drawString(lines.get(i), left + 12, bodyTop + (i - bodyScroll) * 10, 0xE0E0E0);
-            super.drawScreen(mouseX, mouseY, partialTicks);
-        }
-
-        @Override protected void actionPerformed(GuiButton button) {
-            if (button.id == -2) { actionScroll--; initGui(); return; }
-            if (button.id == -3) { actionScroll++; initGui(); return; }
-            PresentationNetwork.choose(id, button.id);
-            mc.displayGuiScreen(null);
-        }
-
-        @Override protected void keyTyped(char typedChar, int keyCode) throws IOException {
-            if (keyCode == 1) { PresentationNetwork.choose(id, -1); mc.displayGuiScreen(null); return; }
-            if (keyCode == 200) bodyScroll = Math.max(0, bodyScroll - 1);
-            else if (keyCode == 208) bodyScroll++;
-            else if (keyCode == 201) { actionScroll = Math.max(0, actionScroll - visibleActions); initGui(); }
-            else if (keyCode == 209) { actionScroll = Math.min(Math.max(0, actions.length - visibleActions), actionScroll + visibleActions); initGui(); }
-            else if (keyCode == 28 || keyCode == 57) {
-                for (GuiButton button : buttonList) if (button.id >= 0) { actionPerformed(button); break; }
-            } else super.keyTyped(typedChar, keyCode);
-        }
-
-        @Override public void handleMouseInput() throws IOException {
-            super.handleMouseInput();
-            int wheel = org.lwjgl.input.Mouse.getEventDWheel();
-            if (wheel != 0) bodyScroll = Math.max(0, bodyScroll + (wheel > 0 ? -2 : 2));
-        }
-
-        @Override public boolean doesGuiPauseGame() { return false; }
-    }
 }

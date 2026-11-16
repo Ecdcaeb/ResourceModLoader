@@ -1,0 +1,41 @@
+{
+  "pools": {
+    "fixture:assembly_start": {
+      "elements": [{
+        "template": "fixture:assembly_start",
+        "projection": {"type": "rml:terrain_projection"},
+        "connectors": [{"pos": [2, 0, 1], "facing": "east", "name": "fixture:exit", "target": "fixture:door", "pool": "fixture:assembly_blocked"}]
+      }]
+    },
+    "fixture:assembly_blocked": {
+      "fallback": "fixture:assembly_end",
+      "elements": [{
+        "template": "fixture:assembly_end",
+        "connectors": [{"pos": [1, 0, 0], "facing": "north", "name": "fixture:incompatible"}]
+      }]
+    },
+    "fixture:assembly_end": {
+      "elements": [{
+        "template": "fixture:assembly_end",
+        "projection": {"type": "rml:terrain_projection"},
+        "connectors": [
+          {"pos": [1, 0, 0], "facing": "north", "name": "fixture:door"},
+          {"pos": [1, 0, 2], "facing": "south", "name": "fixture:exit", "target": "fixture:door", "pool": "fixture:assembly_blocked"}
+        ]
+      }]
+    }
+  },
+  "structure": {
+    "template_pool": "fixture:assembly_start",
+    "rotation": "clockwise_90",
+    "max_depth": 1,
+    "max_pieces": 8,
+    "max_distance": 16,
+    "min_y": 0,
+    "max_y": 255
+  },
+  "structure_set": {
+    "structures": [{"structure": "fixture:assembly", "weight": 1}],
+    "placement": {"spacing": 8, "separation": 3, "salt": 391}
+  }
+}

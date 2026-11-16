@@ -1,0 +1,8 @@
+{
+  "sound": "minecraft:record.13",
+  "duration": 100,
+  "range": 12,
+  "comparator": 11,
+  "volume": 1,
+  "pitch": 1
+}

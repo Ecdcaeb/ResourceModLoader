@@ -261,9 +261,9 @@ java -jar compiler/build/libs/rml-compiler.jar check dev/datapack-example
 java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example build/rml-agent-example.zip
 ```
 
-目标目录以 Minecraft 26.3 官方数据导出的 60 个可定义注册表为依据，另包含函数、NBT 结构模板和标签；执行平台固定为 1.12.2 Forge。注册表覆盖不等于对新版本所有 JSON 字段、原生行为和高度范围的逐字兼容。每项数据经对应的原生提供者验证和执行，缺失字段、类型和引用必须给出诊断。
+目标目录以 Minecraft 26.3 官方数据导出的 60 个可定义注册表为依据，另包含函数、NBT 结构模板、标签，以及 RML 的 `item`、`block`、`machine_recipe` 扩展；执行平台固定为 1.12.2 Forge。注册表覆盖不等于对新版本所有 JSON 字段、原生行为和高度范围的逐字兼容。功能通过可组合的 RML 定义表达，每项数据经对应的原生提供者验证和执行，缺失字段、类型和引用必须给出诊断。
 
-`LoaderRuntime` 装配 `DataRules`、`GameplayModule`、`WorldgenModule`、`PresentationModule` 和 `TimeTestModule`；模块在 `registerDecoders(manager)` 注册组合类型，再于 Forge 启动阶段注册原生载体及事件。`FunctionModule` 管理可重新加载的函数、标签、数值提供者、战利品、谓词、修饰器和结构模板。配方、附魔、维度、生物群系、原生载体及其他启动期定义需要重新启动游戏；函数命令不等同于完整 Forge 模组热重载。
+`LoaderRuntime` 装配 `DataRules`、`GameplayModule`、`WorldgenModule`、`PresentationModule` 和 `TimeTestModule`；模块在 `registerDecoders(manager)` 注册组合类型。物品、方块、附魔及展示载体先声明原生注册壳，依赖注册项的子节点在注册完成后解析；世界生成在生物群系注册事件中初始化。`FunctionModule` 管理可重新加载的函数、标签、数值提供者、战利品、谓词、修饰器和结构模板。配方、附魔、维度、生物群系、原生载体及其他启动期定义需要重新启动游戏；函数命令不等同于完整 Forge 模组热重载。
 
 通用解析支持 `Type`、嵌套 List/Map/Set/Optional/泛型数组、泛型 `@Record` 构造器，以及范围、权重表、空间值、方块状态、NBT 和匹配器。原生模块在相同注册表中提供自己的数值、条件、效果、世界生成、展示、时间和测试类型。实现方式与示例见[解码开发接口](java/deserializer/README.md)。
 
@@ -293,8 +293,71 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 
 `modify_held` 将手中物品数量设为 2；世界测试临时放置金块并在结束时恢复受影响的方块和方块实体。编译器与解码契约、完整 Forge 构建、实际世界行为和客户端画面分别验证，不用其中一项代替其他项。
 
-实际 1.12.2 客户端场景已验证：函数返回值 `42` 与宏参数、storage/实体/谓词条件、虚拟计分比较及结果写入、具名修饰器数量与名称、数值节点耐久效果、原生伤害缩放、熔炉产物、平坦维度层、三倍时钟、世界测试后的方块恢复，以及服务端对话通过网络显示。原生世界存档另以真实磁盘往返契约验证；这些场景不代表对新版本每个字段和每种内容组合的穷尽测试。
+此前的 1.12.2 客户端场景验证了函数返回值 `42` 与宏参数、storage/实体/谓词条件、虚拟计分比较及结果写入、具名修饰器数量与名称、数值节点耐久效果、原生伤害缩放、熔炉产物、平坦维度层、三倍时钟、世界测试后的方块恢复，以及服务端对话通过网络显示。原生世界存档另以真实磁盘往返契约验证；这些场景不代表对新版本每个字段和每种内容组合的穷尽测试。
 
 当前 P1 工具入口为 `/rml tools inspect|check|apply|deactivate`，以及同一实现的 `ResourceModLoader.runtime().getTools()`。响应统一为 JSON，包含会话、运行时版本、活动代次和结构化诊断。`check` 保留已解析候选，`apply` 使用候选标识与预期版本提交；`deactivate` 同时核对会话与版本。已编译启动期定义变化报告 `requires_restart`。命令、候选有效期及依赖要求见[函数工具协议](modules/FUNCTIONS/README.md#agent-运行工具)。
 
 运行工具已在独立客户端通过真实命令管理器验收：校验后改写源文件仍提交原候选；旧版本、被替换候选和错误会话均被拒绝；解析失败保留旧函数行为；启动期定义修改及删除报告重启要求。连续 100 次停用与重新提交后，验证包的归属资源数保持为 3，运行时版本递增到 204。验收加载完整模组 JAR，不依赖额外的 `runtime.jar`。
+
+### 可组合能力与实际执行入口
+
+数值分布、等级公式、上下文条件、物品修饰器、效果树、NBT 路径和文本组件现在共享递归解码入口；自定义命名子节点可以进入已有组合。具体类型、字段和例子见[原生组合值](java/deserializer/README.md#原生组合值)。
+
+附魔通过原生攻击、受伤、装备变化、物品耐久、经验球和弓的发射/耗弹路径执行。属性效果随装备与条件变化清理；多重射击保留断弓前的效果数据，额外或免费箭不能变成可回收弹药。试炼定义分别描述普通与凶兆状态，使用条件决定升级，按参与者计算规模，并保存波次、奖励、冷却及跨维度目标记录。
+
+世界生成按 0–255 的完整体素高度求值，支持封闭空腔与悬挑。结构池通过显式连接点匹配模板、尝试后备池，并按深度、数量、距离及碰撞约束终止；地形投影在写世界前完成规划。连接点和投影也可注册自定义子类型。
+
+对话输入由服务端验证成带类型的 NBT，经过确认与页面导航后交给函数宏。文本、输入和动作可组合；客户端只提交动作索引与输入值。唱片的时长与比较器信号由原生唱片机状态消费，实体变种的条件与权重参与实际选择。
+
+世界时钟保留小数进度与持久状态；`synchronize_world:false` 允许同一维度使用独立时钟。时间线消费数值、条件、函数与效果。测试环境支持组合准备/清理、顺序步骤、种子、重试和超时，结束或卸载时恢复声明范围内的方块及方块实体。该范围必须覆盖测试会修改的位置；任意实体变化、范围外背包、原生计划 tick 和外部调度任务不属于方块快照回滚。
+
+模块级入口由根工程 `check` 执行，包括解码、数据组合、附魔、玩法组合、世界生成/结构拼接、对话传输/注册阶段和时间契约。`GameplayAdvancedContractTest.verifyInWorld`、`TimeCompositionContractTest.verifyInWorld`、`WorldgenAssemblyContractTest.verifyInWorld` 与 `PresentationPlaybackContractTest.verifyInWorld` 还需要真实服务端世界；单独运行各测试 main 不代表这些世界场景已经通过。唱片回归通过原生右键路径插入唱片，检查方块状态变化后的唱片与比较器信号，再保存并恢复方块实体，验证播放在原定时长结束。
+
+上述四个真实世界入口已在加载完整模组 JAR 的 1.12.2 Forge 客户端执行通过：覆盖断弓多重射击及耗弹、条件属性与经验修补、凶兆试炼和跨维度目标、时钟与重试清理、投影结构拼接、唱片状态与存档恢复。额外场景验证了封闭空腔、悬挑、材质规则、实际特征方块、平坦维度层、原生伤害与耐久效果，以及实体变种条件。客户端检查了自定义方块全部状态及物品变体的模型，实际完成“表单输入 → 确认页 → 服务端宏 → 持久 storage”，并截取表单、确认页和盔甲纹饰画面。唱片播放时比较器信号为 `11`，到期后为 `0`，弹出后恢复原生唱片机。
+
+## 15. 服务端托管 Agent 与 TUI 会话
+
+采用“Minecraft 服务端启动 Agent 服务，TUI 连接同一会话”的交互方向。以下为待实现的 Agent 层契约；现有实现仍是前述运行工具与内容提供者，尚不包含 Agent 服务进程或 TUI。
+
+Agent 层优先使用独立进程中的 Google ADK Python，固定 SDK 版本；游戏侧保留 Java 8，模型由 Agent 服务配置选择。ADK 负责 Agent/Runner、工具调用、会话和事件，RML 负责源码工作区、编译产物及游戏执行。ADK 的 `adk run` 是本地交互入口；连接服务器上已运行 Agent 的 RML TUI 使用服务接口，避免为每个终端重复启动 Agent。
+
+```mermaid
+flowchart LR
+    T[TUI] <-->|消息、工具事件、诊断| A[Agent Service / ADK]
+    S[Minecraft 服务端生命周期] -->|启动和停止| A
+    A --> W[受管理的 RML 工作区与编译器]
+    A <-->|结构化工具调用| B[RML Bridge]
+    B -->|主线程任务队列| G[内容运行时与游戏世界]
+```
+
+### 启动与终端归属
+
+1. 服务端启用 Agent 功能后，监督器异步启动服务，传入实例标识、工作区、运行工具端点和模型配置。启动模型或等待网络不占用 Minecraft tick 线程。
+2. 服务报告 ready 后，创建或恢复玩家对应的 Agent 会话。一个服务进程管理多个隔离会话，无需每个玩家启动一份服务。
+3. 本地桌面启动器可以同时打开终端并 attach；已有终端也可以连接。远程服务器返回连接入口，由用户在本机或 SSH 会话中打开 TUI，服务端不能直接在远程玩家电脑弹出终端。
+4. 同一终端只有一个输入与渲染所有者。统一启动器可由 TUI 接管 Minecraft 子进程的日志和控制台输入；已经运行的服务器使用独立终端连接，避免 TUI 与原服务器控制台争抢 stdin。
+
+拟议入口为服务端 `/rml agent start|status|stop`，终端 `rml-agent tui --connect <endpoint> --session <agent-session>`。这些命令尚未实现，不能作为当前安装说明。关闭 TUI 默认 detach；取消当前请求与停止 Agent 服务是独立操作，均不自动停止 Minecraft。
+
+### 会话、事件与工具
+
+会话按服务器实例、玩家 UUID 和工作区隔离。`agentSessionId` 是可持久化的对话身份，`runtimeSessionId` 与 `revision` 来自游戏运行时，二者不得混用。服务器重启后恢复对话，并重新 inspect 世界会话与版本；旧候选不自动重放。
+
+ADK 的 API Server 提供会话创建、`/run` 与 `/run_sse`；TUI 使用流式事件显示回复、工具开始/结束、文件差异、构建日志和游戏断言。连接恢复从保存的会话及事件游标恢复显示，不重新执行已经成功的游戏写操作。会话/事件使用持久存储，构建产物与画面使用 artifact 存储。
+
+现有 `inspect/check/apply/deactivate` 作为工具适配器复用，游戏 API 调用统一进入服务端主线程队列。Agent 可以拆分内容构建任务，但同一工作区的最终合并和游戏提交由一个负责人串行完成；提交仍带候选标识与预期运行时版本。沿用操作员权限，多个对话会话不自动获得服务器管理权限。
+
+还需实现受管理工作区、编译产物导入与服务/TUI 协议。当前 `check` 只读取已登记的包，因此启动器应在游戏启动前准备创作包，或增加明确的运行时包导入能力；不能把新 ZIP 写入 `mods/` 后就宣称运行中安装成功。新增原生注册项仍返回 `requires_restart`。
+
+取消请求会停止模型生成并取消尚未执行的工具任务；已提交的内容或世界变化沿用现有撤销边界。Agent 服务异常时，游戏继续运行并显示服务状态；关闭服务器时停止接收新工具调用、完成或取消在途任务、保存会话并回收子进程。
+
+### 验收
+
+- 服务端启动 Agent 后，本地 TUI 一步连接并提出玩法需求；源码编辑、编译、check、apply 的实际结果进入同一事件流。
+- 关闭并重新连接 TUI，保留会话、工作区与工具结果，不重复运行已提交的操作。
+- 两个玩家并发会话不串台；同一内容的版本冲突沿用 `revision_conflict`，不能静默覆盖。
+- 模型慢响应、取消与服务退出期间，Minecraft tick 继续推进；专用服务器无需图形终端即可运行。
+- 验收使用真实模型调用与真实游戏工具；缺少模型配置时明确返回未配置状态，不生成伪造完成结果。
+
+参考官方资料：[ADK 项目](https://github.com/google/adk-python)、[API Server 与 SSE](https://github.com/google/adk-docs/blob/main/docs/runtime/api-server.md)、[交互式命令行及会话存储](https://github.com/google/adk-docs/blob/main/docs/runtime/command-line.md)、[Runner 事件循环](https://github.com/google/adk-docs/blob/main/docs/runtime/event-loop.md)。
+

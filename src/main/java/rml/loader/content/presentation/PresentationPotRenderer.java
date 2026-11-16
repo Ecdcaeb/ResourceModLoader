@@ -17,13 +17,13 @@ final class PresentationPotRenderer extends TileEntitySpecialRenderer<TileEntity
 
     @Override public void render(TileEntityPresentationPot tile, double x, double y, double z,
                                  float partialTicks, int destroyStage, float alpha) {
-        ResourceLocation texture = PresentationClient.surfaceTexture("decorated_pot_pattern", tile.getPattern());
-        if (texture == null) return;
+        PresentationCodecs.SurfaceDefinition surface = PresentationClient.surface("decorated_pot_pattern", tile.getPattern());
+        if (surface == null) return;
         GlStateManager.pushMatrix();
         GlStateManager.translate(x + 0.5D, y, z + 0.5D);
         GlStateManager.disableLighting();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        bindTexture(texture);
+        GlStateManager.color(((surface.color >> 16) & 255) / 255.0F, ((surface.color >> 8) & 255) / 255.0F, (surface.color & 255) / 255.0F, 1.0F);
+        bindTexture(surface.texture);
         BufferBuilder buffer = Tessellator.getInstance().getBuffer();
         buffer.begin(7, DefaultVertexFormats.POSITION_TEX);
         for (int i = 0; i < Y.length - 1; i++) {
@@ -39,6 +39,7 @@ final class PresentationPotRenderer extends TileEntitySpecialRenderer<TileEntity
         vertex(buffer, -radius, top, -0.24F, 0, 0); vertex(buffer, radius, top, -0.24F, 1, 0);
         vertex(buffer, radius, top, 0.24F, 1, 1); vertex(buffer, -radius, top, 0.24F, 0, 1);
         Tessellator.getInstance().draw();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.enableLighting();
         GlStateManager.popMatrix();
     }

@@ -1,0 +1,5 @@
+{
+  "entity": "minecraft:cow",
+  "texture": "minecraft:textures/entity/cow/cow.png",
+  "weight": 4
+}

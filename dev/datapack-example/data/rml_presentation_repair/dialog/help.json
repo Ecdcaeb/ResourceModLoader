@@ -1,0 +1,19 @@
+{
+  "title": {
+    "text": "Expedition help"
+  },
+  "body": "Tab moves between fields and buttons. Enter activates the focused button. Scroll to see every field. Escape cancels the server session.",
+  "actions": [
+    {
+      "type": "rml:open_dialog",
+      "label": "Back to request",
+      "id": "rml_presentation_repair:form"
+    },
+    {
+      "type": "rml:close",
+      "label": {
+        "translate": "gui.done"
+      }
+    }
+  ]
+}

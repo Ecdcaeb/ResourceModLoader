@@ -1,0 +1,18 @@
+{
+  "prefix": [
+    {
+      "text": "[",
+      "color": "gray"
+    },
+    {
+      "translate": "item.compass.name",
+      "color": "gold"
+    },
+    {
+      "text": "] ",
+      "color": "gray"
+    }
+  ],
+  "suffix": "",
+  "color": "white"
+}

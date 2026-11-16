@@ -106,6 +106,11 @@ public class RMLForgeEventHandler {
         }
     }
 
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void registerDataBiomes(RegistryEvent.Register<net.minecraft.world.biome.Biome> event) {
+        ResourceModLoader.runtime().getWorldgen().initialize();
+    }
+
     public static void construct(FMLConstructionEvent event){
         ResourceModLoader.runtime().getConfigs().loadDefinitions();
         ResourceModLoader.runtime().getConfigs().loadNodes();
@@ -129,7 +134,8 @@ public class RMLForgeEventHandler {
         CompiledLootModule.registerConditions();
         ResourceModLoader.runtime().initializeNative();
         if (FMLLaunchHandler.side() == Side.CLIENT){
-            //MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
+            ResourceModLoader.runtime().getGameplay().initializeClient();
+            ClassHelper.forceInit(RMLTextEffects.ChangeModClickAction.class);
         }
         if (Loader.isModLoaded(KubeJS.MOD_ID)){
             MinecraftForge.EVENT_BUS.register(RMKKubeJs.class);
@@ -142,7 +148,9 @@ public class RMLForgeEventHandler {
     }
 
     public static void onInit(FMLInitializationEvent event){
-        ResourceModLoader.runtime().getGameplay().initializeClient();
+        ResourceModLoader.runtime().getGameplay().initializeAfterRegistries();
+        ResourceModLoader.runtime().getPresentation().initializeAfterRegistries();
+        ResourceModLoader.runtime().getTimeTests().initialize();
         if (Loader.isModLoaded("justenoughdimensions")){
             JEDLoader.load();
         }

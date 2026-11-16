@@ -33,12 +33,18 @@ final class RmlBiomeProvider extends BiomeProvider {
         List<Entry> parsed=new ArrayList<>();
         for(JsonElement element:source) {
             JsonObject value=element.getAsJsonObject();
+            WorldgenNodes.fields(value, "biome", "tag", "parameters", "temperature", "humidity", "altitude", "weirdness");
+            if (value.has("biome") == value.has("tag")) throw new IllegalArgumentException("Multi-noise entry requires exactly one biome or tag");
+            if (value.has("parameters")) {
+                WorldgenNodes.fields(value, "biome", "tag", "parameters");
+                WorldgenNodes.fields(value.getAsJsonObject("parameters"), "temperature", "humidity", "altitude", "weirdness");
+            }
             JsonObject parameters=value.has("parameters")?value.getAsJsonObject("parameters"):value;
             double[] temperature=range(parameters,"temperature"), humidity=range(parameters,"humidity"), altitude=range(parameters,"altitude"), weirdness=range(parameters,"weirdness");
             if(value.has("biome")) {
                 ResourceLocation id=new ResourceLocation(value.get("biome").getAsString());
                 Biome biome=Biome.REGISTRY.getObject(id);
-                if(biome==null) throw new IllegalArgumentException("Unknown multi-noise biome " + id + " in " + parameterList.id);
+                if(!Biome.REGISTRY.containsKey(id)||biome==null) throw new IllegalArgumentException("Unknown multi-noise biome " + id + " in " + parameterList.id);
                 parsed.add(new Entry(biome,temperature[0],temperature[1],humidity[0],humidity[1],altitude[0],altitude[1],weirdness[0],weirdness[1]));
             } else if(value.has("tag")) {
                 ResourceLocation tag=new ResourceLocation(value.get("tag").getAsString());
@@ -63,7 +69,9 @@ final class RmlBiomeProvider extends BiomeProvider {
         return output;
     }
     @Override public Biome[] getBiomesForGeneration(@Nullable Biome[] reuse,int x,int z,int width,int length) {
-        return getBiomes(reuse,x,z,width,length,false);
+        int size=width*length; Biome[] output=reuse==null||reuse.length<size?new Biome[size]:reuse;
+        for(int dz=0,index=0;dz<length;dz++) for(int dx=0;dx<width;dx++,index++) output[index]=select((x+dx)<<2,(z+dz)<<2);
+        return output;
     }
     @Override public List<Biome> getBiomesToSpawnIn() { return spawnBiomes; }
     @Override public boolean areBiomesViable(int x,int z,int radius,List<Biome> allowed) {
@@ -93,8 +101,8 @@ final class RmlBiomeProvider extends BiomeProvider {
     private static double[] range(JsonObject object,String key) {
         if(!object.has(key)) return new double[]{-1,1};
         JsonElement value=object.get(key);
-        if(value.isJsonArray()) { JsonArray array=value.getAsJsonArray(); if(array.size()!=2) throw new IllegalArgumentException(key+" range must have two values"); double a=array.get(0).getAsDouble(),b=array.get(1).getAsDouble(); if(a>b) throw new IllegalArgumentException(key+" minimum exceeds maximum"); return new double[]{a,b}; }
-        double fixed=value.getAsDouble(); return new double[]{fixed,fixed};
+        if(value.isJsonArray()) { JsonArray array=value.getAsJsonArray(); if(array.size()!=2) throw new IllegalArgumentException(key+" range must have two values"); double a=array.get(0).getAsDouble(),b=array.get(1).getAsDouble(); if(!Double.isFinite(a)||!Double.isFinite(b)||a>b) throw new IllegalArgumentException(key+" requires finite ordered bounds"); return new double[]{a,b}; }
+        double fixed=WorldgenNodes.finite(object,key); return new double[]{fixed,fixed};
     }
     private static final class Entry {
         final Biome biome; final double temperatureMin,temperatureMax,humidityMin,humidityMax,altitudeMin,altitudeMax,weirdnessMin,weirdnessMax;

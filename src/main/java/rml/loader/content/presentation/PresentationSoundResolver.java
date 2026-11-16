@@ -37,9 +37,9 @@ final class PresentationSoundResolver {
         if (playback == null) return;
         SoundEvent replacement = events.get(playback.sound);
         if (replacement == null) return;
-        event.setSound(replacement);
-        event.setVolume(playback.volume);
-        event.setPitch(playback.pitch);
+        event.setCanceled(true);
+        Entity entity = event.getEntity();
+        PresentationPlayback.play(entity.world, entity.posX, entity.posY, entity.posZ, playback, -1, false);
     }
     static SoundEvent sound(Entity entity, String trigger) {
         PresentationCodecs.EntitySounds soundSet = selected(entity);

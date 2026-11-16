@@ -264,7 +264,10 @@ public final class FunctionModule implements AutoCloseable {
         current.checkThread();
         FunctionObject function = current.manager.getFunction(name);
         if (function == null) throw new IllegalArgumentException("Missing data function: " + name);
-        return engine.invoke(current.manager, function, new DataCommandSender(context));
+        ICommandSender sender = new DataCommandSender(context);
+        net.minecraft.nbt.NBTTagCompound inputs = context.getInputs();
+        if (inputs != null) sender = rml.loader.runtime.function.FunctionCommandContext.withArguments(sender, inputs);
+        return engine.invoke(current.manager, function, sender);
     }
     public void tick() {
         if (session != null) {

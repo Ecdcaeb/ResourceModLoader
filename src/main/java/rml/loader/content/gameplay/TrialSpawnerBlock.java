@@ -26,6 +26,11 @@ public final class TrialSpawnerBlock extends Block {
     @Override public boolean hasTileEntity(IBlockState state) { return true; }
     @Override public TileEntity createTileEntity(World world, IBlockState state) { return new TrialSpawnerTileEntity(); }
     @Override public EnumBlockRenderType getRenderType(IBlockState state) { return EnumBlockRenderType.MODEL; }
+    @Override public void breakBlock(World world, BlockPos pos, IBlockState state) {
+        TileEntity tile = world.getTileEntity(pos);
+        if (!world.isRemote && tile instanceof TrialSpawnerTileEntity) ((TrialSpawnerTileEntity) tile).abort();
+        super.breakBlock(world, pos, state);
+    }
 
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player,

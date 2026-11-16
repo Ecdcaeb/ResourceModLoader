@@ -1,0 +1,9 @@
+{
+  "count": 2,
+  "cost": {"type": "minecraft:uniform", "min_inclusive": 12, "max_inclusive": 12},
+  "difficulty_cost": {"type": "minecraft:linear", "base": 0, "per_level_above_first": 0},
+  "entries": [
+    {"enchantment": "minecraft:sharpness", "weight": 2},
+    {"enchantment": "minecraft:smite", "weight": 1}
+  ]
+}

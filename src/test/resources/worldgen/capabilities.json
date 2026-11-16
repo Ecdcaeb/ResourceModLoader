@@ -1,0 +1,51 @@
+{
+  "density": {
+    "type": "rml:density_min",
+    "left": {"type": "rml:density_subtract", "left": 80, "right": {"type": "rml:density_coordinate", "axis": "y"}},
+    "right": {
+      "type": "rml:density_subtract",
+      "left": {"type": "rml:density_add", "terms": [
+        {"type": "rml:density_square", "input": {"type": "rml:density_subtract", "left": {"type": "rml:density_coordinate", "axis": "x"}, "right": 8}},
+        {"type": "rml:density_square", "input": {"type": "rml:density_subtract", "left": {"type": "rml:density_coordinate", "axis": "y"}, "right": 48}},
+        {"type": "rml:density_square", "input": {"type": "rml:density_subtract", "left": {"type": "rml:density_coordinate", "axis": "z"}, "right": 8}}
+      ]},
+      "right": 25
+    }
+  },
+  "material": {"type": "rml:material_sequence", "rules": [
+    {"type": "rml:material_condition", "if": {"type": "rml:condition_y_above", "y": 70}, "then": {"type": "rml:material_state", "provider": {"type": "rml:simple_state", "state": {"Name": "minecraft:gold_block"}}}},
+    {"type": "rml:material_state", "provider": {"type": "rml:simple_state", "state": {"Name": "minecraft:stone"}}}
+  ]},
+  "flat": {"biome": "minecraft:plains", "layers": [
+    {"height": 1, "block": "minecraft:bedrock"},
+    {"height": 2, "block": "minecraft:dirt"},
+    {"height": 1, "block_state": {"Name": "minecraft:grass"}}
+  ]},
+  "feature": {"type": "rml:simple_block", "config": {"state": {"type": "rml:simple_state", "state": {"Name": "minecraft:emerald_block"}}}},
+  "placed": {"feature": "fixture:marker", "placement": [
+    {"type": "rml:count", "count": 2},
+    {"type": "rml:rarity", "once_every": 1},
+    {"type": "rml:in_square"},
+    {"type": "rml:height", "height": 90},
+    {"type": "rml:biome", "biomes": ["minecraft:plains"]},
+    {"type": "rml:filter", "filter": {"type": "rml:filter_all", "filters": [
+      {"type": "rml:filter_air"},
+      {"type": "rml:filter_not", "filter": {"type": "rml:filter_block", "state": {"Name": "minecraft:bedrock"}}}
+    ]}}
+  ]},
+  "processors": {"processors": [
+    {"type": "rml:position", "x": 2, "y": 0, "z": 0},
+    {"type": "rml:rotate", "rotation": "clockwise_90"},
+    {"type": "rml:replace_block", "from": "minecraft:stone", "to": {"Name": "minecraft:gold_block"}},
+    {"type": "rml:ignore_block", "block": "minecraft:dirt"}
+  ]},
+  "pool": {"elements": [{"template": "fixture:beam", "weight": 1, "processor_list": "fixture:transform"}]},
+  "structure": {"template_pool": "fixture:pool", "height": 100, "min_y": 90, "max_y": 110, "filter": {"type": "rml:filter_air"}},
+  "structure_set": {"structures": [{"structure": "fixture:beam", "weight": 1}], "placement": {"spacing": 1, "separation": 0, "salt": 29}},
+  "noise_settings": {"sea_level": 0, "default_block": {"Name": "minecraft:stone"}, "default_fluid": {"Name": "minecraft:water"}, "density_function": "fixture:cavity", "material_rule": "fixture:surface"},
+  "dimension": {"id": 75, "noise_settings": "fixture:terrain", "biome": "minecraft:plains", "features": ["fixture:marker"], "structure_sets": ["fixture:beam"]},
+  "flat_dimension": {"id": 76, "noise_settings": "fixture:terrain", "flat_preset": "fixture:flat"},
+  "world_preset": {"dimensions": {"cavity": "fixture:cavity", "flat": "fixture:flat"}},
+  "negative_heights": [-1, 256, {"type": "minecraft:uniform", "min_inclusive": 250, "max_inclusive": 260}],
+  "negative_states": [{"Name": "fixture:missing_block"}, {"Name": "minecraft:stone", "Properties": {"missing": "value"}}]
+}

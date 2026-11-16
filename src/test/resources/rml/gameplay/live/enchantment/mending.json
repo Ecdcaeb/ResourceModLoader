@@ -1,0 +1,5 @@
+{
+  "max_level": 1,
+  "slots": ["any"],
+  "effects": {"repair_with_xp": [{"effect": {"type": "rml:set", "amount": 2}}]}
+}

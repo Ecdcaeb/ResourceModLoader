@@ -110,12 +110,18 @@ public final class DataRules {
         registerEffectDecoder(manager, "rml:run_function");
         registerEffectDecoder(manager, "rml:damage");
         registerEffectDecoder(manager, "rml:heal");
+        registerEffectDecoder(manager, "rml:sequence");
+        registerEffectDecoder(manager, "rml:conditional");
+        registerEffectDecoder(manager, "rml:weighted");
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "test"), Test.class,
                 json -> predicate(json)));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "modifier"), Modifier.class,
                 json -> modifier(json)));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "effect"), Effect.class,
                 json -> effect(json)));
+        ContextNumberDecoders.register(manager, this);
+        ContextPredicateDecoders.register(manager);
+        ContextModifierDecoders.register(manager);
     }
 
     private void registerNumberDecoder(DeserializerManager manager, String type) {
@@ -388,9 +394,12 @@ public final class DataRules {
                 };
             }
             case "minecraft:random_chance": case "random_chance": case "rml:random_chance": {
-                final double chance = requiredNumber(object, "chance");
-                if (chance < 0 || chance > 1) throw invalid("chance must be within 0..1");
-                return context -> context.getRandom().nextFloat() < chance;
+                final NumberValue chance = number(required(object, "chance"));
+                return context -> {
+                    double value = chance.evaluate(context);
+                    if (!Double.isFinite(value) || value < 0 || value > 1) throw invalid("chance must be within 0..1");
+                    return context.getRandom().nextFloat() < value;
+                };
             }
             case "minecraft:killed_by_player": case "killed_by_player": {
                 final boolean inverse = bool(object, "inverse", false);
@@ -484,17 +493,40 @@ public final class DataRules {
         JsonObject object = requireObject(definition, "effect");
         String type = string(object, "type", "");
         validateEffectFields(type, object);
+        if ("rml:sequence".equals(type)) {
+            JsonArray definitions = required(object, "effects").getAsJsonArray();
+            Effect[] sequence = new Effect[definitions.size()];
+            for (int i = 0; i < sequence.length; i++) sequence[i] = effect(definitions.get(i));
+            return (context, target) -> { for (Effect effect : sequence) effect.apply(context, target); };
+        }
+        if ("rml:conditional".equals(type)) {
+            Test condition = predicate(required(object, "condition"));
+            Effect whenTrue = effect(required(object, "on_true"));
+            Effect whenFalse = object.has("on_false") ? effect(object.get("on_false")) : null;
+            return (context, target) -> {
+                Effect selected = condition.test(context) ? whenTrue : whenFalse;
+                if (selected != null) selected.apply(context, target);
+            };
+        }
+        if ("rml:weighted".equals(type)) {
+            if (decoders == null) throw invalid("Weighted effects require the shared decoder registry");
+            final rml.deserializer.value.WeightedList<Effect> effects;
+            try {
+                effects = decoders.decode(new com.google.gson.reflect.TypeToken<rml.deserializer.value.WeightedList<Effect>>() { }.getType(), required(object, "distribution"));
+            } catch (JsonDeserializeException error) { throw new IllegalArgumentException("Cannot decode weighted effects", error); }
+            return (context, target) -> effects.sample(context.getRandom()).apply(context, target);
+        }
         if ("rml:run_function".equals(type)) {
             final ResourceLocation id = resource(object, "function");
             return (context, target) -> invokeFunction.apply(id, target == null ? context : context.withEntity(target));
         }
         if ("rml:damage".equals(type)) {
-            final float amount = (float) requiredNumber(object, "amount");
-            return (context, target) -> { if (target != null) target.attackEntityFrom(net.minecraft.util.DamageSource.GENERIC, amount); };
+            final NumberValue amount = number(required(object, "amount"));
+            return (context, target) -> { if (target != null) target.attackEntityFrom(net.minecraft.util.DamageSource.GENERIC, (float) Math.max(0, amount.evaluate(context))); };
         }
         if ("rml:heal".equals(type)) {
-            final float amount = (float) requiredNumber(object, "amount");
-            return (context, target) -> { if (target instanceof EntityLivingBase) ((EntityLivingBase) target).heal(amount); };
+            final NumberValue amount = number(required(object, "amount"));
+            return (context, target) -> { if (target instanceof EntityLivingBase) ((EntityLivingBase) target).heal((float) Math.max(0, amount.evaluate(context))); };
         }
         throw invalid("Unsupported effect type '" + type + "'");
     }
@@ -516,8 +548,7 @@ public final class DataRules {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(condition, "condition");
         Test test = context -> {
-            LootContext loot = context.getLootContext();
-            if (loot == null) throw new IllegalStateException("Predicate '" + id + "' requires a native loot context");
+            LootContext loot = context.asLootContext();
             return condition.testCondition(context.getRandom(), loot);
         };
         return scope -> scope.own(predicateRegistry.register(id, test));
@@ -534,8 +565,7 @@ public final class DataRules {
         Objects.requireNonNull(id, "id");
         final LootFunction[] copy = Objects.requireNonNull(functions, "functions").clone();
         Modifier target = (stack, context) -> {
-            LootContext loot = context.getLootContext();
-            if (loot == null) throw new IllegalStateException("Modifier '" + id + "' requires a native loot context");
+            LootContext loot = context.asLootContext();
             ItemStack result = stack.copy();
             for (LootFunction function : copy) {
                 if (LootConditionManager.testAllConditions(function.getConditions(), context.getRandom(), loot))
@@ -560,6 +590,7 @@ public final class DataRules {
             case "rml:reference": case "reference": {
                 final ResourceLocation id = resource(object, object.has("name") ? "name" : "id");
                 return (stack, context) -> {
+                    if (!matches(conditions, context)) return stack;
                     Modifier referenced = namedModifiers.get(id);
                     if (referenced == null) throw new IllegalStateException("No active compiled item modifier '" + id + "'");
                     return referenced.apply(stack, context);
@@ -713,6 +744,9 @@ public final class DataRules {
         switch (type) {
             case "rml:run_function": only(object, "type", "function"); return;
             case "rml:damage": case "rml:heal": only(object, "type", "amount"); return;
+            case "rml:sequence": only(object, "type", "effects"); return;
+            case "rml:conditional": only(object, "type", "condition", "on_true", "on_false"); return;
+            case "rml:weighted": only(object, "type", "distribution"); return;
             default: return;
         }
     }

@@ -27,6 +27,7 @@ final class PresentationBannerPatternItem extends Item {
                                                float hitX, float hitY, float hitZ) {
         TileEntity tile = world.getTileEntity(pos);
         if (!(tile instanceof TileEntityBanner)) return EnumActionResult.FAIL;
+        if (!player.canPlayerEdit(pos, facing, player.getHeldItem(hand))) return EnumActionResult.FAIL;
         if (!world.isRemote) {
             NBTTagCompound data = tile.getTileData();
             NBTTagList patterns = data.getTagList("RMLPatterns", Constants.NBT.TAG_STRING);

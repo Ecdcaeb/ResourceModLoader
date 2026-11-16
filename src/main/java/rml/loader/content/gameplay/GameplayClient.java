@@ -8,10 +8,10 @@ import net.minecraft.item.Item;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import net.minecraftforge.fml.relauncher.Side;
 
-@Mod.EventBusSubscriber(modid = "rml", value = Side.CLIENT)
+@SideOnly(Side.CLIENT)
 public final class GameplayClient {
     private GameplayClient() { }
 
@@ -30,7 +30,11 @@ public final class GameplayClient {
                 }
             });
             Item item = Item.getItemFromBlock(block);
-            if (item != null) ModelLoader.setCustomModelResourceLocation(item, 0, new ModelResourceLocation(model, "inventory"));
+            if (item != null) {
+                int variants = block instanceof NativeDataBlock ? ((NativeDataBlock) block).variantCount() : 1;
+                ModelResourceLocation inventory = new ModelResourceLocation(model, "inventory");
+                for (int metadata = 0; metadata < variants; metadata++) ModelLoader.setCustomModelResourceLocation(item, metadata, inventory);
+            }
         }
     }
 }

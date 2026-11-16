@@ -16,7 +16,7 @@ import net.minecraft.util.ResourceLocation;
 @SideOnly(Side.CLIENT)
 final class PresentationTrimLayer implements LayerRenderer<EntityLivingBase> {
     private static final EntityEquipmentSlot[] ARMOR_SLOTS = {EntityEquipmentSlot.HEAD, EntityEquipmentSlot.CHEST, EntityEquipmentSlot.LEGS, EntityEquipmentSlot.FEET};
-    private static final ModelBiped[] MODELS = {new ModelBiped(0.5F), new ModelBiped(0.5F), new ModelBiped(0.25F), new ModelBiped(0.5F)};
+    private static final ModelBiped[] MODELS = {new ModelBiped(1.01F), new ModelBiped(1.01F), new ModelBiped(0.51F), new ModelBiped(1.01F)};
     @Override public void doRenderLayer(EntityLivingBase entity, float limbSwing, float limbSwingAmount, float partialTicks,
                                         float ageInTicks, float netHeadYaw, float headPitch, float scale) {
         for (int slotIndex = 0; slotIndex < ARMOR_SLOTS.length; slotIndex++) {
@@ -46,10 +46,13 @@ final class PresentationTrimLayer implements LayerRenderer<EntityLivingBase> {
             }
             model.setRotationAngles(limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale, entity);
             GlStateManager.enableBlend();
+            boolean decal = PresentationClient.trimDecal(patternId);
+            if (decal) { GlStateManager.enablePolygonOffset(); GlStateManager.doPolygonOffset(-1.0F, -1.0F); }
             GlStateManager.blendFunc(770, 771);
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             PresentationClient.bindSurface(trimTexture);
             model.render(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+            if (decal) GlStateManager.disablePolygonOffset();
             GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
             GlStateManager.disableBlend();
         }

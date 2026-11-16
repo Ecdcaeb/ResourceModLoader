@@ -1,0 +1,1 @@
+{DataVersion:1343,size:[3,1,2],palette:[{Name:"minecraft:stone"},{Name:"minecraft:dirt"},{Name:"minecraft:oak_stairs",Properties:{facing:"north",half:"bottom",shape:"straight"}}],blocks:[{pos:[0,0,0],state:0},{pos:[1,0,0],state:1},{pos:[2,0,0],state:2},{pos:[0,0,1],state:0}],entities:[]}

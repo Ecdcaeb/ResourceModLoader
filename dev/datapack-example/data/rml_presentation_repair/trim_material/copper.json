@@ -1,0 +1,8 @@
+{
+  "palette_id": "rml_presentation_repair:copper",
+  "texture": "minecraft:textures/blocks/wool_colored_orange.png",
+  "description": {
+    "translate": "item.ingotGold.name",
+    "color": "ffaa00"
+  }
+}

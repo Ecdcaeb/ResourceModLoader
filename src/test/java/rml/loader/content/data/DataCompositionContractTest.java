@@ -1,0 +1,155 @@
+package rml.loader.content.data;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.init.Bootstrap;
+import net.minecraft.init.Enchantments;
+import net.minecraft.init.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.storage.loot.conditions.LootCondition;
+import net.minecraft.world.storage.loot.conditions.LootConditionManager;
+import net.minecraft.world.storage.loot.functions.LootFunction;
+import net.minecraft.world.storage.loot.functions.LootFunctionManager;
+import rml.deserializer.AbstractDeserializer;
+import rml.deserializer.DeserializerManager;
+import rml.deserializer.JsonDeserializeException;
+import rml.deserializer.value.IntProvider;
+import rml.deserializer.value.LevelBasedValue;
+import rml.loader.content.CompiledLootModule;
+import rml.loader.content.CompiledTagModule;
+import rml.loader.content.ContentCatalog;
+import rml.loader.deserialize.NativeTypeDecoders;
+import rml.loader.runtime.function.FunctionDataPath;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+
+/** Consumer regressions for custom children and context crossing the native loot adapters. */
+public final class DataCompositionContractTest {
+    private static final JsonParser JSON = new JsonParser();
+
+    public static void main(String[] args) throws Exception {
+        Bootstrap.register();
+        DeserializerManager manager = new DeserializerManager("rml");
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "resource_location"), ResourceLocation.class,
+                value -> new ResourceLocation(manager.decode(String.class, value))));
+        CompiledTagModule tags = new CompiledTagModule();
+        NativeTypeDecoders.register(manager, tags);
+        DataRules rules = new DataRules(new ContentCatalog(null), tags, (id, context) -> { throw new AssertionError("Unexpected function " + id); });
+        rules.registerDecoders(manager);
+        CompiledLootModule.registerConditions();
+        rules.registerNative();
+        distributionsAndLevelValuesCompose(manager);
+        NBTTagCompound inputs = new NBTTagCompound(); inputs.setInteger("amount", 9);
+        NBTTagCompound payload = new NBTTagCompound(); payload.setString("name", "bound"); inputs.setTag("payload", payload);
+        DataContext context = new DataContext(null, null, null, new Random(17), 3).withInputs(inputs)
+                .withDamageSource(new DamageSource("contract").setFireDamage()).withTool(new ItemStack(Items.DIAMOND_PICKAXE));
+        inputs.setInteger("amount", -1);
+        context.getInputs().setInteger("amount", -2);
+        contextSurvivesNativeRules(manager, context);
+        modifierPreservesBookAndInputOwnership(manager, context);
+        conditionalEffectsShortCircuit(manager, context);
+        textChildrenUseSharedManager(manager);
+        reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:damage_source\",\"fire\":true,\"ignored\":true}")));
+        reject(() -> manager.decode(NativeTypeDecoders.ItemMatcher.class, json("{\"items\":[\"contract:missing_item\"]}")));
+        System.out.println("DataCompositionContractTest passed");
+    }
+
+    private static void distributionsAndLevelValuesCompose(DeserializerManager manager) throws Exception {
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "integer"), IntProvider.class,
+                value -> new IntProvider(7, 7, random -> 7)));
+        IntProvider sample = manager.decode(IntProvider.class, json("{\"type\":\"minecraft:weighted_list\",\"distribution\":[{\"data\":{\"type\":\"minecraft:clamped\",\"source\":{\"type\":\"contract:integer\"},\"min_inclusive\":2,\"max_inclusive\":5}}]}"));
+        check(sample.sample(new Random(9)) == 5 && sample.getMinValue() == 5 && sample.getMaxValue() == 5,
+                "Custom integer distribution must survive weighted selection and clamp bounds");
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "level"), LevelBasedValue.class,
+                value -> level -> level + 1));
+        LevelBasedValue value = manager.decode(LevelBasedValue.class, json("{\"type\":\"minecraft:lookup\",\"values\":[2],\"fallback\":{\"type\":\"minecraft:fraction\",\"numerator\":{\"type\":\"minecraft:exponent\",\"base\":{\"type\":\"contract:level\"},\"power\":2},\"denominator\":2}}"));
+        check(value.calculate(1) == 2 && value.calculate(3) == 8, "Level lookup fallback must retain nested custom formulas");
+        reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:clamped\",\"source\":1,\"min_inclusive\":5,\"max_inclusive\":2}")));
+    }
+
+    private static void contextSurvivesNativeRules(DeserializerManager manager, DataContext context) throws Exception {
+        Gson gson = new GsonBuilder().registerTypeHierarchyAdapter(LootCondition.class, new LootConditionManager.Serializer())
+                .registerTypeHierarchyAdapter(LootFunction.class, new LootFunctionManager.Serializer()).create();
+        LootCondition condition = gson.fromJson("{\"condition\":\"rml:expression\",\"expression\":{\"type\":\"rml:all_of\",\"terms\":["
+                + "{\"type\":\"rml:damage_source\",\"fire\":true,\"projectile\":false},"
+                + "{\"type\":\"rml:match_tool\",\"predicate\":{\"items\":[\"minecraft:diamond_pickaxe\"]}},"
+                + "{\"type\":\"rml:compare\",\"operator\":\"=\",\"left\":{\"type\":\"rml:input\",\"path\":\"amount\"},\"right\":9},"
+                + "{\"type\":\"rml:level\",\"min\":3,\"max\":3}]}}", LootCondition.class);
+        check(condition.testCondition(context.getRandom(), context.withEntity(null).withLevel(3).asLootContext()),
+                "Native predicate evaluation must retain damage, tool, detached inputs and effect level");
+        DataContext restored = DataContext.fromLoot(context.asLootContext(), context.getRandom());
+        check(restored.getOrigin() == null, "Native adaptation must not fabricate an origin");
+        LootFunction function = gson.fromJson("{\"function\":\"rml:expression\",\"expression\":{\"type\":\"rml:set_count\",\"count\":{\"type\":\"rml:add\",\"inputs\":[{\"type\":\"rml:input\",\"path\":\"amount\"},{\"type\":\"rml:context_level\"}]}}}", LootFunction.class);
+        ItemStack original = new ItemStack(Items.APPLE, 2);
+        check(function.apply(original, context.getRandom(), context.asLootContext()).getCount() == 12 && original.getCount() == 2,
+                "Native modifier must compute with preserved context without mutating its input");
+    }
+
+    private static void modifierPreservesBookAndInputOwnership(DeserializerManager manager, DataContext context) throws Exception {
+        ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
+        Map<net.minecraft.enchantment.Enchantment, Integer> levels = new LinkedHashMap<>();
+        levels.put(Enchantments.FORTUNE, 4); levels.put(Enchantments.UNBREAKING, 1);
+        EnchantmentHelper.setEnchantments(levels, book);
+        DataRules.Modifier remove = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_enchantments\",\"enchantments\":{\"minecraft:fortune\":0}}"));
+        ItemStack changed = remove.apply(book, context);
+        check(!EnchantmentHelper.getEnchantments(changed).containsKey(Enchantments.FORTUNE)
+                && EnchantmentHelper.getEnchantments(changed).get(Enchantments.UNBREAKING) == 1
+                && EnchantmentHelper.getEnchantments(book).get(Enchantments.FORTUNE) == 4,
+                "Removing one stored enchantment must preserve others and the original book");
+        DataRules.Modifier copy = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:copy_nbt\",\"source\":\"inputs\",\"path\":\"payload\",\"target\":\"custom\"}"));
+        ItemStack result = copy.apply(new ItemStack(Items.APPLE), context);
+        check("bound".equals(result.getTagCompound().getCompoundTag("custom").getString("name")), "Input payload must reach item NBT");
+        result.getTagCompound().getCompoundTag("custom").setString("name", "changed");
+        check("bound".equals(context.getInputs().getCompoundTag("payload").getString("name")), "Item writes must not alias validated inputs");
+        FunctionDataPath.Compiled destination = FunctionDataPath.compile("nested[0].value");
+        NBTTagCompound root = new NBTTagCompound(); destination.set(root, new net.minecraft.nbt.NBTTagInt(5));
+        check(((net.minecraft.nbt.NBTPrimitive) destination.get(root)).getInt() == 5, "Compiled writes must create typed compound/list parents");
+        net.minecraft.nbt.NBTTagList integers = new net.minecraft.nbt.NBTTagList();
+        integers.appendTag(new net.minecraft.nbt.NBTTagInt(2)); root.setTag("numbers", integers);
+        reject(() -> FunctionDataPath.compile("numbers[0]").set(root, new net.minecraft.nbt.NBTTagString("invalid")));
+        check(root.getTagList("numbers", 3).getIntAt(0) == 2, "A rejected heterogeneous list write must preserve its native value");
+        DataRules.Modifier skipped = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:reference\",\"id\":\"contract:absent\",\"conditions\":[{\"type\":\"rml:any_of\",\"terms\":[]}]}"));
+        check(skipped.apply(book, context) == book, "A false modifier condition must skip named lookup and preserve the original stack");
+    }
+
+    private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {
+        int[] total = {0};
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "accumulate"), DataRules.Effect.class,
+                value -> (data, target) -> total[0] += data.getLevel()));
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "unreachable"), DataRules.Effect.class,
+                value -> (data, target) -> { throw new AssertionError("Unselected effect executed"); }));
+        DataRules.Effect effect = manager.decode(DataRules.Effect.class, json("{\"type\":\"rml:sequence\",\"effects\":["
+                + "{\"type\":\"rml:conditional\",\"condition\":{\"type\":\"rml:damage_source\",\"fire\":true},\"on_true\":{\"type\":\"contract:accumulate\"},\"on_false\":{\"type\":\"contract:unreachable\"}},"
+                + "{\"type\":\"rml:weighted\",\"distribution\":[{\"data\":{\"type\":\"contract:accumulate\"}}]}]}"));
+        effect.apply(context, null);
+        check(total[0] == 6, "Sequence and weighted consumers must execute custom child effects exactly once");
+    }
+
+    private static void textChildrenUseSharedManager(DeserializerManager manager) throws Exception {
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "text"), ITextComponent.class,
+                value -> new TextComponentString("custom")));
+        ITextComponent text = manager.decode(ITextComponent.class, json("{\"text\":\"parent\",\"extra\":[{\"type\":\"contract:text\"}],\"hoverEvent\":{\"action\":\"show_text\",\"value\":{\"type\":\"contract:text\"}}}"));
+        check("parentcustom".equals(text.getUnformattedText())
+                && "custom".equals(text.getStyle().getHoverEvent().getValue().getUnformattedText()),
+                "Native text siblings and hover contents must retain custom decoder children");
+    }
+
+    private static JsonElement json(String text) { return JSON.parse(text); }
+    private interface Checked { void run() throws Exception; }
+    private static void reject(Checked action) throws Exception {
+        try { action.run(); } catch (JsonDeserializeException | IllegalArgumentException expected) { return; }
+        throw new AssertionError("Malformed definition was accepted");
+    }
+    private static void check(boolean value, String message) { if (!value) throw new AssertionError(message); }
+}

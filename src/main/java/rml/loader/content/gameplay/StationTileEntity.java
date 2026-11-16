@@ -75,8 +75,9 @@ public final class StationTileEntity extends TileEntityChest {
                 if (input.isEmpty() || !recipe.ingredients[index].test(input, context)) { matches = false; break; }
             }
             if (matches) {
+                if (selection.isEmpty()) return recipe;
                 ItemStack result = recipe.resultFor(getStackInSlot(0), getStackInSlot(1), getStackInSlot(2), context);
-                if (selection.isEmpty() || ItemStack.areItemsEqual(selection, result)) return recipe;
+                if (ItemStack.areItemsEqual(selection, result)) return recipe;
             }
         }
         return null;
@@ -121,25 +122,23 @@ public final class StationTileEntity extends TileEntityChest {
         if (burn <= 0) return false;
         burnTime = burn;
         ItemStack remainder = fuel.getItem().getContainerItem(fuel);
-        if (fuel.getCount() > 1) fuel.shrink(1);
+        if (fuel.getCount() > 1) {
+            fuel.shrink(1);
+            if (!remainder.isEmpty()) net.minecraft.block.Block.spawnAsEntity(world, pos.up(), remainder);
+        }
         else setInventorySlotContents(5, remainder.isEmpty() ? ItemStack.EMPTY : remainder);
         return true;
     }
 
     private void complete(MachineRecipe recipe, ItemStack crafted) {
         ItemStack result = crafted.copy();
-        if ("smithing_transform".equals(recipe.operation)) {
-            ItemStack base = getStackInSlot(1);
-            net.minecraft.nbt.NBTTagCompound copied = base.hasTagCompound() ? base.getTagCompound().copy() : new net.minecraft.nbt.NBTTagCompound();
-            if (result.hasTagCompound()) copied.merge(result.getTagCompound().copy());
-            result.setItemDamage(base.getItemDamage());
-            if (!copied.isEmpty()) result.setTagCompound(copied);
-        }
         insertOutput(result);
         for (int index = 0; index < recipe.ingredients.length; index++) {
             ItemStack input = getStackInSlot(index);
+            ItemStack remainder = input.getItem().getContainerItem(input);
             input.shrink(1);
-            if (input.isEmpty()) setInventorySlotContents(index, ItemStack.EMPTY);
+            if (input.isEmpty()) setInventorySlotContents(index, remainder);
+            else if (!remainder.isEmpty()) net.minecraft.block.Block.spawnAsEntity(world, pos.up(), remainder);
         }
         if (recipe.experience > 0) {
             int points = MathHelper.floor(recipe.experience);

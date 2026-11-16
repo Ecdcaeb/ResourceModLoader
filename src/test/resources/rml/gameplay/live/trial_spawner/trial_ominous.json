@@ -1,0 +1,29 @@
+{
+  "activation_range": 8,
+  "spawn_range": 2,
+  "normal": {
+    "entity": "minecraft:zombie",
+    "spawn_count": 2,
+    "additional_spawn_count": {"type": "minecraft:linear", "base": 1, "per_level_above_first": 1},
+    "max_active": 1,
+    "additional_max_active": {"type": "minecraft:linear", "base": 0, "per_level_above_first": 1},
+    "spawn_interval": 1,
+    "cooldown": 20,
+    "reward": {"id": "minecraft:emerald", "count": 1}
+  },
+  "ominous": {
+    "condition": {"type": "rml:entity_on_fire", "on_fire": true},
+    "settings": {
+      "entity": "minecraft:skeleton",
+      "spawn_count": 4,
+      "additional_spawn_count": {"type": "minecraft:linear", "base": 1, "per_level_above_first": 1},
+      "max_active": 2,
+      "additional_max_active": {"type": "minecraft:linear", "base": 0, "per_level_above_first": 1},
+      "spawn_interval": 1,
+      "cooldown": 80,
+      "reward": {"id": "minecraft:diamond", "count": 2},
+      "reward_per_player": true,
+      "on_spawn": {"type": "rml:potion", "potion": "minecraft:strength", "duration": 200, "amplifier": 1}
+    }
+  }
+}

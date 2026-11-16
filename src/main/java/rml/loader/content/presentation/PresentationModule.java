@@ -48,6 +48,7 @@ public final class PresentationModule {
     private final DataRules rules;
     private final CompiledTagModule tags;
     private DeserializerManager decoders;
+    private final PresentationDeferredChildren deferredChildren = new PresentationDeferredChildren();
     private final Map<ResourceLocation, Definition> definitions = new LinkedHashMap<>();
     private final Map<ResourceLocation, SoundEvent> soundEvents = new HashMap<>();
     private final Map<ResourceLocation, PresentationCodecs.SurfaceDefinition> surfaces = new LinkedHashMap<>();
@@ -58,6 +59,7 @@ public final class PresentationModule {
     private final Map<ResourceLocation, PresentationCodecs.EntitySounds> entitySoundVariants = new LinkedHashMap<>();
     private final Map<ResourceLocation, ResourceLocation> defaultSoundVariants = new LinkedHashMap<>();
     private final Map<ResourceLocation, String> defaultSoundVariantTypes = new LinkedHashMap<>();
+    private final BlockPresentationJukebox jukeboxBlock = new BlockPresentationJukebox();
     private BlockPresentationPot potBlock;
     private boolean initialized;
 
@@ -75,12 +77,12 @@ public final class PresentationModule {
         if (manager == null) throw new NullPointerException("manager");
         if (decoders != null && decoders != manager) throw new IllegalStateException("Presentation decoders already registered");
         if (decoders == null) {
-            PresentationCodecs.register(manager);
+            PresentationCodecs.register(manager, deferredChildren);
             decoders = manager;
         }
     }
 
-    /** Decode and validate the entire module before creating native registry entries. */
+    /** Decode registry-independent shells before the native block/item/sound registry events. */
     public synchronized void initialize() {
         if (initialized) return;
         if (decoders == null) throw new IllegalStateException("registerDecoders must run before initialize");
@@ -97,6 +99,10 @@ public final class PresentationModule {
                     throw new IllegalArgumentException("Invalid " + resource.getType() + " at " + resource.getSource() + ": " + ex.getMessage(), ex);
                 }
             }
+        }
+        for (Definition definition : parsed.values()) if (definition.decoded instanceof PresentationCodecs.DialogDefinition) {
+            for (PresentationCodecs.DialogAction action : ((PresentationCodecs.DialogDefinition) definition.decoded).actions)
+                action.validate(id -> parsed.containsKey(PresentationIds.key("dialog", id)), id -> catalog.snapshot().resources("function").containsKey(id));
         }
         Map<ResourceLocation, PresentationCodecs.SurfaceDefinition> parsedSurfaces = new LinkedHashMap<>();
         Map<ResourceLocation, PresentationCodecs.TrimMaterial> parsedTrimMaterials = new LinkedHashMap<>();
@@ -129,21 +135,10 @@ public final class PresentationModule {
             }
             if (definition.decoded instanceof PresentationCodecs.EntityVariant) {
                 PresentationCodecs.EntityVariant variant = (PresentationCodecs.EntityVariant) definition.decoded;
-                parsedTextures.putIfAbsent(variant.entity, variant.texture);
+                parsedTextures.put(PresentationIds.key(definition.type, definition.id), variant.texture);
                 if (variant.sounds != null) {
                     parsedSounds.put(PresentationIds.key(definition.type, definition.id), variant.sounds);
-                    parsedDefaultSounds.putIfAbsent(variant.entity, definition.id);
-                    parsedDefaultSoundTypes.putIfAbsent(variant.entity, definition.type);
                     registerEntitySounds(variant.sounds);
-                }
-            }
-        }
-        for (Definition definition : parsed.values()) {
-            if (definition.decoded instanceof PresentationCodecs.EntityVariant) {
-                PresentationCodecs.EntityVariant variant = (PresentationCodecs.EntityVariant) definition.decoded;
-                if (variant.sounds != null) {
-                    parsedDefaultSounds.put(variant.entity, definition.id);
-                    parsedDefaultSoundTypes.put(variant.entity, definition.type);
                 }
             }
         }
@@ -160,18 +155,38 @@ public final class PresentationModule {
         boolean hasPotPatterns = hasType(parsed, "decorated_pot_pattern");
         if (hasPotPatterns) potBlock = new BlockPresentationPot(firstIdOfType(parsed, "decorated_pot_pattern"));
         registerNativeEntities(parsed);
+        GameRegistry.registerTileEntity(BlockPresentationJukebox.PlayingRecord.class, new ResourceLocation("rml", "presentation_jukebox"));
         if (hasPotPatterns) GameRegistry.registerTileEntity(TileEntityPresentationPot.class, new ResourceLocation("rml", "decorated_pot"));
         MinecraftForge.EVENT_BUS.register(this);
         if (net.minecraftforge.fml.common.FMLCommonHandler.instance().getSide().isClient()) {
-            PresentationClient.configure(surfaces, paintings, trimMaterials, trimPatterns, defaultEntityTextures);
+            PresentationClient.configure(surfaces, paintings, trimMaterials, trimPatterns, defaultEntityTextures, soundEvents.keySet());
             PresentationClient.installNetworkHandler();
             PresentationClient.registerModels();
         }
         PresentationNetwork.register(this);
+        PresentationPlayback.register();
         initialized = true;
     }
 
+    /** FML initialization hook, after every native registry event and before worlds/functions run. */
+    public synchronized void initializeAfterRegistries() {
+        if (!initialized) throw new IllegalStateException("initialize must register presentation shells first");
+        try {
+            deferredChildren.resolve();
+            for (PresentationCodecs.TrimPattern pattern : trimPatterns.values())
+                if (pattern.templateItem != null && !ForgeRegistries.ITEMS.containsKey(pattern.templateItem))
+                    throw new IllegalArgumentException("Unknown trim template item " + pattern.templateItem);
+        } catch (JsonDeserializeException ex) {
+            throw new IllegalArgumentException("Invalid presentation condition or trim ingredient after native registry initialization", ex);
+        }
+    }
+
     private void validateTyped(CompiledResource resource, Definition definition) {
+        if (definition.decoded instanceof PresentationCodecs.ChatStyle) {
+            String color = ((PresentationCodecs.ChatStyle) definition.decoded).color;
+            TextFormatting formatting = TextFormatting.getValueByName(color.toLowerCase(java.util.Locale.ROOT));
+            if (formatting == null || !formatting.isColor()) throw new IllegalArgumentException("Unknown chat color " + color);
+        }
         if (definition.decoded instanceof PresentationCodecs.EntityVariant) {
             PresentationCodecs.EntityVariant variant = (PresentationCodecs.EntityVariant) definition.decoded;
             ResourceLocation expected = entityType(resource.getType());
@@ -282,6 +297,7 @@ public final class PresentationModule {
     @SubscribeEvent
     public void registerBlocks(RegistryEvent.Register<net.minecraft.block.Block> event) {
         if (potBlock != null) event.getRegistry().register(potBlock);
+        event.getRegistry().register(jukeboxBlock);
     }
     @SubscribeEvent
     public void registerSounds(RegistryEvent.Register<SoundEvent> event) {
@@ -303,6 +319,20 @@ public final class PresentationModule {
     public void assignDefaultEntitySounds(net.minecraftforge.event.entity.EntityJoinWorldEvent event) {
         if (event.getWorld().isRemote) return;
         net.minecraft.entity.Entity entity = event.getEntity();
+        if (entity instanceof net.minecraft.entity.EntityLivingBase && entity.getEntityData().getString("rml_presentation_variant").isEmpty()) {
+            ResourceLocation entityType = net.minecraft.entity.EntityList.getKey(entity);
+            DataContext context = new DataContext((net.minecraft.world.WorldServer) event.getWorld(), entity, entity.getPosition(), entity.world.rand, 0);
+            Definition selected = null;
+            long total = 0;
+            for (Definition definition : definitions.values()) if (definition.decoded instanceof PresentationCodecs.EntityVariant) {
+                PresentationCodecs.EntityVariant value = (PresentationCodecs.EntityVariant) definition.decoded;
+                if (value.entity.equals(entityType) && value.condition.test(context)) {
+                    total += value.weight;
+                    if (entity.world.rand.nextDouble() * total < value.weight) selected = definition;
+                }
+            }
+            if (selected != null) assignVariant(entity, selected, false);
+        }
         String current = entity.getEntityData().getString("rml_presentation_sound_variant");
         ResourceLocation type = net.minecraft.entity.EntityList.getKey(entity);
         ResourceLocation defaultVariant = defaultSoundVariants.get(type);
@@ -335,14 +365,15 @@ public final class PresentationModule {
             ResourceLocation itemId = itemId("jukebox_song".equals(definition.type) ? "record" : "instrument", definition.id);
             if (event.getRegistry().containsKey(itemId)) throw new IllegalStateException("Playback item id is already registered: " + itemId);
             net.minecraft.item.Item item = "jukebox_song".equals(definition.type)
-                    ? new PresentationRecordItem(itemId.getPath(), sound)
-                    : new PresentationInstrumentItem(sound, playback.volume, playback.pitch);
+                    ? new PresentationRecordItem(itemId.getPath(), sound, playback, jukeboxBlock)
+                    : new PresentationInstrumentItem(sound, playback);
             item.setRegistryName(itemId);
             item.setTranslationKey(itemId.getNamespace() + "." + itemId.getPath().replace('/', '.'));
             item.setCreativeTab(net.minecraft.creativetab.CreativeTabs.MISC);
             event.getRegistry().register(item);
         }
     }
+
 
     private static ResourceLocation itemId(String family, ResourceLocation id) {
         return new ResourceLocation("rml", family + "/" + id.getNamespace() + "/" + id.getPath());
@@ -369,7 +400,8 @@ public final class PresentationModule {
         StringBuilder message = new StringBuilder();
         for (int i = 2; i < args.length; i++) { if (i > 2) message.append(' '); message.append(args[i]); }
         PresentationCodecs.ChatStyle chatStyle = (PresentationCodecs.ChatStyle) style.decoded;
-        TextComponentString component = new TextComponentString(chatStyle.prefix + message + chatStyle.suffix);
+        net.minecraft.util.text.ITextComponent component = new TextComponentString("").appendSibling(chatStyle.prefix.createCopy())
+                .appendSibling(new TextComponentString(message.toString())).appendSibling(chatStyle.suffix.createCopy());
         String color = chatStyle.color;
         TextFormatting formatting = TextFormatting.getValueByName(color.toUpperCase(java.util.Locale.ROOT));
         if (formatting == null || !formatting.isColor()) throw new CommandException("Unknown chat color '%s' in %s", color, style.id);
@@ -383,7 +415,8 @@ public final class PresentationModule {
         PresentationCodecs.SoundPlayback playback = (PresentationCodecs.SoundPlayback) song.decoded;
         SoundEvent sound = soundEvents.get(playback.sound);
         if (sound == null) throw new CommandException("Sound '%s' is not registered yet", playback.sound);
-        sender.getEntityWorld().playSound(null, sender.getPosition(), sound, SoundCategory.RECORDS, playback.volume, playback.pitch);
+        PresentationPlayback.play(sender.getEntityWorld(), sender.getPosition().getX() + 0.5, sender.getPosition().getY() + 0.5,
+                sender.getPosition().getZ() + 0.5, playback, -1, false);
     }
 
     private void openDialog(ICommandSender sender, String[] args) throws CommandException {
@@ -407,7 +440,7 @@ public final class PresentationModule {
         }
         if (player.isDead || player.connection == null || player.world.isRemote)
             throw new IllegalStateException("Dialog preview requires a connected server player");
-        PresentationNetwork.open(player, id, dialog.json);
+        PresentationNetwork.open(player, id, (PresentationCodecs.DialogDefinition) dialog.decoded, new net.minecraft.nbt.NBTTagCompound());
     }
 
     private void setVariant(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
@@ -434,13 +467,19 @@ public final class PresentationModule {
         PresentationCodecs.EntityVariant value = (PresentationCodecs.EntityVariant) variant.decoded;
         if (!value.entity.equals(net.minecraft.entity.EntityList.getKey(entity)))
             throw new CommandException("Variant '%s' targets %s, not %s", variant.id, value.entity, entity.getName());
+        assignVariant(entity, variant, true);
+    }
+
+    private void assignVariant(net.minecraft.entity.Entity entity, Definition variant, boolean sync) {
+        PresentationCodecs.EntityVariant value = (PresentationCodecs.EntityVariant) variant.decoded;
         entity.getEntityData().setString("rml_presentation_variant", variant.id.toString());
         entity.getEntityData().setString("rml_presentation_variant_type", variant.type);
         entity.getEntityData().setString("rml_presentation_variant_entity", value.entity.toString());
         entity.getEntityData().setString("rml_presentation_variant_texture", value.texture.toString());
-        entity.getEntityData().setString("rml_presentation_sound_variant", "");
+        entity.getEntityData().setString("rml_presentation_sound_variant", value.sounds == null ? "" : variant.id.toString());
+        entity.getEntityData().setString("rml_presentation_sound_variant_type", value.sounds == null ? "" : variant.type);
         entity.getEntityData().setInteger("rml_presentation_variant_revision", entity.getEntityData().getInteger("rml_presentation_variant_revision") + 1);
-        PresentationNetwork.syncVariant(entity, variant.id, variant.type, value);
+        if (sync) PresentationNetwork.syncVariant(entity, variant.id, variant.type, value);
     }
 
     public ResourceLocation resolveTrimMaterial(net.minecraft.item.ItemStack addition, DataContext context) {
@@ -448,11 +487,11 @@ public final class PresentationModule {
         net.minecraft.nbt.NBTTagCompound tag = addition.getTagCompound();
         if (tag != null && tag.hasKey("rml_trim_material")) {
             if (!tag.hasKey("rml_trim_material", 8)) throw new IllegalArgumentException("rml_trim_material must be a resource identifier string");
-            return new ResourceLocation(tag.getString("rml_trim_material"));
+            ResourceLocation id = new ResourceLocation(tag.getString("rml_trim_material"));
+            if (!trimMaterials.containsKey(PresentationIds.key("trim_material", id))) throw new IllegalArgumentException("Unknown trim material " + id);
+            return id;
         }
         ResourceLocation itemId = net.minecraft.item.Item.REGISTRY.getNameForObject(addition.getItem());
-        ResourceLocation vanillaMaterial = vanillaTrimMaterial(itemId);
-        if (vanillaMaterial != null) return vanillaMaterial;
         ResourceLocation match = null;
         for (Definition definition : definitions.values()) {
             if (!(definition.decoded instanceof PresentationCodecs.TrimMaterial)) continue;
@@ -486,23 +525,6 @@ public final class PresentationModule {
         return match;
     }
 
-    private static ResourceLocation vanillaTrimMaterial(ResourceLocation item) {
-        if (item == null || !"minecraft".equals(item.getNamespace())) return null;
-        switch (item.getPath()) {
-            case "amethyst_shard": return new ResourceLocation("minecraft", "amethyst");
-            case "copper_ingot": return new ResourceLocation("minecraft", "copper");
-            case "diamond": return new ResourceLocation("minecraft", "diamond");
-            case "emerald": return new ResourceLocation("minecraft", "emerald");
-            case "gold_ingot": return new ResourceLocation("minecraft", "gold");
-            case "iron_ingot": return new ResourceLocation("minecraft", "iron");
-            case "lapis_lazuli": return new ResourceLocation("minecraft", "lapis");
-            case "netherite_ingot": return new ResourceLocation("minecraft", "netherite");
-            case "quartz": return new ResourceLocation("minecraft", "quartz");
-            case "redstone": return new ResourceLocation("minecraft", "redstone");
-            case "resin_brick": return new ResourceLocation("minecraft", "resin");
-            default: return null;
-        }
-    }
 
     private void applyTrim(ICommandSender sender, String[] args) throws CommandException {
         if (args.length != 3 || !(sender.getCommandSenderEntity() instanceof net.minecraft.entity.player.EntityPlayer)) throw usage();
@@ -555,18 +577,9 @@ public final class PresentationModule {
         ((TileEntityPresentationPot) tile).setPattern(pattern.id);
     }
 
-    void executeDialogAction(EntityPlayerMP player, ResourceLocation id, int index) {
-        Definition dialog = definitions.get(PresentationIds.key("dialog", id));
-        if (dialog == null) return;
-        PresentationCodecs.DialogDefinition decoded = (PresentationCodecs.DialogDefinition) dialog.decoded;
-        PresentationCodecs.DialogAction action = decoded.actions[index];
-        if (action instanceof PresentationCodecs.MessageAction) {
-            player.getServer().getPlayerList().sendMessage(new TextComponentString(((PresentationCodecs.MessageAction) action).text));
-        } else if (action instanceof PresentationCodecs.FunctionAction) {
-            ResourceLocation function = ((PresentationCodecs.FunctionAction) action).function;
-            DataContext context = new DataContext(player.getServerWorld(), player, player.getPosition(), player.getRNG(), 0);
-            rules.invoke(function, context);
-        }
+    void invokeDialogFunction(EntityPlayerMP player, ResourceLocation function, net.minecraft.nbt.NBTTagCompound inputs) {
+        DataContext context = new DataContext(player.getServerWorld(), player, player.getPosition(), player.getRNG(), 0).withInputs(inputs);
+        rules.invoke(function, context);
     }
 
     private Definition require(String id, String type) throws CommandException {
@@ -579,23 +592,7 @@ public final class PresentationModule {
     private static Definition parse(CompiledResource resource) {
         JsonElement element = resource.getValue();
         if (!element.isJsonObject()) throw new IllegalArgumentException("definition must be an object");
-        JsonObject json = element.getAsJsonObject();
-        Definition definition = new Definition(resource.getId(), resource.getType(), json);
-        if ("chat_type".equals(resource.getType())) {
-            definition.text("color", "white");
-            String color = definition.text("color", "white");
-            TextFormatting formatting = TextFormatting.getValueByName(color.toUpperCase(java.util.Locale.ROOT));
-            if (formatting == null || !formatting.isColor()) throw new IllegalArgumentException("color must be a Minecraft text color");
-        }
-        if ("instrument".equals(resource.getType()) || "jukebox_song".equals(resource.getType())) {
-            JsonElement sound = json.get("sound");
-            if (sound == null || !sound.isJsonPrimitive()) throw new IllegalArgumentException("sound must be a resource identifier");
-            new ResourceLocation(sound.getAsString());
-            float volume = definition.number("volume", 1.0F);
-            float pitch = definition.number("pitch", 1.0F);
-            if (volume < 0 || pitch <= 0) throw new IllegalArgumentException("volume must be nonnegative and pitch must be positive");
-        }
-        return definition;
+        return new Definition(resource.getId(), resource.getType());
     }
 
     private static CommandException usage() {
@@ -605,10 +602,7 @@ public final class PresentationModule {
     private static final class Definition {
         final ResourceLocation id;
         final String type;
-        final JsonObject json;
-        Definition(ResourceLocation id, String type, JsonObject json) { this.id = id; this.type = type; this.json = json; }
+        Definition(ResourceLocation id, String type) { this.id = id; this.type = type; }
         Object decoded;
-        String text(String key, String fallback) { JsonElement value = json.get(key); return value == null || !value.isJsonPrimitive() ? fallback : value.getAsString(); }
-        float number(String key, float fallback) { JsonElement value = json.get(key); return value == null ? fallback : value.getAsFloat(); }
     }
 }

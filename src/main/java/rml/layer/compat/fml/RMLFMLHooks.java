@@ -32,6 +32,23 @@ public class RMLFMLHooks {
     }
 
     public static class LateHooks{
+        public static int modifyItemDamage(ItemStack stack, int amount, net.minecraft.entity.EntityLivingBase entity) {
+            return ResourceModLoader.runtime().getGameplay().modifyItemDamage(stack, amount, entity);
+        }
+
+        public static ItemStack projectileWeapon(ItemStack weapon) {
+            return ResourceModLoader.runtime().getGameplay().hasNativeEnchantment(weapon) ? weapon.copy() : weapon;
+        }
+
+        public static boolean spawnEnchantedProjectile(net.minecraft.world.World world, net.minecraft.entity.Entity projectile,
+                                                       net.minecraft.entity.EntityLivingBase shooter, ItemStack weapon, ItemStack ammunition) {
+            return ResourceModLoader.runtime().getGameplay().spawnEnchantedProjectile(world, projectile, shooter, weapon, ammunition);
+        }
+
+        public static void consumeEnchantedAmmunition(ItemStack ammunition, int amount, ItemStack weapon, net.minecraft.entity.EntityLivingBase shooter) {
+            ResourceModLoader.runtime().getGameplay().consumeEnchantedAmmunition(ammunition, amount, weapon, shooter);
+        }
+
         /**
          * {@link CraftingHelper#getItemStack(JsonObject, JsonContext)}
          * {@link CraftingHelper#getItemStackBasic(JsonObject, JsonContext)}

@@ -1,0 +1,12 @@
+{
+  "max_level": 1,
+  "supported_items": "minecraft:bow",
+  "slots": ["hand"],
+  "effects": {
+    "projectile_count": [{"effect": {"type": "rml:set", "amount": 3}}],
+    "projectile_spread": [{"effect": {"type": "rml:set", "amount": 10}}],
+    "projectile_speed": [{"effect": {"type": "rml:multiply", "amount": 1.5}}],
+    "ammunition_use": [{"effect": {"type": "rml:set", "amount": 2}}],
+    "projectile_spawned": [{"effect": {"type": "rml:ignite", "duration": 2}}]
+  }
+}

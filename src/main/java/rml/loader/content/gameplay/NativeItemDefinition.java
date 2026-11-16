@@ -20,7 +20,8 @@ public final class NativeItemDefinition {
     public final int nutrition;
     public final float saturation;
     public final boolean alwaysEdible;
-    public final DataRules.Effect useEffect;
+    public DataRules.Effect useEffect;
+    private com.google.gson.JsonElement pendingUseEffect;
 
     private NativeItemDefinition(ResourceLocation id, ResourceLocation model, int maxStackSize, int maxDamage,
                                  String creativeTab, String harvestTool, int harvestLevel, float destroySpeed,
@@ -35,6 +36,22 @@ public final class NativeItemDefinition {
 
     public static NativeItemDefinition decode(DeserializerManager manager, ResourceLocation id, JsonObject json)
             throws rml.deserializer.JsonDeserializeException {
+        return decode(manager, id, json, false);
+    }
+
+    static NativeItemDefinition decodeForRegistration(DeserializerManager manager, ResourceLocation id, JsonObject json) throws rml.deserializer.JsonDeserializeException {
+        return decode(manager, id, json, true);
+    }
+
+    void resolveDependencies(DeserializerManager manager) throws rml.deserializer.JsonDeserializeException {
+        if (pendingUseEffect != null) {
+            useEffect = manager.decode(DataRules.Effect.class, pendingUseEffect);
+            pendingUseEffect = null;
+        }
+    }
+
+    private static NativeItemDefinition decode(DeserializerManager manager, ResourceLocation id, JsonObject json, boolean deferred) throws rml.deserializer.JsonDeserializeException {
+        GameplayFields.only(json, "id", "model", "max_stack_size", "max_damage", "creative_tab", "harvest_tool", "harvest_level", "destroy_speed", "equipment_slot", "use_action", "use_duration", "food", "on_use");
         ResourceLocation model = manager.decode(ResourceLocation.class, required(json, "model"));
         int stackSize = integer(json, "max_stack_size", 64);
         int damage = integer(json, "max_damage", 0);
@@ -50,21 +67,22 @@ public final class NativeItemDefinition {
         boolean alwaysEdible = false;
         if (json.has("food")) {
             JsonObject food = json.getAsJsonObject("food");
+            GameplayFields.only(food, "nutrition", "saturation", "always_edible");
             nutrition = integer(food, "nutrition", -1);
             saturation = food.has("saturation") ? food.get("saturation").getAsFloat() : -1;
             alwaysEdible = food.has("always_edible") && food.get("always_edible").getAsBoolean();
         }
-        DataRules.Effect useEffect = json.has("on_use") ? manager.decode(DataRules.Effect.class, json.get("on_use")) : null;
+        DataRules.Effect useEffect = !deferred && json.has("on_use") ? manager.decode(DataRules.Effect.class, json.get("on_use")) : null;
         if (nutrition > 0 && "none".equals(useAction)) useAction = "eat";
-        if (useEffect != null && "none".equals(useAction)) useAction = "drink";
+        if (json.has("on_use") && "none".equals(useAction)) useAction = "drink";
         if (model == null || stackSize < 1 || stackSize > 64 || damage < 0 || harvest < -1 || speed < 0 || Float.isNaN(speed)
-                || Float.isInfinite(speed) || duration < 0 || nutrition < 0 || nutrition > 20 || saturation < 0 || Float.isInfinite(saturation)) {
+                || Float.isInfinite(speed) || duration < 0 || nutrition < 0 || nutrition > 20 || saturation < 0 || !Float.isFinite(saturation)) {
             throw new IllegalArgumentException("invalid item stack, tool, food, or use values");
         }
         if (!equipment.isEmpty() && !equipment.matches("head|chest|legs|feet")) throw new IllegalArgumentException("equipment_slot must be an armor slot");
         if (!useAction.matches("none|eat|drink|block")) throw new IllegalArgumentException("invalid use_action for Forge 1.12.2");
         if ("block".equals(useAction) && duration < 1) throw new IllegalArgumentException("block use_action requires positive use_duration");
-        if ((nutrition > 0 || saturation > 0 || useEffect != null) && duration == 0) duration = 32;
+        if ((nutrition > 0 || saturation > 0 || json.has("on_use")) && duration == 0) duration = 32;
         if (damage > 0) stackSize = 1;
         if (!java.util.Arrays.asList("misc", "building_blocks", "decorations", "redstone", "transportation", "tools", "combat", "brewing", "materials", "food").contains(tab)) {
             throw new IllegalArgumentException("unknown creative_tab: " + tab);
@@ -72,8 +90,10 @@ public final class NativeItemDefinition {
         if (!tool.isEmpty() && !java.util.Arrays.asList("pickaxe", "axe", "shovel", "hoe", "sword").contains(tool)) {
             throw new IllegalArgumentException("unsupported harvest_tool: " + tool);
         }
-        return new NativeItemDefinition(id, model, stackSize, damage, tab, tool, harvest, speed, equipment,
+        NativeItemDefinition result = new NativeItemDefinition(id, model, stackSize, damage, tab, tool, harvest, speed, equipment,
                 useAction, duration, nutrition, saturation, alwaysEdible, useEffect);
+        if (deferred) result.pendingUseEffect = json.get("on_use");
+        return result;
     }
 
     private static com.google.gson.JsonElement required(JsonObject json, String key) {

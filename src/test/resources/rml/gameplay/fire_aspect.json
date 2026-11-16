@@ -1,0 +1,11 @@
+{
+  "weight": "rare",
+  "max_level": 2,
+  "min_cost": {"type": "minecraft:linear", "base": 10, "per_level_above_first": 20},
+  "max_cost": {"type": "minecraft:linear", "base": 60, "per_level_above_first": 20},
+  "supported_items": "minecraft:diamond_sword",
+  "slots": ["mainhand"],
+  "effects": {
+    "post_attack": [{"affected": "victim", "effect": {"type": "rml:ignite", "duration": {"type": "minecraft:linear", "base": 4, "per_level_above_first": 4}}}]
+  }
+}

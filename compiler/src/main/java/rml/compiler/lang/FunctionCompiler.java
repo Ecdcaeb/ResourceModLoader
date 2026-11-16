@@ -33,7 +33,6 @@ public final class FunctionCompiler {
         private final Map<String, String> wrappers = new TreeMap<>();
         private final Map<String, List<String>> compiled = new TreeMap<>();
         private final Set<String> including = new LinkedHashSet<>();
-        private final Set<String> runtimeFunctions = new LinkedHashSet<>();
         private final Set<String> external = new LinkedHashSet<>();
 
         private Compiler(Project project, Map<String, List<String>> functionTags) {
@@ -50,21 +49,6 @@ public final class FunctionCompiler {
                     throw error("wrapper_collision", tagSource(id), 0, "Generated tag wrapper collides with function: " + wrapper);
                 }
                 wrappers.put(id, wrapper);
-            }
-            for (SourceResource source : sources.values()) {
-                String[] lines = source.getText().split("\\r\\n|\\r|\\n", -1);
-                for (int line = 0; line < lines.length; line++) {
-                    List<Token> words = tokens(lines[line].trim());
-                    if (words.size() >= 6 && "function".equals(words.get(0).value)
-                            && "with".equals(words.get(2).value) && "storage".equals(words.get(3).value)) {
-                        String target = words.get(1).value;
-                        if (target.startsWith("#")) {
-                            String tag = identifier(target.substring(1), source.getPath(), line + 1);
-                            List<String> members = tags.get(tag);
-                            if (members != null) for (String member : members) runtimeFunctions.add(identifier(member, source.getPath(), line + 1));
-                        } else runtimeFunctions.add(identifier(target, source.getPath(), line + 1));
-                    }
-                }
             }
         }
 
@@ -106,10 +90,7 @@ public final class FunctionCompiler {
                 if (more) continue;
                 String command = logical.toString().trim();
                 logical.setLength(0);
-                if (command.startsWith("$")) {
-                    String expanded = substitute(command.substring(1), source, start).trim();
-                    command = runtimeFunctions.contains(source.getId()) && expanded.contains("$(") ? "$" + expanded : expanded;
-                }
+                if (command.startsWith("$")) command = substitute(command.substring(1), source, start).trim();
                 List<Token> tokens = tokens(command);
                 if ("#include".equals(tokens.get(0).value)) {
                     require(tokens.size() == 2, source.getPath(), start, "invalid_include", "Expected #include <function>");
@@ -135,19 +116,21 @@ public final class FunctionCompiler {
         private String substitute(String command, SourceResource source, int line) {
             StringBuilder result = new StringBuilder();
             int offset = 0;
+            boolean runtime = false;
             int opening;
             while ((opening = command.indexOf("$(", offset)) >= 0) {
                 result.append(command, offset, opening);
                 int closing = command.indexOf(')', opening + 2);
-                if (closing < 0) throw error("invalid_macro", source.getPath(), line, "Unclosed constant substitution");
+                if (closing < 0) throw error("invalid_macro", source.getPath(), line, "Unclosed parameter substitution");
                 String name = command.substring(opening + 2, closing);
+                if (name.isEmpty()) throw error("invalid_macro", source.getPath(), line, "Parameter name must not be empty");
                 String value = project.getConstants().get(name);
-                if (value == null && runtimeFunctions.contains(source.getId())) {
+                if (value == null) {
+                    runtime = true;
                     result.append(command, opening, closing + 1);
                     offset = closing + 1;
                     continue;
                 }
-                if (value == null) throw error("missing_constant", source.getPath(), line, "Unknown constant: " + name);
                 if (value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0 || value.indexOf('\u0085') >= 0
                         || value.indexOf('\u2028') >= 0 || value.indexOf('\u2029') >= 0) {
                     throw error("invalid_constant", source.getPath(), line, "Constant must occupy one line: " + name);
@@ -155,7 +138,8 @@ public final class FunctionCompiler {
                 result.append(value);
                 offset = closing + 1;
             }
-            return result.append(command, offset, command.length()).toString();
+            String expanded = result.append(command, offset, command.length()).toString();
+            return runtime ? "$" + expanded : expanded;
         }
 
         private String lower(String command, String source, int line) {

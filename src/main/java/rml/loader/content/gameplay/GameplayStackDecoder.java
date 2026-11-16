@@ -24,6 +24,13 @@ final class GameplayStackDecoder {
     static ItemStack decode(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         if (value == null || !value.isJsonObject()) throw new IllegalArgumentException("item stack result must be an object");
         JsonObject source = value.getAsJsonObject();
+        if (source.has("type")) {
+            ItemStack custom = manager.decode(ItemStack.class, source);
+            if (custom == null || custom.isEmpty()) throw new IllegalArgumentException("Custom item result resolved to an empty stack");
+            return custom.copy();
+        }
+        GameplayFields.only(source, "id", "item", "count", "data", "nbt", "components");
+        if (source.has("id") && source.has("item")) throw new IllegalArgumentException("Item result cannot specify both id and item");
         if (!source.has("id") && !source.has("item")) throw new IllegalArgumentException("item stack result requires id");
         String itemId = source.has("id") ? source.get("id").getAsString() : source.get("item").getAsString();
         JsonObject nativeStack = new JsonObject();
@@ -54,12 +61,12 @@ final class GameplayStackDecoder {
                     merge(tag, compound(manager, value));
                     break;
                 case "minecraft:custom_name":
-                    display(tag).setString("Name", textJson(manager.decode(ITextComponent.class, value)));
+                    display(tag).setString("Name", manager.decode(ITextComponent.class, value).getFormattedText());
                     break;
                 case "minecraft:lore": {
                     NBTTagList lore = new NBTTagList();
                     JsonArray lines = value.getAsJsonArray();
-                    for (JsonElement line : lines) lore.appendTag(new NBTTagString(textJson(manager.decode(ITextComponent.class, line))));
+                    for (JsonElement line : lines) lore.appendTag(new NBTTagString(manager.decode(ITextComponent.class, line).getFormattedText()));
                     display(tag).setTag("Lore", lore);
                     break;
                 }
@@ -68,6 +75,7 @@ final class GameplayStackDecoder {
                     nativeStack.add("data", value);
                     break;
                 case "minecraft:unbreakable": {
+                    if (value.isJsonObject()) GameplayFields.only(value.getAsJsonObject(), "show_in_tooltip");
                     boolean enabled = value.isJsonObject() || value.getAsBoolean();
                     tag.setBoolean("Unbreakable", enabled);
                     if (value.isJsonObject() && value.getAsJsonObject().has("show_in_tooltip") && !value.getAsJsonObject().get("show_in_tooltip").getAsBoolean()) tag.setInteger("HideFlags", tag.getInteger("HideFlags") | 4);
@@ -83,7 +91,11 @@ final class GameplayStackDecoder {
                     }
                     JsonArray blocks = blockIds(value);
                     NBTTagList list = new NBTTagList();
-                    for (JsonElement block : blocks) list.appendTag(new NBTTagString(block.getAsString()));
+                    for (JsonElement block : blocks) {
+                        ResourceLocation id = manager.decode(ResourceLocation.class, block);
+                        if (!net.minecraft.block.Block.REGISTRY.containsKey(id)) throw new IllegalArgumentException("Unknown adventure-mode block: " + id);
+                        list.appendTag(new NBTTagString(id.toString()));
+                    }
                     tag.setTag("minecraft:can_break".equals(key) ? "CanDestroy" : "CanPlaceOn", list);
                     break;
                 }
@@ -104,27 +116,32 @@ final class GameplayStackDecoder {
         if (components == null || !components.has("minecraft:enchantments")) return;
         JsonObject levels = components.getAsJsonObject("minecraft:enchantments");
         if (levels.has("levels")) {
+            GameplayFields.only(levels, "levels", "show_in_tooltip");
             if (levels.has("show_in_tooltip") && !levels.get("show_in_tooltip").getAsBoolean()) {
                 tag.setInteger("HideFlags", tag.getInteger("HideFlags") | 1);
                 stack.setTagCompound(tag);
             }
             levels = levels.getAsJsonObject("levels");
         }
+        java.util.Map<Enchantment, Integer> enchantments = net.minecraft.enchantment.EnchantmentHelper.getEnchantments(stack);
         for (Map.Entry<String, JsonElement> entry : levels.entrySet()) {
             ResourceLocation id = manager.decode(ResourceLocation.class, new com.google.gson.JsonPrimitive(entry.getKey()));
             Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
             if (enchantment == null) throw new IllegalArgumentException("Unknown enchantment in item result: " + id);
             int level = entry.getValue().getAsInt();
             if (level < 1 || level > 32767) throw new IllegalArgumentException("enchantment level must be positive");
-            stack.addEnchantment(enchantment, level);
+            enchantments.put(enchantment, level);
         }
+        net.minecraft.enchantment.EnchantmentHelper.setEnchantments(enchantments, stack);
     }
 
     private static JsonArray blockIds(JsonElement value) {
         if (value.isJsonArray()) return value.getAsJsonArray();
         JsonArray result = new JsonArray();
         JsonObject options = value.getAsJsonObject();
+        GameplayFields.only(options, "predicates", "show_in_tooltip");
         for (JsonElement predicate : options.getAsJsonArray("predicates")) {
+            GameplayFields.only(predicate.getAsJsonObject(), "blocks");
             JsonElement blocks = predicate.getAsJsonObject().get("blocks");
             if (blocks.isJsonArray()) result.addAll(blocks.getAsJsonArray()); else result.add(blocks);
         }
@@ -139,9 +156,6 @@ final class GameplayStackDecoder {
         return manager.decode(NBTTagCompound.class, value);
     }
 
-    private static String textJson(ITextComponent component) {
-        return new com.google.gson.JsonPrimitive(component.getFormattedText()).toString();
-    }
 
     private static NBTTagCompound display(NBTTagCompound tag) {
         NBTTagCompound display = tag.getCompoundTag("display");

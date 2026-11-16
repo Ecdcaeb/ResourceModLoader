@@ -35,29 +35,34 @@ public final class WorldgenCodecs {
     /** Registers operators on the caller's existing decoder manager; safe before world initialization. */
     public static void registerDecoders(DeserializerManager manager) { registerDecoders(manager,id->null); }
     public static void registerDecoders(DeserializerManager manager,java.util.function.Function<ResourceLocation,Noise> noiseLookup) {
+        WorldgenNodes.register(manager, id -> { throw new IllegalArgumentException("Unknown density_function " + id); });
+        WorldgenPlacement.register(manager, id -> net.minecraft.world.biome.Biome.REGISTRY.containsKey(id));
+        WorldgenAssembly.register(manager);
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "density_constant"), DensityFunction.class,
-                json -> { double value=json.isJsonPrimitive()?json.getAsDouble():number(json.getAsJsonObject(),"value"); return (seed,x,y,z)->value; }));
+                json -> { double value=json.isJsonPrimitive()?json.getAsDouble():number(object(json,"type","value"),"value"); if(!Double.isFinite(value)) throw new IllegalArgumentException("Density constant must be finite"); return (seed,x,y,z)->value; }));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "value_noise"), Noise.class,
                 json -> {
                     JsonObject object=json.getAsJsonObject();
                     if(object.has("amplitudes")) {
+                        WorldgenNodes.fields(object,"type","amplitudes","first_octave");
                         JsonArray amplitudes=object.getAsJsonArray("amplitudes"); if(amplitudes.size()==0) throw new IllegalArgumentException("noise amplitudes must not be empty");
                         int first=object.has("first_octave")?integer(object,"first_octave"):0; double[] scales=new double[amplitudes.size()],weights=new double[amplitudes.size()];
-                        for(int i=0;i<amplitudes.size();i++) { scales[i]=Math.pow(2.0D,first+i); weights[i]=amplitudes.get(i).getAsDouble(); }
+                        for(int i=0;i<amplitudes.size();i++) { scales[i]=Math.pow(2.0D,(double)first+i); weights[i]=amplitudes.get(i).getAsDouble(); if(!Double.isFinite(scales[i])||scales[i]<=0||!Double.isFinite(weights[i])) throw new IllegalArgumentException("Noise octaves and amplitudes must be finite"); }
                         return (seed,x,y,z)->{ double sum=0; for(int i=0;i<scales.length;i++) sum+=valueNoise(seed,x*scales[i],y*scales[i],z*scales[i])*weights[i]; return sum; };
                     }
+                    WorldgenNodes.fields(object,"type","scale","amplitude");
                     double scale=number(object,"scale"),amplitude=number(object,"amplitude"); if(scale<=0) throw new IllegalArgumentException("noise scale must be positive");
                     return (seed,x,y,z)->valueNoise(seed,x*scale,y*scale,z*scale)*amplitude;
                 }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "density_y_gradient"), DensityFunction.class,
-                json -> { JsonObject object=json.getAsJsonObject(); int from=integer(object,"from_y"),to=integer(object,"to_y"); double a=number(object,"from_value"),b=number(object,"to_value"); if(to<=from) throw new IllegalArgumentException("to_y must exceed from_y"); return (seed,x,y,z)->a+(b-a)*MathHelper.clamp((double)(y-from)/(to-from),0.0D,1.0D); }));
+                json -> { JsonObject object=object(json,"type","from_y","to_y","from_value","to_value"); int from=integer(object,"from_y"),to=integer(object,"to_y"); double a=number(object,"from_value"),b=number(object,"to_value"); if(from<0||to>255||to<=from) throw new IllegalArgumentException("Gradient endpoints must increase within 0..255"); return (seed,x,y,z)->a+(b-a)*MathHelper.clamp((double)(y-from)/(to-from),0.0D,1.0D); }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "density_add"), DensityFunction.class,
-                json -> { JsonArray array=json.getAsJsonObject().getAsJsonArray("terms"); if(array.size()<2) throw new IllegalArgumentException("density_add requires at least two terms"); List<DensityFunction> terms=decodeArray(manager,array,DensityFunction.class); return (seed,x,y,z)->{ double value=0; for(DensityFunction term:terms) value+=term.sample(seed,x,y,z); return value; }; }));
+                json -> { JsonArray array=object(json,"type","terms").getAsJsonArray("terms"); if(array.size()<2) throw new IllegalArgumentException("density_add requires at least two terms"); DensityFunction[] terms=decodeArray(manager,array,DensityFunction.class).toArray(new DensityFunction[0]); return (seed,x,y,z)->{ double value=0; for(DensityFunction term:terms) value+=term.sample(seed,x,y,z); return value; }; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "density_multiply"), DensityFunction.class,
-                json -> { JsonObject object=json.getAsJsonObject(); DensityFunction left=manager.decode(DensityFunction.class,object.get("left")); DensityFunction right=manager.decode(DensityFunction.class,object.get("right")); return (seed,x,y,z)->left.sample(seed,x,y,z)*right.sample(seed,x,y,z); }));
+                json -> { JsonObject object=object(json,"type","left","right"); DensityFunction left=manager.decode(DensityFunction.class,object.get("left")); DensityFunction right=manager.decode(DensityFunction.class,object.get("right")); return (seed,x,y,z)->left.sample(seed,x,y,z)*right.sample(seed,x,y,z); }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "density_noise"), DensityFunction.class,
                 json -> {
-                    JsonObject object=json.getAsJsonObject(); double scale=number(object,"scale"),amplitude=object.has("amplitude")?number(object,"amplitude"):1.0D;
+                    JsonObject object=object(json,"type","scale","amplitude","noise"); double scale=number(object,"scale"),amplitude=object.has("amplitude")?number(object,"amplitude"):1.0D;
                     if(scale<=0) throw new IllegalArgumentException("scale must be positive");
                     Noise noise;
                     if(object.has("noise")&&object.get("noise").isJsonPrimitive()&&object.getAsJsonPrimitive("noise").isString()) {
@@ -68,33 +73,45 @@ public final class WorldgenCodecs {
                 }));
 
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "simple_state"), BlockStateProvider.class,
-                json -> { JsonObject object=json.getAsJsonObject(); JsonElement state=object.has("Name")?object:object.has("state")?object.get("state"):object.has("config")?object.get("config").getAsJsonObject().get("state"):null; if(state==null) throw new IllegalArgumentException("simple_state requires state"); IBlockState compiled=WorldgenModule.resolveBlockState(state); return (random,pos)->compiled; }));
+                json -> {
+                    JsonElement state;
+                    if (json.isJsonPrimitive()) state = json;
+                    else {
+                        JsonObject object = object(json,"type","Name","Properties","state","config");
+                        if ((object.has("Name")?1:0)+(object.has("state")?1:0)+(object.has("config")?1:0)!=1) throw new IllegalArgumentException("simple_state requires exactly one state form");
+                        if (object.has("Name")) { JsonObject nativeState=new JsonObject();nativeState.add("Name",object.get("Name"));if(object.has("Properties"))nativeState.add("Properties",object.get("Properties"));state=nativeState; }
+                        else if (object.has("state")) state=object.get("state");
+                        else state=object(object.get("config"),"state").get("state");
+                    }
+                    IBlockState compiled=manager.decode(IBlockState.class,state); return (random,pos)->compiled;
+                }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "weighted_state"), BlockStateProvider.class,
                 json -> {
+                    object(json,"type","entries");
                     java.lang.reflect.Type weightedType = new com.google.gson.reflect.TypeToken<rml.deserializer.value.WeightedList<BlockStateProvider>>() { }.getType();
                     @SuppressWarnings("unchecked") rml.deserializer.value.WeightedList<BlockStateProvider> providers = (rml.deserializer.value.WeightedList<BlockStateProvider>) manager.decode(weightedType, json.getAsJsonObject().get("entries"));
                     return (random,pos) -> providers.sample(random).provide(random,pos);
                 }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "condition_y_above"), MaterialCondition.class,
-                json -> { JsonObject object=json.getAsJsonObject(); int y=integer(object,"y"); boolean inclusive=!object.has("inclusive")||object.get("inclusive").getAsBoolean(); return context->inclusive?context.y()>=y:context.y()>y; }));
+                json -> { JsonObject object=object(json,"type","y","inclusive"); int y=integer(object,"y"); if(y<0||y>255)throw new IllegalArgumentException("Material height must be within 0..255"); boolean inclusive=!object.has("inclusive")||object.get("inclusive").getAsBoolean(); return context->inclusive?context.y()>=y:context.y()>y; }));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "condition_noise_threshold"), MaterialCondition.class,
-                json -> { JsonObject object=json.getAsJsonObject(); double scale=number(object,"scale"),threshold=number(object,"threshold"); if(scale<=0) throw new IllegalArgumentException("scale must be positive"); return context->valueNoise(context.seed(),context.x()*scale,context.y()*scale,context.z()*scale)>threshold; }));
+                json -> { JsonObject object=object(json,"type","scale","threshold","noise"); double scale=number(object,"scale"),threshold=number(object,"threshold"); if(scale<=0) throw new IllegalArgumentException("scale must be positive"); Noise source=object.has("noise")?manager.decode(Noise.class,object.get("noise")):WorldgenCodecs::valueNoise; return context->source.sample(context.seed(),context.x()*scale,context.y()*scale,context.z()*scale)>threshold; }));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "material_state"), MaterialRule.class,
-                json -> { BlockStateProvider provider=manager.decode(BlockStateProvider.class,json.getAsJsonObject().get("provider")); return context->provider.provide(context.random(),context.position()); }));
+                json -> { BlockStateProvider provider=manager.decode(BlockStateProvider.class,object(json,"type","provider").get("provider")); return context->provider.provide(context.random(),context.position()); }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "material_condition"), MaterialRule.class,
-                json -> { JsonObject object=json.getAsJsonObject(); MaterialCondition condition=manager.decode(MaterialCondition.class,object.get("if")); MaterialRule thenRule=manager.decode(MaterialRule.class,object.get("then")); MaterialRule elseRule=object.has("else")?manager.decode(MaterialRule.class,object.get("else")):context->null; return context->condition.test(context)?thenRule.apply(context):elseRule.apply(context); }));
+                json -> { JsonObject object=object(json,"type","if","then","else"); MaterialCondition condition=manager.decode(MaterialCondition.class,object.get("if")); MaterialRule thenRule=manager.decode(MaterialRule.class,object.get("then")); MaterialRule elseRule=object.has("else")?manager.decode(MaterialRule.class,object.get("else")):context->null; return context->condition.test(context)?thenRule.apply(context):elseRule.apply(context); }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "ignore_block"), TemplateProcessor.class,
-                json -> { Block block=block(json.getAsJsonObject(),"block"); return (world,pos,info)->info.blockState.getBlock()==block?null:info; }));
+                json -> { Block block=block(object(json,"type","block"),"block"); return (world,pos,info)->info.blockState.getBlock()==block?null:info; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "replace_block"), TemplateProcessor.class,
-                json -> { JsonObject object=json.getAsJsonObject(); Block from=block(object,"from"); IBlockState to=manager.decode(IBlockState.class,object.get("to")); return (world,pos,info)->info.blockState.getBlock()==from?new net.minecraft.world.gen.structure.template.Template.BlockInfo(info.pos,to,info.tileentityData):info; }));
+                json -> { JsonObject object=object(json,"type","from","to"); Block from=block(object,"from"); IBlockState to=manager.decode(IBlockState.class,object.get("to")); return (world,pos,info)->info.blockState.getBlock()==from?new net.minecraft.world.gen.structure.template.Template.BlockInfo(info.pos,to,info.tileentityData):info; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "protect_block"), TemplateProcessor.class,
-                json -> { Block protectedBlock=block(json.getAsJsonObject(),"block"); return (world,pos,info)->world.getBlockState(pos).getBlock()==protectedBlock?null:info; }));
+                json -> { Block protectedBlock=block(object(json,"type","block"),"block"); return (world,pos,info)->world.getBlockState(pos).getBlock()==protectedBlock?null:info; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "position"), TemplateProcessor.class,
-                json -> { JsonObject object=json.getAsJsonObject(); int x=integer(object,"x"),y=integer(object,"y"),z=integer(object,"z"); return new TemplateProcessor(){ @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){return info;} @Override public BlockPos translation(){return new BlockPos(x,y,z);} }; }));
+                json -> { JsonObject object=object(json,"type","x","y","z"); int x=integer(object,"x"),y=integer(object,"y"),z=integer(object,"z"); BlockPos translation=new BlockPos(x,y,z); return new TemplateProcessor(){ @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){return info;} @Override public BlockPos translation(){return translation;} }; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "rotate"), TemplateProcessor.class,
-                json -> { net.minecraft.util.Rotation rotation=net.minecraft.util.Rotation.valueOf(json.getAsJsonObject().get("rotation").getAsString().toUpperCase(java.util.Locale.ROOT)); return new TemplateProcessor(){ @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){return info;} @Override public net.minecraft.util.Rotation rotation(){return rotation;} }; }));
+                json -> { net.minecraft.util.Rotation rotation=net.minecraft.util.Rotation.valueOf(object(json,"type","rotation").get("rotation").getAsString().toUpperCase(java.util.Locale.ROOT)); return new TemplateProcessor(){ @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){return info;} @Override public net.minecraft.util.Rotation rotation(){return rotation;} }; }));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "rule"), TemplateProcessor.class,
-                json -> { java.util.List<TemplateProcessor> processors=new java.util.ArrayList<>(); for(JsonElement rule:json.getAsJsonObject().getAsJsonArray("rules")){ JsonObject object=rule.getAsJsonObject(); Block matcher=block(object,"if_block"); TemplateProcessor then=manager.decode(TemplateProcessor.class,object.get("then")); processors.add((world,pos,info)->info.blockState.getBlock()==matcher?then.processBlock(world,pos,info):info); } return (world,pos,info)->{ net.minecraft.world.gen.structure.template.Template.BlockInfo current=info; for(TemplateProcessor processor:processors){if(current==null) return null;current=processor.processBlock(world,pos,current);} return current; }; }));
+                json -> { java.util.List<TemplateProcessor> processors=new java.util.ArrayList<>(); for(JsonElement rule:object(json,"type","rules").getAsJsonArray("rules")){ JsonObject object=object(rule,"if_block","then"); Block matcher=block(object,"if_block"); TemplateProcessor then=manager.decode(TemplateProcessor.class,object.get("then")); if(then.rotation()!=net.minecraft.util.Rotation.NONE||!then.translation().equals(BlockPos.ORIGIN))throw new IllegalArgumentException("Origin transforms must be top-level processors"); processors.add((world,pos,info)->info.blockState.getBlock()==matcher?then.processBlock(world,pos,info):info); } TemplateProcessor[] compiled=processors.toArray(new TemplateProcessor[0]); return (world,pos,info)->{ net.minecraft.world.gen.structure.template.Template.BlockInfo current=info; for(TemplateProcessor processor:compiled){if(current==null) return null;current=processor.processBlock(world,pos,current);} return current; }; }));
     }
 
     public static Noise decodeNoise(DeserializerManager manager, JsonElement json) throws rml.deserializer.JsonDeserializeException { return manager.decode(Noise.class,json); }
@@ -106,13 +123,14 @@ public final class WorldgenCodecs {
     public static TemplateProcessor decodeProcessorList(DeserializerManager manager,JsonElement definition) throws rml.deserializer.JsonDeserializeException {
         java.lang.reflect.Type listType=new com.google.gson.reflect.TypeToken<List<TemplateProcessor>>() { }.getType();
         @SuppressWarnings("unchecked") List<TemplateProcessor> processors=(List<TemplateProcessor>)manager.decode(listType,definition.getAsJsonObject().get("processors"));
+        TemplateProcessor[] compiled = processors.toArray(new TemplateProcessor[0]);
         return new TemplateProcessor(){
-            @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){net.minecraft.world.gen.structure.template.Template.BlockInfo current=info;for(TemplateProcessor processor:processors){if(current==null)return null;current=processor.processBlock(world,position,current);}return current;}
-            @Override public BlockPos transformOrigin(BlockPos origin){BlockPos offset=BlockPos.ORIGIN;net.minecraft.util.Rotation current=net.minecraft.util.Rotation.NONE;for(TemplateProcessor processor:processors){net.minecraft.util.Rotation next=processor.rotation();if(next!=net.minecraft.util.Rotation.NONE){offset=rotate(offset,next);current=compose(current,next);}offset=offset.add(processor.translation());}return origin.add(offset);}
-            @Override public net.minecraft.util.Rotation rotation(){net.minecraft.util.Rotation result=net.minecraft.util.Rotation.NONE;for(TemplateProcessor processor:processors)result=compose(result,processor.rotation());return result;}
+            @Override public net.minecraft.world.gen.structure.template.Template.BlockInfo processBlock(net.minecraft.world.World world,BlockPos position,net.minecraft.world.gen.structure.template.Template.BlockInfo info){net.minecraft.world.gen.structure.template.Template.BlockInfo current=info;for(TemplateProcessor processor:compiled){if(current==null)return null;current=processor.processBlock(world,position,current);}return current;}
+            @Override public BlockPos transformOrigin(BlockPos origin){BlockPos offset=BlockPos.ORIGIN;for(TemplateProcessor processor:compiled){net.minecraft.util.Rotation next=processor.rotation();if(next!=net.minecraft.util.Rotation.NONE)offset=rotate(offset,next);offset=offset.add(processor.translation());}return origin.add(offset);}
+            @Override public net.minecraft.util.Rotation rotation(){net.minecraft.util.Rotation result=net.minecraft.util.Rotation.NONE;for(TemplateProcessor processor:compiled)result=compose(result,processor.rotation());return result;}
         };
     }
-    private static net.minecraft.util.Rotation compose(net.minecraft.util.Rotation first,net.minecraft.util.Rotation second){
+    static net.minecraft.util.Rotation compose(net.minecraft.util.Rotation first,net.minecraft.util.Rotation second){
         int a=first==net.minecraft.util.Rotation.NONE?0:first==net.minecraft.util.Rotation.CLOCKWISE_90?1:first==net.minecraft.util.Rotation.CLOCKWISE_180?2:3;
         int b=second==net.minecraft.util.Rotation.NONE?0:second==net.minecraft.util.Rotation.CLOCKWISE_90?1:second==net.minecraft.util.Rotation.CLOCKWISE_180?2:3;
         switch((a+b)&3){case 1:return net.minecraft.util.Rotation.CLOCKWISE_90;case 2:return net.minecraft.util.Rotation.CLOCKWISE_180;case 3:return net.minecraft.util.Rotation.COUNTERCLOCKWISE_90;default:return net.minecraft.util.Rotation.NONE;}
@@ -124,11 +142,12 @@ public final class WorldgenCodecs {
     private static Block block(JsonObject json,String key) {
         if(!json.has(key)||!json.get(key).isJsonPrimitive()) throw new IllegalArgumentException("missing block id '"+key+"'");
         ResourceLocation id=new ResourceLocation(json.get(key).getAsString()); Block value=Block.REGISTRY.getObject(id);
-        if(value==null) throw new IllegalArgumentException("unknown block "+id);
+        if(!Block.REGISTRY.containsKey(id)||value==null) throw new IllegalArgumentException("unknown block "+id);
         return value;
     }
-    private static double number(JsonObject json,String key) { if(!json.has(key)||!json.get(key).isJsonPrimitive()||!json.getAsJsonPrimitive(key).isNumber()) throw new IllegalArgumentException("missing numeric '"+key+"'"); return json.get(key).getAsDouble(); }
-    private static int integer(JsonObject json,String key) { if(!json.has(key)||!json.get(key).isJsonPrimitive()||!json.getAsJsonPrimitive(key).isNumber()) throw new IllegalArgumentException("missing integer '"+key+"'"); return json.get(key).getAsInt(); }
+    private static JsonObject object(JsonElement json,String... fields) { JsonObject object=json.getAsJsonObject(); WorldgenNodes.fields(object,fields);return object; }
+    private static double number(JsonObject json,String key) { if(!json.has(key)||!json.get(key).isJsonPrimitive()||!json.getAsJsonPrimitive(key).isNumber()) throw new IllegalArgumentException("missing numeric '"+key+"'"); return WorldgenNodes.finite(json,key); }
+    private static int integer(JsonObject json,String key) { if(!json.has(key)||!json.get(key).isJsonPrimitive()||!json.getAsJsonPrimitive(key).isNumber()) throw new IllegalArgumentException("missing integer '"+key+"'"); return json.get(key).getAsBigDecimal().intValueExact(); }
     private static double valueNoise(long seed,double x,double y,double z) {
         int ix=floor(x),iy=floor(y),iz=floor(z); double fx=fade(x-ix),fy=fade(y-iy),fz=fade(z-iz);
         double x00=mix(lattice(seed,ix,iy,iz),lattice(seed,ix+1,iy,iz),fx),x10=mix(lattice(seed,ix,iy+1,iz),lattice(seed,ix+1,iy+1,iz),fx);

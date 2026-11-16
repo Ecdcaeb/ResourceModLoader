@@ -65,19 +65,23 @@ public final class GameplayModule {
     private final Map<ResourceLocation, Enchantment> enchantments = new LinkedHashMap<>();
     private final Map<ResourceLocation, DamageDefinition> damageTypes = new LinkedHashMap<>();
     private final Map<ResourceLocation, SlotDefinition> slotSources = new LinkedHashMap<>();
-    private final List<IVillager> villagerTrades = new ArrayList<>();
-    private final Map<Block, Block> blockTransformers = new LinkedHashMap<>();
+    private final List<BlockTransformer> blockTransformers = new ArrayList<>();
     private final Map<ResourceLocation, EnchantmentProvider> enchantmentProviders = new LinkedHashMap<>();
     private final Map<ResourceLocation, TrialSpawnerDefinition> trialSpawners = new LinkedHashMap<>();
     private final Map<ResourceLocation, SulfurCubeArchetype> sulfurCubes = new LinkedHashMap<>();
     private final Map<ResourceLocation, MachineRecipe> machineRecipes = new LinkedHashMap<>();
     private boolean initialized;
+    private boolean registryPrepared;
+    private boolean declaresTrials, declaresMachines, declaresSulfur;
+    private List<CompiledResource> declaredDefinitions = Collections.emptyList();
     private final Map<ResourceLocation, NativeItemDefinition> customItems = new LinkedHashMap<>();
     private final Map<ResourceLocation, NativeBlockDefinition> customBlocks = new LinkedHashMap<>();
     private DeserializerManager decoderManager;
     private final Map<ResourceLocation, NativeDataItem> itemInstances = new LinkedHashMap<>();
     private final Map<ResourceLocation, NativeDataBlock> blockInstances = new LinkedHashMap<>();
     private MachineRecipe.TrimLookup trimLookup;
+    private final NativeEnchantmentRuntime enchantmentRuntime = new NativeEnchantmentRuntime(enchantments.values());
+    private final EnchantmentProjectiles projectileRuntime = new EnchantmentProjectiles(enchantmentRuntime);
 
     public GameplayModule(ContentCatalog catalog, DataRules rules, CompiledTagModule tags) {
         this.catalog = Objects.requireNonNull(catalog, "catalog");
@@ -91,10 +95,17 @@ public final class GameplayModule {
         Objects.requireNonNull(manager, "manager");
         if (decoderManager != null && decoderManager != manager) throw new IllegalStateException("Gameplay decoders already bound to another manager");
         decoderManager = manager;
+        EnchantmentEffectDecoders.register(manager);
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "attribute"), EnchantmentAttribute.class, json -> EnchantmentAttribute.decode(manager, json.getAsJsonObject())));
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "trial_settings"), TrialSpawnerDefinition.Settings.class, json -> TrialSpawnerDefinition.Settings.decode(manager, json.getAsJsonObject())));
+        GameplayTradeDecoders.register(manager);
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "slot_source"), SlotDefinition.class, json -> SlotDefinition.decode(json.getAsJsonObject())));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "equipment"), SlotDefinition.class, json -> SlotDefinition.equipment(json.getAsJsonObject())));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "inventory"), SlotDefinition.class, json -> SlotDefinition.inventory(json.getAsJsonObject())));
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "first_match"), SlotDefinition.class, json -> SlotDefinition.firstMatch(manager, json.getAsJsonObject())));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "block_transformer"), BlockTransformer.class,
+                json -> BlockTransformer.decode(manager, json.getAsJsonObject())));
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "sequence"), BlockTransformer.class,
                 json -> BlockTransformer.decode(manager, json.getAsJsonObject())));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "enchantment_provider"), EnchantmentProvider.class,
                 json -> EnchantmentProvider.decode(manager, json.getAsJsonObject())));
@@ -114,20 +125,58 @@ public final class GameplayModule {
                 json -> NativeBlockDefinition.decode(manager, manager.decode(ResourceLocation.class, json.getAsJsonObject().get("id")), json.getAsJsonObject())));
     }
     public synchronized void setTrimLookup(MachineRecipe.TrimLookup trimLookup) {
-        if (initialized) throw new IllegalStateException("Trim resolver must be supplied before GameplayModule.initialize");
+        if (initialized) throw new IllegalStateException("Trim resolver must be supplied before GameplayModule.initializeAfterRegistries");
         this.trimLookup = Objects.requireNonNull(trimLookup, "trimLookup");
     }
 
-    /** Decode every gameplay definition before installing event handlers or registry callbacks. */
+    /** Declare registry identities first; item/block/entity-dependent children bind after registry events. */
     public synchronized void initialize() {
+        if (registryPrepared) return;
+        if (decoderManager == null) throw new IllegalStateException("Gameplay decoders were not registered");
+        List<CompiledResource> declarations = new ArrayList<>();
+        for (String type : TYPES) declarations.addAll(catalog.snapshot().resources(type).values());
+        boolean trials = !catalog.snapshot().resources("trial_spawner").isEmpty();
+        boolean machines = !catalog.snapshot().resources("machine_recipe").isEmpty();
+        boolean sulfur = !catalog.snapshot().resources("sulfur_cube_archetype").isEmpty();
+        Map<ResourceLocation, NativeItemDefinition> items = new LinkedHashMap<>();
+        Map<ResourceLocation, NativeBlockDefinition> blocks = new LinkedHashMap<>();
+        Map<ResourceLocation, Enchantment> enchantmentDeclarations = new LinkedHashMap<>();
+        for (CompiledResource resource : declarations) {
+            try {
+                switch (resource.getType()) {
+                    case "item": items.put(resource.getId(), NativeItemDefinition.decodeForRegistration(decoderManager, resource.getId(), object(resource))); break;
+                    case "block": blocks.put(resource.getId(), NativeBlockDefinition.decodeForRegistration(decoderManager, resource.getId(), object(resource))); break;
+                    case "enchantment": enchantmentDeclarations.put(resource.getId(), new NativeEnchantment(resource.getId(), object(resource), decoderManager, true)); break;
+                    default: break;
+                }
+            } catch (Exception cause) { throw failure(resource, "invalid registry declaration: " + cause.getMessage()); }
+        }
+        for (ResourceLocation id : items.keySet()) {
+            if (blocks.containsKey(id)) throw failure(find(declarations, "item", id), "item and block definitions cannot share a registry ID");
+            if (isBuiltInBlock(id, trials, machines)) throw failure(find(declarations, "item", id), "item ID conflicts with a gameplay machine block");
+        }
+        for (ResourceLocation id : blocks.keySet()) if (isBuiltInBlock(id, trials, machines)) throw failure(find(declarations, "block", id), "block ID conflicts with a gameplay machine block");
+        customItems.putAll(items);
+        customBlocks.putAll(blocks);
+        enchantments.putAll(enchantmentDeclarations);
+        declaredDefinitions = Collections.unmodifiableList(declarations);
+        declaresTrials = trials; declaresMachines = machines; declaresSulfur = sulfur;
+        if (trials) GameRegistry.registerTileEntity(TrialSpawnerTileEntity.class, new ResourceLocation("rml", "trial_spawner"));
+        if (machines) GameRegistry.registerTileEntity(StationTileEntity.class, new ResourceLocation("rml", "machine_station"));
+        if (sulfur) FMLCommonHandler.instance().bus().register(this);
+        MinecraftForge.EVENT_BUS.register(this);
+        registryPrepared = true;
+    }
+
+    /** Called once from FMLInitializationEvent, after every Forge registry event. */
+    public synchronized void initializeAfterRegistries() {
         if (initialized) return;
-        List<CompiledResource> staged = new ArrayList<>();
-        for (String type : TYPES) staged.addAll(catalog.snapshot().resources(type).values());
+        if (!registryPrepared) throw new IllegalStateException("GameplayModule.initialize must declare native registries first");
+        List<CompiledResource> staged = declaredDefinitions;
         Map<ResourceLocation, Enchantment> stagedEnchantments = new LinkedHashMap<>();
         Map<ResourceLocation, SlotDefinition> stagedSlots = new LinkedHashMap<>();
-        List<IVillager> stagedTrades = new ArrayList<>();
         Map<ResourceLocation, DamageDefinition> stagedDamage = new LinkedHashMap<>();
-        Map<Block, Block> stagedTransformers = new LinkedHashMap<>();
+        List<BlockTransformer> stagedTransformers = new ArrayList<>();
         Map<ResourceLocation, EnchantmentProvider> stagedProviders = new LinkedHashMap<>();
         Map<ResourceLocation, TrialSpawnerDefinition> stagedSpawners = new LinkedHashMap<>();
         Map<ResourceLocation, SulfurCubeArchetype> stagedSulfurCubes = new LinkedHashMap<>();
@@ -138,7 +187,13 @@ public final class GameplayModule {
             JsonObject json = object(resource);
             switch (resource.getType()) {
                 case "enchantment":
-                    stagedEnchantments.put(resource.getId(), new NativeEnchantment(resource.getId(), json, rules));
+                    try {
+                        NativeEnchantment enchantment = (NativeEnchantment) enchantments.get(resource.getId());
+                        enchantment.resolveDependencies(decoderManager);
+                        stagedEnchantments.put(resource.getId(), enchantment);
+                    } catch (Exception cause) {
+                        throw failure(resource, "invalid enchantment: " + cause.getMessage());
+                    }
                     break;
                 case "enchantment_provider":
                     try {
@@ -165,21 +220,11 @@ public final class GameplayModule {
                     break;
                 case "villager_trade":
                 case "trade_set":
-                    try {
-                        if (decoderManager == null) throw new IllegalStateException("Gameplay decoders were not registered");
-                        stagedTrades.add(decoderManager.decode(IVillager.class, resource.getValue()));
-                    } catch (Exception cause) {
-                        throw failure(resource, "invalid native villager trade: " + cause.getMessage());
-                    }
                     break;
                 case "block_transformer":
                     try {
                         if (decoderManager == null) throw new IllegalStateException("Gameplay decoders were not registered");
-                        BlockTransformer transformer = decoderManager.decode(BlockTransformer.class, resource.getValue());
-                        Block from = Block.getBlockFromName(transformer.from.toString());
-                        Block to = Block.getBlockFromName(transformer.to.toString());
-                        if (from == null || to == null) throw new IllegalArgumentException("unknown block in transformation " + transformer.from + " -> " + transformer.to);
-                        if (stagedTransformers.put(from, to) != null) throw new IllegalArgumentException("Duplicate transformer for " + transformer.from);
+                        stagedTransformers.add(decoderManager.decode(BlockTransformer.class, resource.getValue()));
                     } catch (Exception cause) {
                         throw failure(resource, "invalid block transformer: " + cause.getMessage());
                     }
@@ -213,7 +258,9 @@ public final class GameplayModule {
                 case "item":
                     try {
                         if (decoderManager == null) throw new IllegalStateException("Gameplay decoders were not registered");
-                        stagedItems.put(resource.getId(), NativeItemDefinition.decode(decoderManager, resource.getId(), json));
+                        NativeItemDefinition item = customItems.get(resource.getId());
+                        item.resolveDependencies(decoderManager);
+                        stagedItems.put(resource.getId(), item);
                     } catch (Exception cause) {
                         throw failure(resource, "invalid native item: " + cause.getMessage());
                     }
@@ -221,7 +268,9 @@ public final class GameplayModule {
                 case "block":
                     try {
                         if (decoderManager == null) throw new IllegalStateException("Gameplay decoders were not registered");
-                        stagedBlocks.put(resource.getId(), NativeBlockDefinition.decode(decoderManager, resource.getId(), json));
+                        NativeBlockDefinition block = customBlocks.get(resource.getId());
+                        block.resolveDependencies(decoderManager);
+                        stagedBlocks.put(resource.getId(), block);
                     } catch (Exception cause) {
                         throw failure(resource, "invalid native block: " + cause.getMessage());
                     }
@@ -245,21 +294,20 @@ public final class GameplayModule {
         enchantments.putAll(stagedEnchantments);
         damageTypes.putAll(stagedDamage);
         slotSources.putAll(stagedSlots);
-        villagerTrades.addAll(stagedTrades);
-        blockTransformers.putAll(stagedTransformers);
+        blockTransformers.addAll(stagedTransformers);
         enchantmentProviders.putAll(stagedProviders);
         trialSpawners.putAll(stagedSpawners);
         machineRecipes.putAll(stagedRecipes);
         StationTileEntity.setRecipes(machineRecipes);
         TrialSpawnerTileEntity.setDefinitions(trialSpawners);
-        if (!trialSpawners.isEmpty()) GameRegistry.registerTileEntity(TrialSpawnerTileEntity.class, new ResourceLocation("rml", "trial_spawner"));
-        if (!machineRecipes.isEmpty()) GameRegistry.registerTileEntity(StationTileEntity.class, new ResourceLocation("rml", "machine_station"));
-        if (!sulfurCubes.isEmpty()) FMLCommonHandler.instance().bus().register(this);
-        MinecraftForge.EVENT_BUS.register(this);
+        enchantmentRuntime.resolveComponents();
         initialized = true;
     }
     public void initializeClient() {
-        if (!sulfurCubes.isEmpty() && FMLCommonHandler.instance().getSide().isClient()) SulfurCubeClient.register();
+        if (FMLCommonHandler.instance().getSide().isClient()) {
+            MinecraftForge.EVENT_BUS.register(GameplayClient.class);
+            if (declaresSulfur) SulfurCubeClient.register();
+        }
     }
     public DamageSource createDamageSource(ResourceLocation type, Entity attacker) {
         DamageDefinition definition = damageTypes.get(type);
@@ -289,11 +337,11 @@ public final class GameplayModule {
 
     @SubscribeEvent
     public void registerGameplayBlocks(RegistryEvent.Register<Block> event) {
-        if (!trialSpawners.isEmpty()) {
+        if (declaresTrials) {
             if (event.getRegistry().containsKey(TrialSpawnerBlock.INSTANCE.getRegistryName())) throw new IllegalArgumentException("Block ID is already registered: rml:trial_spawner");
             event.getRegistry().register(TrialSpawnerBlock.INSTANCE);
         }
-        if (!machineRecipes.isEmpty()) {
+        if (declaresMachines) {
             for (StationBlock block : StationBlock.ALL) {
                 if (event.getRegistry().containsKey(block.getRegistryName())) throw new IllegalArgumentException("Block ID is already registered: " + block.getRegistryName());
                 event.getRegistry().register(block);
@@ -309,12 +357,12 @@ public final class GameplayModule {
 
     @SubscribeEvent
     public void registerGameplayItems(RegistryEvent.Register<Item> event) {
-        if (!trialSpawners.isEmpty()) {
+        if (declaresTrials) {
             ItemBlock item = new ItemBlock(TrialSpawnerBlock.INSTANCE);
             item.setRegistryName(TrialSpawnerBlock.INSTANCE.getRegistryName());
             event.getRegistry().register(item);
         }
-        if (!machineRecipes.isEmpty()) {
+        if (declaresMachines) {
             for (StationBlock block : StationBlock.ALL) {
                 ItemBlock item = new ItemBlock(block);
                 item.setRegistryName(block.getRegistryName());
@@ -328,14 +376,14 @@ public final class GameplayModule {
             event.getRegistry().register(item);
         }
         for (NativeDataBlock block : blockInstances.values()) {
-            ItemBlock item = new ItemBlock(block);
+            ItemBlock item = new NativeBlockItem(block);
             item.setRegistryName(block.getRegistryName());
             event.getRegistry().register(item);
         }
     }
     @SubscribeEvent
     public void registerSulfurEntity(RegistryEvent.Register<net.minecraftforge.fml.common.registry.EntityEntry> event) {
-        if (sulfurCubes.isEmpty()) return;
+        if (!declaresSulfur) return;
         net.minecraftforge.fml.common.registry.EntityEntry entry = EntityEntryBuilder.create()
                 .entity(SulfurCubeEntity.class)
                 .id(new ResourceLocation("rml", "sulfur_cube"), 1)
@@ -346,16 +394,40 @@ public final class GameplayModule {
     }
     @SubscribeEvent
     public void registerVillagerProfessions(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event) {
-        for (IVillager trade : villagerTrades) trade.run(event.getRegistry());
+        // Forge fires block and item registry events before the remaining native registries.
+        // Offers can now resolve same-catalog item stacks, while profession installers can still register identities.
+        List<IVillager> staged = new ArrayList<>();
+        for (CompiledResource resource : declaredDefinitions) {
+            if (!"villager_trade".equals(resource.getType()) && !"trade_set".equals(resource.getType())) continue;
+            try {
+                JsonObject trade = object(resource);
+                if ("trade_set".equals(resource.getType()) && !trade.has("type")) {
+                    JsonObject tagged = new JsonObject();
+                    for (Map.Entry<String, JsonElement> field : trade.entrySet()) tagged.add(field.getKey(), field.getValue());
+                    tagged.addProperty("type", "rml:trade_set");
+                    trade = tagged;
+                }
+                staged.add(decoderManager.decode(IVillager.class, trade));
+            } catch (Exception cause) { throw failure(resource, "invalid native villager trade: " + cause.getMessage()); }
+        }
+        for (IVillager trade : staged) trade.run(event.getRegistry());
     }
 
     @SubscribeEvent
     public void onBlockPlaced(BlockEvent.PlaceEvent event) {
-        Block input = event.getPlacedBlock().getBlock();
-        Block output = blockTransformers.get(input);
-        if (output != null && !event.getWorld().isRemote) {
-            event.getWorld().setBlockState(event.getPos(), output.getDefaultState(), 3);
-        }
+        if (!event.getWorld().isRemote) transformBlock((net.minecraft.world.WorldServer) event.getWorld(), event.getPos(), event.getPlayer());
+    }
+
+    public boolean transformBlock(net.minecraft.world.WorldServer world, net.minecraft.util.math.BlockPos pos, Entity actor) {
+        DataContext context = new DataContext(world, actor, pos, world.rand, 0);
+        for (BlockTransformer transformer : blockTransformers) if (transformer.apply(context)) return true;
+        return false;
+    }
+
+    public ItemStack applyEnchantmentProvider(ResourceLocation id, ItemStack stack, DataContext context) {
+        EnchantmentProvider provider = enchantmentProviders.get(id);
+        if (provider == null) throw new IllegalArgumentException("Unknown enchantment provider: " + id);
+        return provider.apply(stack, context);
     }
 
     @SubscribeEvent
@@ -380,17 +452,7 @@ public final class GameplayModule {
         DamageDefinition definition = damageName == null ? null : damageTypes.get(new ResourceLocation(damageName));
         float amount = event.getAmount();
         Entity attacker = source.getTrueSource();
-        if (attacker instanceof EntityLivingBase) {
-            EntityLivingBase livingAttacker = (EntityLivingBase) attacker;
-            ItemStack weapon = livingAttacker.getHeldItemMainhand();
-            for (Map.Entry<ResourceLocation, Enchantment> entry : enchantments.entrySet()) {
-                int level = EnchantmentHelper.getEnchantmentLevel(entry.getValue(), weapon);
-                if (level <= 0 || !(entry.getValue() instanceof NativeEnchantment)) continue;
-                NativeEnchantment enchantment = (NativeEnchantment) entry.getValue();
-                amount += enchantment.damageBonus * level;
-                if (enchantment.hitEffect != null) enchantment.hitEffect.apply(context(victim, attacker), victim);
-            }
-        }
+        if (attacker instanceof EntityLivingBase) amount = enchantmentRuntime.modify("damage", amount, (EntityLivingBase) attacker, source);
         if (definition == null) {
             event.setAmount(Math.max(0, amount));
             return;
@@ -398,6 +460,54 @@ public final class GameplayModule {
         if (definition.damageMultiplier != null) amount *= definition.damageMultiplier.evaluate(context(victim, attacker));
         if (definition.hurtEffect != null) definition.hurtEffect.apply(context(victim, attacker), victim);
         event.setAmount(Math.max(0, amount));
+    }
+
+    @SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.LOWEST)
+    public void onLivingDamage(net.minecraftforge.event.entity.living.LivingDamageEvent event) {
+        EntityLivingBase victim = event.getEntityLiving();
+        if (victim.world.isRemote || event.getAmount() <= 0) return;
+        float protection = enchantmentRuntime.modify("protection", 0, victim, event.getSource());
+        protection = enchantmentRuntime.modify("damage_protection", protection, victim, event.getSource());
+        event.setAmount(event.getAmount() * (1 - Math.min(20, Math.max(0, protection)) / 25));
+        Entity attacker = event.getSource().getTrueSource();
+        if (attacker instanceof EntityLivingBase) enchantmentRuntime.execute("post_attack", (EntityLivingBase) attacker, attacker, victim, event.getSource());
+        enchantmentRuntime.execute("post_defense", victim, attacker, victim, event.getSource());
+    }
+
+    @SubscribeEvent
+    public void onLivingUpdate(net.minecraftforge.event.entity.living.LivingEvent.LivingUpdateEvent event) {
+        if (!event.getEntityLiving().world.isRemote) enchantmentRuntime.tick(event.getEntityLiving());
+    }
+
+    @SubscribeEvent
+    public void onEquipmentChanged(net.minecraftforge.event.entity.living.LivingEquipmentChangeEvent event) {
+        if (!event.getEntityLiving().world.isRemote) enchantmentRuntime.updateAttributes(event.getEntityLiving(), false);
+    }
+
+    @SubscribeEvent
+    public void onPickupExperience(net.minecraftforge.event.entity.player.PlayerPickupXpEvent event) {
+        enchantmentRuntime.pickup(event.getEntityPlayer(), event.getOrb());
+    }
+
+    @SubscribeEvent(priority = net.minecraftforge.fml.common.eventhandler.EventPriority.LOWEST)
+    public void onTrialMobDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
+        TrialSpawnerTileEntity.onMobDeath(event.getEntityLiving());
+        if (!event.getEntityLiving().world.isRemote) enchantmentRuntime.updateAttributes(event.getEntityLiving(), true);
+    }
+
+    /** Called at ItemStack.damageItem entry, before vanilla Unbreaking. */
+    public int modifyItemDamage(ItemStack stack, int amount, EntityLivingBase entity) {
+        return enchantmentRuntime.itemDamage(stack, amount, entity);
+    }
+
+    public boolean hasNativeEnchantment(ItemStack stack) { return enchantmentRuntime.hasEnchantment(stack); }
+
+    public boolean spawnEnchantedProjectile(net.minecraft.world.World world, Entity projectile, EntityLivingBase shooter, ItemStack weapon, ItemStack ammunition) {
+        return projectileRuntime.spawn(world, projectile, shooter, weapon, ammunition);
+    }
+
+    public void consumeEnchantedAmmunition(ItemStack ammunition, int amount, ItemStack weapon, EntityLivingBase shooter) {
+        projectileRuntime.consume(ammunition, amount, weapon, shooter);
     }
 
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
@@ -420,7 +530,7 @@ public final class GameplayModule {
                 if (!(actor instanceof EntityPlayer)) throw new CommandException("This enchant command requires a player sender");
                 EntityPlayer player = (EntityPlayer) actor;
                 ResourceLocation providerId = new ResourceLocation(args[1]);
-                ItemStack enchanted = applyEnchantmentProvider(providerId, player.getHeldItemMainhand(), player.world.rand);
+                ItemStack enchanted = applyEnchantmentProvider(providerId, player.getHeldItemMainhand(), context(player, player));
                 player.setHeldItem(net.minecraft.util.EnumHand.MAIN_HAND, enchanted);
                 return;
             case "slot":
@@ -430,10 +540,7 @@ public final class GameplayModule {
                 return;
             case "transform":
                 if (actor == null) throw new CommandException("This transform command requires an entity sender");
-                Block input = actor.world.getBlockState(sender.getPosition()).getBlock();
-                Block output = blockTransformers.get(input);
-                if (output == null) throw new CommandException("No transformer matches the block at your position");
-                actor.world.setBlockState(sender.getPosition(), output.getDefaultState(), 3);
+                if (!(actor.world instanceof net.minecraft.world.WorldServer) || !transformBlock((net.minecraft.world.WorldServer) actor.world, sender.getPosition(), actor)) throw new CommandException("No transformer matches the block at your position");
                 return;
             case "spawner":
                 if (args.length != 2 || actor == null) throw new CommandException("Usage: spawner <definition> (entity sender required)");
@@ -488,50 +595,18 @@ public final class GameplayModule {
         return hasMachines && Arrays.asList("blast_furnace", "smoker", "campfire", "stonecutter", "smithing_table").contains(id.getPath());
     }
 
-    private static final class NativeEnchantment extends Enchantment {
-        private final int maxLevel;
-        private final int minLevel;
-        private final int minCost;
-        private final int maxCost;
-        private final float damageBonus;
-        private final DataRules.Effect hitEffect;
-
-        NativeEnchantment(ResourceLocation id, JsonObject json, DataRules rules) {
-            super(rarity(json), slot(json), net.minecraft.inventory.EntityEquipmentSlot.values());
-            setName(id.toString());
-            this.minLevel = integer(json, "min_level", 1);
-            this.maxLevel = integer(json, "max_level", 1);
-            this.minCost = integer(json, "min_cost", 1);
-            this.maxCost = integer(json, "max_cost", Math.max(minCost, minCost + 10));
-            this.damageBonus = json.has("damage_bonus") ? json.get("damage_bonus").getAsFloat() : 0;
-            this.hitEffect = json.has("on_hit") ? rules.effect(json.get("on_hit")) : null;
-            if (minLevel < 1 || maxLevel < minLevel || minCost < 0 || maxCost < minCost) throw new IllegalArgumentException("Invalid enchantment bounds for " + id);
-        }
-        @Override public int getMinLevel() { return minLevel; }
-        @Override public int getMaxLevel() { return maxLevel; }
-        @Override public int getMinEnchantability(int level) { return minCost + (level - 1) * 10; }
-        @Override public int getMaxEnchantability(int level) { return getMinEnchantability(level) + maxCost; }
-        @Override public float calcDamageByCreature(int level, net.minecraft.entity.EnumCreatureAttribute creatureType) { return damageBonus * level; }
-    }
-
-    private static Enchantment.Rarity rarity(JsonObject json) {
-        String value = string(json, "weight", "common").toUpperCase(Locale.ROOT);
-        return Enchantment.Rarity.valueOf(value);
-    }
-    private static EnumEnchantmentType slot(JsonObject json) {
-        String value = string(json, "slot", "all").toUpperCase(Locale.ROOT);
-        if ("ALL".equals(value)) return EnumEnchantmentType.ALL;
-        if ("ARMOR_FEET".equals(value) || "ARMOR_LEGS".equals(value) || "ARMOR_CHEST".equals(value) || "ARMOR_HEAD".equals(value)) return EnumEnchantmentType.ARMOR;
-        return EnumEnchantmentType.valueOf(value);
-    }
     private static int integer(JsonObject json, String key, int fallback) { return json.has(key) ? json.get(key).getAsInt() : fallback; }
     private static String string(JsonObject json, String key, String fallback) { return json.has(key) ? json.get(key).getAsString() : fallback; }
 
     public static final class EnchantmentProvider {
         private final List<Choice> choices;
-        private final int totalWeight;
-        private EnchantmentProvider(List<Choice> choices, int totalWeight) { this.choices = Collections.unmodifiableList(choices); this.totalWeight = totalWeight; }
+        private final rml.deserializer.value.IntProvider count, cost;
+        private final rml.deserializer.value.LevelBasedValue difficultyCost;
+        private EnchantmentProvider(List<Choice> choices, rml.deserializer.value.IntProvider count, rml.deserializer.value.IntProvider cost, rml.deserializer.value.LevelBasedValue difficultyCost) {
+            this.choices = Collections.unmodifiableList(choices); this.count = count; this.cost = cost; this.difficultyCost = difficultyCost;
+        }
         public static EnchantmentProvider decode(DeserializerManager manager, JsonObject json) throws rml.deserializer.JsonDeserializeException {
+            GameplayFields.only(json, "entries", "count", "cost", "difficulty_cost");
             if (!json.has("entries") || !json.get("entries").isJsonArray()) throw new IllegalArgumentException("enchantment provider requires entries array");
             List<Choice> choices = new ArrayList<>();
             long total = 0;
@@ -542,33 +617,77 @@ public final class GameplayModule {
                 choices.add(choice);
             }
             if (choices.isEmpty()) throw new IllegalArgumentException("enchantment provider entries must not be empty");
-            return new EnchantmentProvider(choices, (int) total);
+            rml.deserializer.value.IntProvider count = json.has("count") ? manager.decode(rml.deserializer.value.IntProvider.class, json.get("count")) : new rml.deserializer.value.IntProvider(1, 1, random -> 1);
+            rml.deserializer.value.IntProvider cost = json.has("cost") ? manager.decode(rml.deserializer.value.IntProvider.class, json.get("cost")) : null;
+            if (count.getMinValue() < 0 || cost != null && cost.getMinValue() < 0) throw new IllegalArgumentException("Provider count and cost must be nonnegative");
+            rml.deserializer.value.LevelBasedValue difficulty = json.has("difficulty_cost") ? manager.decode(rml.deserializer.value.LevelBasedValue.class, json.get("difficulty_cost")) : level -> 0;
+            return new EnchantmentProvider(choices, count, cost, difficulty);
         }
         public ItemStack apply(ItemStack original, java.util.Random random) {
-            Objects.requireNonNull(original, "stack"); Objects.requireNonNull(random, "random");
-            int selected = random.nextInt(totalWeight);
-            Choice choice = choices.get(choices.size() - 1);
-            for (Choice candidate : choices) {
-                selected -= candidate.weight;
-                if (selected < 0) { choice = candidate; break; }
-            }
-            Enchantment enchantment = net.minecraftforge.fml.common.registry.ForgeRegistries.ENCHANTMENTS.getValue(choice.enchantment);
-            if (enchantment == null) throw new IllegalStateException("Unknown enchantment in provider: " + choice.enchantment);
+            return apply(original, new DataContext(null, null, null, random, 0));
+        }
+        public ItemStack apply(ItemStack original, DataContext context) {
+            Objects.requireNonNull(original, "stack"); Objects.requireNonNull(context, "context");
             ItemStack result = original.copy();
-            result.addEnchantment(enchantment, choice.level);
+            if (result.isEmpty()) return result;
+            boolean book = result.getItem() == net.minecraft.init.Items.BOOK || result.getItem() == net.minecraft.init.Items.ENCHANTED_BOOK;
+            int difficulty = context.getWorld() == null || context.getOrigin() == null ? 0 : (int) Math.ceil(context.getWorld().getDifficultyForLocation(context.getOrigin()).getAdditionalDifficulty());
+            float extra = difficultyCost.calculate(difficulty);
+            if (!Float.isFinite(extra)) throw new IllegalStateException("Nonfinite provider difficulty cost");
+            int budget = cost == null ? -1 : Math.max(0, (int) Math.min(Integer.MAX_VALUE, cost.sample(context.getRandom()) + (double) extra));
+            int selections = Math.min(choices.size(), count.sample(context.getRandom()));
+            List<Choice> remaining = new ArrayList<>(choices);
+            Map<Enchantment, Integer> installed = EnchantmentHelper.getEnchantments(result);
+            for (int pick = 0; pick < selections; pick++) {
+                List<Choice> eligible = new ArrayList<>();
+                List<Integer> levels = new ArrayList<>();
+                int weight = 0;
+                for (Choice choice : remaining) {
+                    Enchantment enchantment = net.minecraftforge.fml.common.registry.ForgeRegistries.ENCHANTMENTS.getValue(choice.enchantment);
+                    if (enchantment == null) throw new IllegalStateException("Unknown enchantment in provider: " + choice.enchantment);
+                    if (!choice.condition.test(context) || (book ? !enchantment.isAllowedOnBooks() : !enchantment.canApply(result)) || installed.containsKey(enchantment)) continue;
+                    boolean compatible = true;
+                    for (Enchantment present : installed.keySet()) if (!enchantment.isCompatibleWith(present)) { compatible = false; break; }
+                    if (!compatible) continue;
+                    int level = budget >= 0 && !choice.explicitLevel ? enchantment.getMaxLevel() : Math.min(enchantment.getMaxLevel(), choice.levels.sample(context.getRandom()));
+                    if (budget >= 0) while (level >= enchantment.getMinLevel() && (budget < enchantment.getMinEnchantability(level) || budget > enchantment.getMaxEnchantability(level))) level--;
+                    if (level < enchantment.getMinLevel()) continue;
+                    eligible.add(choice); levels.add(level); weight += choice.weight;
+                }
+                if (eligible.isEmpty()) break;
+                int selected = context.getRandom().nextInt(weight), index = 0;
+                for (; index < eligible.size() - 1; index++) { selected -= eligible.get(index).weight; if (selected < 0) break; }
+                Choice choice = eligible.get(index);
+                installed.put(net.minecraftforge.fml.common.registry.ForgeRegistries.ENCHANTMENTS.getValue(choice.enchantment), levels.get(index));
+                remaining.remove(choice);
+            }
+            if (result.getItem() == net.minecraft.init.Items.BOOK && !installed.isEmpty()) {
+                ItemStack enchantedBook = new ItemStack(net.minecraft.init.Items.ENCHANTED_BOOK, result.getCount());
+                if (result.hasTagCompound()) enchantedBook.setTagCompound(result.getTagCompound().copy());
+                result = enchantedBook;
+            }
+            EnchantmentHelper.setEnchantments(installed, result);
             return result;
         }
         public static final class Choice {
             public final ResourceLocation enchantment;
             public final int level;
             public final int weight;
-            private Choice(ResourceLocation enchantment, int level, int weight) { this.enchantment = enchantment; this.level = level; this.weight = weight; }
+            private final rml.deserializer.value.IntProvider levels;
+            private final DataRules.Test condition;
+            private final boolean explicitLevel;
+            private Choice(ResourceLocation enchantment, rml.deserializer.value.IntProvider levels, int weight, DataRules.Test condition, boolean explicitLevel) {
+                this.enchantment = enchantment; this.level = levels.getMinValue(); this.levels = levels; this.weight = weight; this.condition = condition; this.explicitLevel = explicitLevel;
+            }
             public static Choice decode(DeserializerManager manager, JsonObject json) throws rml.deserializer.JsonDeserializeException {
+                GameplayFields.only(json, "enchantment", "level", "weight", "conditions");
                 ResourceLocation enchantment = manager.decode(ResourceLocation.class, json.get("enchantment"));
-                int level = json.has("level") ? json.get("level").getAsInt() : 1;
-                int weight = json.has("weight") ? json.get("weight").getAsInt() : 1;
-                if (enchantment == null || level < 1 || weight < 1) throw new IllegalArgumentException("enchantment choice requires an id and positive level/weight");
-                return new Choice(enchantment, level, weight);
+                if (!net.minecraftforge.fml.common.registry.ForgeRegistries.ENCHANTMENTS.containsKey(enchantment)) throw new IllegalArgumentException("Unknown enchantment in provider: " + enchantment);
+                rml.deserializer.value.IntProvider level = json.has("level") ? manager.decode(rml.deserializer.value.IntProvider.class, json.get("level")) : new rml.deserializer.value.IntProvider(1, 1, random -> 1);
+                int weight = json.has("weight") ? manager.decode(Integer.class, json.get("weight")) : 1;
+                if (enchantment == null || level.getMinValue() < 1 || weight < 1) throw new IllegalArgumentException("enchantment choice requires an id and positive level/weight");
+                DataRules.Test condition = json.has("conditions") ? manager.decode(DataRules.Test.class, json.get("conditions")) : context -> true;
+                return new Choice(enchantment, level, weight, condition, json.has("level"));
             }
         }
     }
@@ -576,12 +695,43 @@ public final class GameplayModule {
     public static final class BlockTransformer {
         public final ResourceLocation from;
         public final ResourceLocation to;
-        private BlockTransformer(ResourceLocation from, ResourceLocation to) { this.from = from; this.to = to; }
+        private final rml.loader.deserialize.NativeTypeDecoders.BlockMatcher predicate;
+        private final net.minecraft.block.state.IBlockState state;
+        private final DataRules.Test condition;
+        private final DataRules.Effect effect;
+        private final BlockTransformer[] sequence;
+        private BlockTransformer(ResourceLocation from, net.minecraft.block.state.IBlockState state, rml.loader.deserialize.NativeTypeDecoders.BlockMatcher predicate,
+                                 DataRules.Test condition, DataRules.Effect effect, BlockTransformer[] sequence) {
+            this.from = from; this.to = state == null ? null : state.getBlock().getRegistryName(); this.state = state;
+            this.predicate = predicate; this.condition = condition; this.effect = effect; this.sequence = sequence;
+        }
         public static BlockTransformer decode(DeserializerManager manager, JsonObject json) throws rml.deserializer.JsonDeserializeException {
-            ResourceLocation from = manager.decode(ResourceLocation.class, json.get("from"));
-            ResourceLocation to = manager.decode(ResourceLocation.class, json.get("to"));
-            if (from == null || to == null) throw new IllegalArgumentException("transformer from and to are required");
-            return new BlockTransformer(from, to);
+            GameplayFields.only(json, "from", "to", "predicate", "conditions", "effect", "steps");
+            DataRules.Test condition = json.has("conditions") ? manager.decode(DataRules.Test.class, json.get("conditions")) : context -> true;
+            DataRules.Effect effect = json.has("effect") ? manager.decode(DataRules.Effect.class, json.get("effect")) : null;
+            if (json.has("steps")) {
+                if (json.has("from") || json.has("to") || json.has("predicate")) throw new IllegalArgumentException("Sequence transformer cannot also declare from/to/predicate");
+                return new BlockTransformer(null, null, null, condition, effect, manager.decode(BlockTransformer[].class, json.get("steps")));
+            }
+            ResourceLocation from = json.has("from") ? manager.decode(ResourceLocation.class, json.get("from")) : null;
+            if (from != null && !Block.REGISTRY.containsKey(from)) throw new IllegalArgumentException("Unknown transformer block: " + from);
+            rml.loader.deserialize.NativeTypeDecoders.BlockMatcher predicate = json.has("predicate") ? manager.decode(rml.loader.deserialize.NativeTypeDecoders.BlockMatcher.class, json.get("predicate")) : (world, pos, old) -> true;
+            if (from == null && !json.has("predicate")) throw new IllegalArgumentException("Transformer requires from or predicate");
+            net.minecraft.block.state.IBlockState state = manager.decode(net.minecraft.block.state.IBlockState.class, json.get("to"));
+            return new BlockTransformer(from, state, predicate, condition, effect, null);
+        }
+        public boolean apply(DataContext context) {
+            net.minecraft.world.WorldServer world = context.getWorld();
+            net.minecraft.util.math.BlockPos pos = context.getOrigin();
+            if (world == null || pos == null || pos.getY() < 0 || pos.getY() > 255 || !world.isBlockLoaded(pos) || !condition.test(context)) return false;
+            boolean changed = false;
+            if (sequence != null) { for (BlockTransformer step : sequence) changed |= step.apply(context); }
+            else {
+                net.minecraft.block.state.IBlockState old = world.getBlockState(pos);
+                if ((from == null || from.equals(old.getBlock().getRegistryName())) && predicate.test(world, pos, old)) changed = world.setBlockState(pos, state, 3);
+            }
+            if (changed && effect != null && context.getEntity() != null) effect.apply(context, context.getEntity());
+            return changed;
         }
     }
 
@@ -589,7 +739,30 @@ public final class GameplayModule {
         public final String type;
         public final String slot;
         public final int index;
-        private SlotDefinition(String type, String slot, int index) { this.type = type; this.slot = slot; this.index = index; }
+        private final SlotDefinition[] alternatives;
+        private final rml.loader.deserialize.NativeTypeDecoders.ItemMatcher matcher;
+        private final DataRules.Test condition;
+        private SlotDefinition(String type, String slot, int index) { this(type, slot, index, null, null, null); }
+        private SlotDefinition(String type, String slot, int index, SlotDefinition[] alternatives, rml.loader.deserialize.NativeTypeDecoders.ItemMatcher matcher, DataRules.Test condition) {
+            this.type = type; this.slot = slot; this.index = index; this.alternatives = alternatives; this.matcher = matcher; this.condition = condition;
+        }
+        public static SlotDefinition firstMatch(DeserializerManager manager, JsonObject json) throws rml.deserializer.JsonDeserializeException {
+            GameplayFields.only(json, "sources", "predicate", "conditions");
+            SlotDefinition[] sources = manager.decode(SlotDefinition[].class, json.get("sources"));
+            if (sources.length == 0) throw new IllegalArgumentException("first_match requires at least one source");
+            rml.loader.deserialize.NativeTypeDecoders.ItemMatcher matcher = json.has("predicate") ? manager.decode(rml.loader.deserialize.NativeTypeDecoders.ItemMatcher.class, json.get("predicate")) : (stack, context) -> !stack.isEmpty();
+            DataRules.Test condition = json.has("conditions") ? manager.decode(DataRules.Test.class, json.get("conditions")) : context -> true;
+            return new SlotDefinition("first_match", "", -1, sources, matcher, condition);
+        }
+        private SlotDefinition select(Entity entity) {
+            DataContext context = context(entity, entity);
+            if (!condition.test(context)) return null;
+            for (SlotDefinition source : alternatives) {
+                SlotDefinition selected = source.alternatives == null ? source : source.select(entity);
+                if (selected != null && matcher.test(selected.resolve(entity), context)) return selected;
+            }
+            return null;
+        }
         public static SlotDefinition decode(JsonObject json) {
             String type = string(json, "type", "");
             if ("equipment".equals(type)) return equipment(json);
@@ -597,11 +770,13 @@ public final class GameplayModule {
             throw new IllegalArgumentException("slot source type must be equipment or inventory");
         }
         public static SlotDefinition equipment(JsonObject json) {
+            GameplayFields.only(json, "slot");
             String slot = string(json, "slot", "");
             if (!Arrays.asList("mainhand", "offhand", "head", "chest", "legs", "feet").contains(slot)) throw new IllegalArgumentException("equipment slot must be mainhand, offhand, head, chest, legs, or feet");
             return new SlotDefinition("equipment", slot, -1);
         }
         public static SlotDefinition inventory(JsonObject json) {
+            GameplayFields.only(json, "index");
             int index = integer(json, "index", -1);
             if (index < 0 || index > 35) throw new IllegalArgumentException("inventory index must be between 0 and 35");
             return new SlotDefinition("inventory", "", index);
@@ -638,6 +813,7 @@ public final class GameplayModule {
             try { return decode(json); } catch (RuntimeException cause) { throw failure(resource, cause.getMessage()); }
         }
         public ItemStack resolve(Entity entity) {
+            if (alternatives != null) { SlotDefinition source = select(entity); return source == null ? ItemStack.EMPTY : source.resolve(entity); }
             if (entity instanceof EntityPlayer && "inventory".equals(type)) return ((EntityPlayer) entity).inventory.getStackInSlot(index);
             if (!(entity instanceof EntityLivingBase)) return ItemStack.EMPTY;
             EntityLivingBase living = (EntityLivingBase) entity;
@@ -654,9 +830,16 @@ public final class GameplayModule {
         }
         public void replace(Entity entity, ItemStack stack) {
             Objects.requireNonNull(stack, "stack");
+            if (alternatives != null) {
+                SlotDefinition source = select(entity);
+                if (source == null) throw new IllegalArgumentException("No slot source matched the entity");
+                source.replace(entity, stack);
+                return;
+            }
             if ("inventory".equals(type)) {
                 if (!(entity instanceof EntityPlayer)) throw new IllegalArgumentException("inventory slots require a player entity");
                 ((EntityPlayer) entity).inventory.setInventorySlotContents(index, stack);
+                ((EntityPlayer) entity).inventory.markDirty();
                 return;
             }
             if (!(entity instanceof EntityLivingBase)) throw new IllegalArgumentException("equipment slots require a living entity");

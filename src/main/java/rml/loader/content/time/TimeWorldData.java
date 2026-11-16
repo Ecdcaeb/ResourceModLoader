@@ -21,7 +21,7 @@ public final class TimeWorldData extends WorldSavedData {
     public TimeWorldData(String name) { super(name); }
 
     static TimeWorldData get(WorldServer world) {
-        MapStorage storage = world.getMapStorage();
+        MapStorage storage = world.getPerWorldStorage();
         TimeWorldData data = (TimeWorldData) storage.getOrLoadData(TimeWorldData.class, NAME);
         if (data == null) {
             data = new TimeWorldData();
@@ -51,12 +51,20 @@ public final class TimeWorldData extends WorldSavedData {
 
     static final class Clock {
         long time;
+        long epoch;
         double rate = 1.0;
         double fraction;
         boolean paused;
         boolean configured;
-        static Clock read(NBTTagCompound n) { Clock c = new Clock(); c.time=n.getLong("time"); c.rate=n.getDouble("rate"); c.fraction=n.getDouble("fraction"); c.paused=n.getBoolean("paused"); c.configured=n.getBoolean("configured"); return c; }
-        NBTTagCompound write() { NBTTagCompound n=new NBTTagCompound(); n.setLong("time",time); n.setDouble("rate",rate); n.setDouble("fraction",fraction); n.setBoolean("paused",paused); n.setBoolean("configured",configured); return n; }
+        void advance() {
+            if (paused) return;
+            double scaled = rate + fraction;
+            long ticks = (long) Math.floor(scaled);
+            time = Math.addExact(time, ticks);
+            fraction = scaled - ticks;
+        }
+        static Clock read(NBTTagCompound n) { Clock c = new Clock(); c.time=n.getLong("time"); c.epoch=n.hasKey("epoch")?n.getLong("epoch"):c.time; c.rate=n.getDouble("rate"); c.fraction=n.getDouble("fraction"); c.paused=n.getBoolean("paused"); c.configured=n.getBoolean("configured"); return c; }
+        NBTTagCompound write() { NBTTagCompound n=new NBTTagCompound(); n.setLong("time",time); n.setLong("epoch",epoch); n.setDouble("rate",rate); n.setDouble("fraction",fraction); n.setBoolean("paused",paused); n.setBoolean("configured",configured); return n; }
     }
     static final class Timeline {
         long previous;
@@ -65,7 +73,21 @@ public final class TimeWorldData extends WorldSavedData {
         int eventIndex;
         boolean completed;
         boolean started;
-        static Timeline read(NBTTagCompound n) { Timeline t=new Timeline(); t.previous=n.getLong("previous"); t.lastClock=n.getLong("last_clock"); t.cycle=n.getLong("cycle"); t.eventIndex=n.getInteger("event_index"); t.completed=n.getBoolean("completed"); t.started=n.getBoolean("started"); return t; }
-        NBTTagCompound write() { NBTTagCompound n=new NBTTagCompound(); n.setLong("previous",previous); n.setLong("last_clock",lastClock); n.setLong("cycle",cycle); n.setInteger("event_index",eventIndex); n.setBoolean("completed",completed); n.setBoolean("started",started); return n; }
+        long[] offsets = new long[0];
+        long duration;
+        static Timeline read(NBTTagCompound n) {
+            Timeline t=new Timeline(); t.previous=n.getLong("previous"); t.lastClock=n.getLong("last_clock"); t.cycle=n.getLong("cycle"); t.eventIndex=n.getInteger("event_index"); t.completed=n.getBoolean("completed"); t.started=n.getBoolean("started");
+            t.duration=n.getLong("duration");
+            net.minecraft.nbt.NBTTagList offsets=n.getTagList("offsets",4);
+            t.offsets=new long[offsets.tagCount()];
+            for(int i=0;i<t.offsets.length;i++) t.offsets[i]=((net.minecraft.nbt.NBTTagLong)offsets.get(i)).getLong();
+            return t;
+        }
+        NBTTagCompound write() {
+            NBTTagCompound n=new NBTTagCompound(); n.setLong("previous",previous); n.setLong("last_clock",lastClock); n.setLong("cycle",cycle); n.setInteger("event_index",eventIndex); n.setBoolean("completed",completed); n.setBoolean("started",started); n.setLong("duration",duration);
+            net.minecraft.nbt.NBTTagList values=new net.minecraft.nbt.NBTTagList();
+            for(long offset:offsets) values.appendTag(new net.minecraft.nbt.NBTTagLong(offset));
+            n.setTag("offsets",values); return n;
+        }
     }
 }

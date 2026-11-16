@@ -30,10 +30,14 @@ public final class FunctionStorage extends WorldSavedData {
     }
 
     public NBTBase get(ResourceLocation id, String path) {
+        return get(id, FunctionDataPath.compile(path));
+    }
+
+    public NBTBase get(ResourceLocation id, FunctionDataPath.Compiled path) {
         if (!values.hasKey(id.getNamespace())) return null;
         NBTTagCompound namespace = values.getCompoundTag(id.getNamespace());
         if (!namespace.hasKey(id.getPath())) return null;
-        return FunctionDataPath.get(namespace.getCompoundTag(id.getPath()), path);
+        return path.get(namespace.getCompoundTag(id.getPath()));
     }
 
     public void set(ResourceLocation id, String path, NBTBase value) {

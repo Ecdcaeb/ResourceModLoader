@@ -1,0 +1,6 @@
+{
+  "entity": "minecraft:cow",
+  "texture": "minecraft:textures/entity/pig/pig.png",
+  "weight": 1000000,
+  "condition": {"type": "rml:random_chance", "chance": 0}
+}

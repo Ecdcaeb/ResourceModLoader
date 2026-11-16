@@ -46,7 +46,7 @@ public final class PresentationNetwork {
     }
 
     interface ClientHandler {
-        void open(ResourceLocation id, String title, String body, String[] actions);
+        void open(OpenMessage message);
         void variant(int entityId, ResourceLocation id, String type, ResourceLocation entity, ResourceLocation texture);
     }
 
@@ -56,22 +56,10 @@ public final class PresentationNetwork {
         return handler;
     }
 
-    static void open(EntityPlayer player, ResourceLocation id, JsonObject json) {
-        if (!(player instanceof EntityPlayerMP)) return;
-        EntityPlayerMP serverPlayer = (EntityPlayerMP) player;
-        JsonArray actions = json.getAsJsonArray("actions");
-        SESSIONS.put(player.getUniqueID(), new Session(id, player.world, actions.size()));
-        CHANNEL.sendTo(new OpenMessage(id, json.get("title").getAsString(), json.get("body").getAsString(), labels(actions)), serverPlayer);
-    }
-
-    private static String[] labels(JsonArray actions) {
-        String[] labels = new String[actions.size()];
-        for (int i = 0; i < labels.length; i++) {
-            JsonElement item = actions.get(i);
-            labels[i] = item.isJsonObject() && item.getAsJsonObject().has("label")
-                    ? item.getAsJsonObject().get("label").getAsString() : "Continue";
-        }
-        return labels;
+    static void open(EntityPlayerMP player, ResourceLocation id, PresentationCodecs.DialogDefinition definition, net.minecraft.nbt.NBTTagCompound inherited) {
+        UUID token = UUID.randomUUID();
+        SESSIONS.put(player.getUniqueID(), new Session(id, player.world, token, definition, inherited.copy()));
+        CHANNEL.sendTo(new OpenMessage(id, token, definition), player);
     }
 
     static void syncVariant(net.minecraft.entity.Entity entity, ResourceLocation id, String type,
@@ -116,17 +104,37 @@ public final class PresentationNetwork {
         if (entity instanceof EntityPlayerMP) CHANNEL.sendTo(message, (EntityPlayerMP) entity);
     }
 
-    private static void choose(EntityPlayerMP player, ResourceLocation id, int index) {
+    private static void choose(EntityPlayerMP player, ChooseMessage message) {
         Session session = SESSIONS.get(player.getUniqueID());
-        if (session == null || !session.id.equals(id) || session.world != player.world) return;
-        if (index == -1) { SESSIONS.remove(player.getUniqueID()); return; }
-        if (index < 0 || index >= session.actionCount) return;
+        if (session == null || !session.id.equals(message.id) || !session.token.equals(message.token) || session.world != player.world || player.isDead) return;
+        if (message.index == -1) { SESSIONS.remove(player.getUniqueID()); return; }
+        if (message.index < 0 || message.index >= session.definition.actions.length) return;
+        net.minecraft.nbt.NBTTagCompound inputs;
+        try {
+            inputs = PresentationDialogs.validateInputs(session.definition.inputs, message.inputs);
+        } catch (IllegalArgumentException ex) {
+            player.sendMessage(new net.minecraft.util.text.TextComponentString(ex.getMessage()));
+            CHANNEL.sendTo(new OpenMessage(session.id, session.token, session.definition), player);
+            return;
+        }
+        net.minecraft.nbt.NBTTagCompound merged = session.inherited.copy();
+        merged.merge(inputs);
         SESSIONS.remove(player.getUniqueID());
-        module.executeDialogAction(player, id, index);
+        session.definition.actions[message.index].execute(new PresentationDialogs.ActionContext(player, merged, module, session.id));
     }
 
     @SubscribeEvent
     public static void logout(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
+        SESSIONS.remove(event.player.getUniqueID());
+    }
+
+    @SubscribeEvent
+    public static void changeDimension(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerChangedDimensionEvent event) {
+        SESSIONS.remove(event.player.getUniqueID());
+    }
+
+    @SubscribeEvent
+    public static void respawn(net.minecraftforge.fml.common.gameevent.PlayerEvent.PlayerRespawnEvent event) {
         SESSIONS.remove(event.player.getUniqueID());
     }
 
@@ -139,8 +147,12 @@ public final class PresentationNetwork {
     private static final class Session {
         final ResourceLocation id;
         final net.minecraft.world.World world;
-        final int actionCount;
-        Session(ResourceLocation id, net.minecraft.world.World world, int actionCount) { this.id = id; this.world = world; this.actionCount = actionCount; }
+        final UUID token;
+        final PresentationCodecs.DialogDefinition definition;
+        final net.minecraft.nbt.NBTTagCompound inherited;
+        Session(ResourceLocation id, net.minecraft.world.World world, UUID token, PresentationCodecs.DialogDefinition definition, net.minecraft.nbt.NBTTagCompound inherited) {
+            this.id = id; this.world = world; this.token = token; this.definition = definition; this.inherited = inherited;
+        }
     }
     private static void writeBoundedString(PacketBuffer packet, String value, int maxLength, String field) {
         if (value == null || value.length() > maxLength)
@@ -149,38 +161,58 @@ public final class PresentationNetwork {
     }
 
     public static final class OpenMessage implements IMessage {
-        private ResourceLocation id;
-        private String title;
-        private String body;
-        private String[] actions;
+        ResourceLocation id;
+        UUID token;
+        net.minecraft.util.text.ITextComponent title, body;
+        net.minecraft.util.text.ITextComponent[] actions;
+        PresentationDialogs.Input[] inputs;
         public OpenMessage() { }
-        public OpenMessage(ResourceLocation id, String title, String body, String[] actions) { this.id = id; this.title = title; this.body = body; this.actions = actions; }
+        OpenMessage(ResourceLocation id, UUID token, PresentationCodecs.DialogDefinition definition) {
+            this.id = id; this.token = token; this.title = definition.title; this.body = definition.body; this.inputs = definition.inputs;
+            actions = new net.minecraft.util.text.ITextComponent[definition.actions.length];
+            for (int i = 0; i < actions.length; i++) actions[i] = definition.actions[i].label();
+        }
         @Override public void toBytes(ByteBuf buf) {
             PacketBuffer out = new PacketBuffer(buf);
-            out.writeResourceLocation(id);
-            writeBoundedString(out, title, 256, "dialog title");
-            writeBoundedString(out, body, 2048, "dialog body");
-            if (actions == null || actions.length > 16) throw new IllegalArgumentException("Dialog supports at most 16 actions");
-            out.writeVarInt(actions.length);
-            for (String action : actions) writeBoundedString(out, action, 128, "dialog action");
+            out.writeResourceLocation(id); out.writeUniqueId(token); out.writeTextComponent(title); out.writeTextComponent(body);
+            out.writeVarInt(actions.length); for (net.minecraft.util.text.ITextComponent action : actions) out.writeTextComponent(action);
+            out.writeVarInt(inputs.length); for (PresentationDialogs.Input input : inputs) input.write(out);
         }
         @Override public void fromBytes(ByteBuf buf) {
             PacketBuffer in = new PacketBuffer(buf);
-            id = in.readResourceLocation(); title = in.readString(256); body = in.readString(2048);
+            id = in.readResourceLocation(); token = in.readUniqueId(); title = PresentationDialogs.readText(in); body = PresentationDialogs.readText(in);
             int count = in.readVarInt();
-            if (count < 0 || count > 16) throw new IllegalArgumentException("Invalid dialog action count");
-            actions = new String[count];
-            for (int i = 0; i < count; i++) actions[i] = in.readString(128);
+            if (count < 1 || count > 64) throw new IllegalArgumentException("Invalid dialog action count");
+            actions = new net.minecraft.util.text.ITextComponent[count];
+            for (int i = 0; i < count; i++) actions[i] = PresentationDialogs.readText(in);
+            count = in.readVarInt(); if (count < 0 || count > 16) throw new IllegalArgumentException("Invalid input count");
+            inputs = new PresentationDialogs.Input[count]; for (int i = 0; i < count; i++) inputs[i] = PresentationDialogs.Input.read(in);
         }
     }
 
     public static final class ChooseMessage implements IMessage {
-        private ResourceLocation id;
-        private int index;
+        ResourceLocation id;
+        UUID token;
+        int index;
+        Map<String, String> inputs;
         public ChooseMessage() { }
-        public ChooseMessage(ResourceLocation id, int index) { this.id = id; this.index = index; }
-        @Override public void toBytes(ByteBuf buf) { PacketBuffer out = new PacketBuffer(buf); out.writeResourceLocation(id); out.writeVarInt(index); }
-        @Override public void fromBytes(ByteBuf buf) { PacketBuffer in = new PacketBuffer(buf); id = in.readResourceLocation(); index = in.readVarInt(); }
+        public ChooseMessage(ResourceLocation id, UUID token, int index, Map<String, String> inputs) {
+            this.id = id; this.token = token; this.index = index; this.inputs = new java.util.LinkedHashMap<>(inputs);
+        }
+        @Override public void toBytes(ByteBuf buf) {
+            PacketBuffer out = new PacketBuffer(buf); out.writeResourceLocation(id); out.writeUniqueId(token); out.writeVarInt(index);
+            if (inputs.size() > 16) throw new IllegalArgumentException("Too many dialog inputs");
+            out.writeVarInt(inputs.size());
+            for (Map.Entry<String, String> input : inputs.entrySet()) {
+                writeBoundedString(out, input.getKey(), 64, "input key"); writeBoundedString(out, input.getValue(), 1024, "input value");
+            }
+        }
+        @Override public void fromBytes(ByteBuf buf) {
+            PacketBuffer in = new PacketBuffer(buf); id = in.readResourceLocation(); token = in.readUniqueId(); index = in.readVarInt();
+            int count = in.readVarInt(); if (count < 0 || count > 16) throw new IllegalArgumentException("Invalid input count");
+            inputs = new java.util.LinkedHashMap<>();
+            for (int i = 0; i < count; i++) if (inputs.put(in.readString(64), in.readString(1024)) != null) throw new IllegalArgumentException("Duplicate input key");
+        }
     }
 
     public static final class VariantMessage implements IMessage {
@@ -217,17 +249,17 @@ public final class PresentationNetwork {
 
     public static final class OpenHandler implements IMessageHandler<OpenMessage, IMessage> {
         @Override public IMessage onMessage(OpenMessage message, MessageContext context) {
-            clientHandler().open(message.id, message.title, message.body, message.actions);
+            clientHandler().open(message);
             return null;
         }
     }
 
-    static void choose(ResourceLocation id, int index) { CHANNEL.sendToServer(new ChooseMessage(id, index)); }
+    static void choose(ResourceLocation id, UUID token, int index, Map<String, String> inputs) { CHANNEL.sendToServer(new ChooseMessage(id, token, index, inputs)); }
 
     public static final class ChooseHandler implements IMessageHandler<ChooseMessage, IMessage> {
         @Override public IMessage onMessage(ChooseMessage message, MessageContext context) {
             EntityPlayerMP player = context.getServerHandler().player;
-            player.getServerWorld().addScheduledTask(() -> choose(player, message.id, message.index));
+            player.getServerWorld().addScheduledTask(() -> choose(player, message));
             return null;
         }
     }

@@ -32,6 +32,15 @@ public final class MachineRecipe {
     }
 
     public ItemStack resultFor(ItemStack template, ItemStack base, ItemStack addition, DataContext context) {
+        if ("smithing_transform".equals(operation) || "crafting_transmute".equals(operation)) {
+            ItemStack source = "smithing_transform".equals(operation) ? base : template;
+            ItemStack transformed = result.copy();
+            net.minecraft.nbt.NBTTagCompound tag = source.hasTagCompound() ? source.getTagCompound().copy() : new net.minecraft.nbt.NBTTagCompound();
+            if (transformed.hasTagCompound()) tag.merge(transformed.getTagCompound());
+            if (!tag.isEmpty()) transformed.setTagCompound(tag);
+            if (transformed.isItemStackDamageable()) transformed.setItemDamage(Math.min(source.getItemDamage(), transformed.getMaxDamage()));
+            return transformed;
+        }
         if (!"smithing_trim".equals(operation)) return result;
         if (trims == null) throw new IllegalStateException("Smithing trim recipe has no Presentation trim resolver");
         ResourceLocation pattern = trims.resolveTrimPattern(trimPattern, template);
@@ -56,16 +65,19 @@ public final class MachineRecipe {
             case "smoking":
             case "campfire_cooking":
             case "stonecutting":
+                GameplayFields.only(json, "stonecutting".equals(operation) ? new String[]{"ingredient", "result", "experience"} : new String[]{"ingredient", "result", "experience", "cookingtime"});
                 inputs = new NativeTypeDecoders.ItemMatcher[]{decodeMatcher(manager, required(json, "ingredient"))};
                 break;
             case "smithing_transform":
             case "smithing_trim":
+                GameplayFields.only(json, "smithing_trim".equals(operation) ? new String[]{"template", "base", "addition", "pattern", "experience"} : new String[]{"template", "base", "addition", "result", "experience"});
                 inputs = new NativeTypeDecoders.ItemMatcher[]{
                         decodeMatcher(manager, required(json, "template")),
                         decodeMatcher(manager, required(json, "base")),
                         decodeMatcher(manager, required(json, "addition"))};
                 break;
             case "crafting_transmute":
+                GameplayFields.only(json, "input", "material", "result", "experience");
                 inputs = new NativeTypeDecoders.ItemMatcher[]{
                         decodeMatcher(manager, required(json, "input")),
                         decodeMatcher(manager, required(json, "material"))};

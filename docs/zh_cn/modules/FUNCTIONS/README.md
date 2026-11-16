@@ -54,7 +54,7 @@ tick 执行器的 `ticks` 为正数时按世界总 tick 的整倍数执行，为
 
 `/rml functions reload [modid]` 同时准备该内容包的可重载函数、标签、数值提供者、战利品、谓词、修饰器和结构模板；全部准备成功后提交。`unload` 释放这些运行资源。原生注册、维度、配方、物品、方块和其他启动期提供者仍需重启，命令不把它们作为可热插拔内容。
 
-运行时参数可以从 storage 传入，例如 `function demo:message with storage demo:arguments values`，目标函数使用 `$say $(message)`。`pack.mcmeta` 中声明的常量在编译时展开。公开命名解码器可以扩展数值、条件和效果，复用字段与泛型容器的组合规则。
+运行时参数可以从 storage 传入，例如 `function demo:message with storage demo:arguments values`，目标函数使用 `$say $(message)`。对话动作也会把服务端验证后的输入绑定到函数参数；目标函数无需在源码中另有静态带参调用。`pack.mcmeta` 中声明的常量在编译时展开一轮，尚未绑定的 `$(name)` 保留为运行时参数；调用时缺失参数会报错。公开命名解码器可以扩展数值、条件和效果，复用字段与泛型容器的组合规则。
 
 ### Agent 运行工具
 

@@ -26,19 +26,19 @@ final class PresentationBannerRenderer extends TileEntityBannerRenderer {
                 ? state.getValue(BlockBanner.ROTATION) * 22.5F
                 : state.getValue(BlockBanner.FACING).getHorizontalAngle();
         for (int i = 0; i < patterns.tagCount(); i++) {
-            ResourceLocation texture = PresentationClient.surfaceTexture("banner_pattern", new ResourceLocation(patterns.getStringTagAt(i)));
-            if (texture != null) drawLayer(texture, x, y, z, rotation);
+            PresentationCodecs.SurfaceDefinition surface = PresentationClient.surface("banner_pattern", new ResourceLocation(patterns.getStringTagAt(i)));
+            if (surface != null) drawLayer(surface, x, y, z, rotation);
         }
     }
 
-    private void drawLayer(ResourceLocation texture, double x, double y, double z, float rotation) {
+    private void drawLayer(PresentationCodecs.SurfaceDefinition surface, double x, double y, double z, float rotation) {
         GlStateManager.pushMatrix();
         GlStateManager.translate(x + 0.5D, y + 1.45D, z + 0.5D);
         GlStateManager.rotate(180.0F - rotation, 0.0F, 1.0F, 0.0F);
         GlStateManager.disableLighting();
         GlStateManager.enableBlend();
-        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
-        bindTexture(texture);
+        GlStateManager.color(((surface.color >> 16) & 255) / 255.0F, ((surface.color >> 8) & 255) / 255.0F, (surface.color & 255) / 255.0F, 1.0F);
+        bindTexture(surface.texture);
         BufferBuilder buffer = Tessellator.getInstance().getBuffer();
         buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX);
         buffer.pos(-0.625D, -1.25D, -0.015D).tex(0.0D, 1.0D).endVertex();
@@ -46,6 +46,7 @@ final class PresentationBannerRenderer extends TileEntityBannerRenderer {
         buffer.pos(0.625D, 1.25D, -0.015D).tex(1.0D, 0.0D).endVertex();
         buffer.pos(-0.625D, 1.25D, -0.015D).tex(0.0D, 0.0D).endVertex();
         Tessellator.getInstance().draw();
+        GlStateManager.color(1.0F, 1.0F, 1.0F, 1.0F);
         GlStateManager.disableBlend();
         GlStateManager.enableLighting();
         GlStateManager.popMatrix();

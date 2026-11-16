@@ -1,0 +1,15 @@
+{
+  "max_level": 2,
+  "supported_items": "minecraft:diamond_boots",
+  "slots": ["feet"],
+  "effects": {
+    "attributes": [{
+      "type": "rml:attribute",
+      "id": "stride",
+      "attribute": "generic.movementSpeed",
+      "operation": "add",
+      "amount": 0.2,
+      "requirements": {"type": "rml:level", "min": 2}
+    }]
+  }
+}

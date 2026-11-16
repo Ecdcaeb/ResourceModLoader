@@ -51,13 +51,23 @@ public final class NativeDataItem extends Item {
     }
 
     @Override public float getDestroySpeed(ItemStack stack, IBlockState state) {
-        return definition.harvestTool.isEmpty() ? super.getDestroySpeed(stack, state) : definition.destroySpeed;
+        return !definition.harvestTool.isEmpty() && state.getBlock().isToolEffective(definition.harvestTool, state) ? definition.destroySpeed : super.getDestroySpeed(stack, state);
     }
 
     @Override public boolean canHarvestBlock(IBlockState state) {
         String tool = state.getBlock().getHarvestTool(state);
         return tool == null || tool.isEmpty() || (tool.equals(definition.harvestTool)
                 && definition.harvestLevel >= state.getBlock().getHarvestLevel(state));
+    }
+
+    @Override public boolean onBlockDestroyed(ItemStack stack, World world, IBlockState state, BlockPos pos, EntityLivingBase user) {
+        if (!world.isRemote && state.getBlockHardness(world, pos) != 0 && !definition.harvestTool.isEmpty()) stack.damageItem(1, user);
+        return true;
+    }
+
+    @Override public boolean hitEntity(ItemStack stack, EntityLivingBase target, EntityLivingBase attacker) {
+        if (!attacker.world.isRemote && !definition.harvestTool.isEmpty()) stack.damageItem("sword".equals(definition.harvestTool) ? 1 : 2, attacker);
+        return true;
     }
 
     @Override public int getMaxItemUseDuration(ItemStack stack) { return definition.useDuration; }

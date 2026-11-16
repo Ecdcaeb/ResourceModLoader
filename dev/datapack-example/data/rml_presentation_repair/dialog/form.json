@@ -1,0 +1,102 @@
+{
+  "title": {
+    "text": "Expedition supplies",
+    "color": "gold"
+  },
+  "body": [
+    {
+      "text": "Choose supplies, then review your request. "
+    },
+    {
+      "translate": "gui.done",
+      "bold": true
+    }
+  ],
+  "inputs": [
+    {
+      "type": "rml:text",
+      "key": "name",
+      "label": "Expedition name",
+      "initial": "River camp",
+      "max_length": 40
+    },
+    {
+      "type": "rml:boolean",
+      "key": "enabled",
+      "label": "Announce expedition",
+      "initial": true
+    },
+    {
+      "type": "rml:choice",
+      "key": "route",
+      "label": "Route",
+      "choices": [
+        "forest",
+        "river",
+        "mountain"
+      ]
+    },
+    {
+      "type": "rml:number",
+      "key": "amount",
+      "label": "Supply crates",
+      "min": 1,
+      "max": 5,
+      "step": 1,
+      "initial": 2
+    }
+  ],
+  "actions": [
+    {
+      "type": "rml:confirmation",
+      "label": "Review request",
+      "title": "Send this request?",
+      "body": "Your server will receive the four validated values.",
+      "yes": {
+        "type": "rml:sequence",
+        "label": {
+          "translate": "gui.yes"
+        },
+        "actions": [
+          {
+            "type": "rml:function",
+            "label": "Record request",
+            "id": "rml_presentation_repair:submit"
+          },
+          {
+            "type": "rml:message",
+            "label": "Receipt",
+            "text": {
+              "text": "Your request was recorded.",
+              "color": "green"
+            }
+          }
+        ]
+      },
+      "no": {
+        "type": "rml:open_dialog",
+        "label": {
+          "translate": "gui.no"
+        },
+        "id": "rml_presentation_repair:form"
+      }
+    },
+    {
+      "type": "rml:dialog_list",
+      "label": "Other pages",
+      "title": "Expedition desk",
+      "dialogs": [
+        {
+          "type": "rml:open_dialog",
+          "label": "Help",
+          "id": "rml_presentation_repair:help"
+        },
+        {
+          "type": "rml:open_dialog",
+          "label": "Request form",
+          "id": "rml_presentation_repair:form"
+        }
+      ]
+    }
+  ]
+}

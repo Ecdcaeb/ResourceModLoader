@@ -44,6 +44,11 @@ public final class NativeDataBlock extends Block {
     @Override public IBlockState getStateFromMeta(int meta) { return getDefaultState().withProperty(VARIANT, Math.max(0, Math.min(definition.variants - 1, meta))); }
     @Override public int getMetaFromState(IBlockState state) { return state.getValue(VARIANT); }
     @Override public EnumBlockRenderType getRenderType(IBlockState state) { return EnumBlockRenderType.MODEL; }
+    @Override public int damageDropped(IBlockState state) { return state.getValue(VARIANT); }
+    @Override public void getSubBlocks(net.minecraft.creativetab.CreativeTabs tab, net.minecraft.util.NonNullList<net.minecraft.item.ItemStack> stacks) {
+        for (int variant = 0; variant < definition.variants; variant++) stacks.add(new net.minecraft.item.ItemStack(this, 1, variant));
+    }
+    int variantCount() { return definition.variants; }
 
     @Override
     public boolean onBlockActivated(World world, BlockPos pos, IBlockState state, EntityPlayer player,

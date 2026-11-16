@@ -60,6 +60,7 @@ public final class NativeTypeDecoders {
     @FunctionalInterface public interface EntityMatcher { boolean test(Entity entity, DataContext context); }
 
     public static void register(DeserializerManager manager, CompiledTagModule tags) {
+        registerText(manager);
         register(manager, IntRange.class, "int_range", value -> intRange(manager, value));
         register(manager, DoubleRange.class, "double_range", value -> doubleRange(manager, value));
         register(manager, Vec3d.class, "vec3", value -> vector(manager, value));
@@ -123,10 +124,58 @@ public final class NativeTypeDecoders {
             manager.addEntry(new AbstractDeserializer<>(id(operation), EntityMatcher.class,
                     value -> entityLogic(manager, object(value), operation)));
         }
+        NumericValueDecoders.register(manager);
+        register(manager, rml.loader.runtime.function.FunctionDataPath.Compiled.class, "nbt_path",
+                value -> rml.loader.runtime.function.FunctionDataPath.compile(manager.decode(String.class, payload(value))));
     }
 
     private static <T> void register(DeserializerManager manager, Class<T> type, String name, AbstractDeserializer.IDeserializer<T> decoder) {
         manager.addDefaultEntry(new AbstractDeserializer<>(id(name), type, decoder));
+    }
+
+    public static AbstractDeserializer<net.minecraft.util.text.ITextComponent> registerText(DeserializerManager manager) {
+        return manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "textcomponent"),
+                net.minecraft.util.text.ITextComponent.class, value -> text(manager, value)));
+    }
+
+    private static net.minecraft.util.text.ITextComponent text(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonArray()) {
+            net.minecraft.util.text.ITextComponent result = null;
+            for (JsonElement child : value.getAsJsonArray()) {
+                net.minecraft.util.text.ITextComponent component = manager.decode(net.minecraft.util.text.ITextComponent.class, child);
+                if (result == null) result = component; else result.appendSibling(component);
+            }
+            if (result == null) throw error(value, "Text component array must not be empty");
+            return result;
+        }
+        JsonElement normalized = value;
+        if (value.isJsonObject()) {
+            JsonObject object = value.getAsJsonObject(), result = new JsonObject();
+            for (Map.Entry<String, JsonElement> field : object.entrySet()) {
+                JsonElement child = field.getValue();
+                if ("extra".equals(field.getKey()) || "with".equals(field.getKey())) {
+                    if (!child.isJsonArray()) throw error(value, "Text children must be an array");
+                    JsonArray children = new JsonArray();
+                    for (JsonElement entry : child.getAsJsonArray()) children.add(textJson(manager, entry));
+                    child = children;
+                } else if ("hoverEvent".equals(field.getKey()) && child.isJsonObject()) {
+                    JsonObject hover = new JsonObject();
+                    for (Map.Entry<String, JsonElement> entry : child.getAsJsonObject().entrySet())
+                        hover.add(entry.getKey(), "value".equals(entry.getKey()) ? textJson(manager, entry.getValue()) : entry.getValue());
+                    child = hover;
+                }
+                result.add(field.getKey(), child);
+            }
+            normalized = result;
+        }
+        net.minecraft.util.text.ITextComponent result = net.minecraft.util.text.ITextComponent.Serializer.jsonToComponent(normalized.toString());
+        if (result == null) throw error(value, "Text component must not be null");
+        return result;
+    }
+
+    private static JsonElement textJson(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        return new com.google.gson.JsonParser().parse(net.minecraft.util.text.ITextComponent.Serializer.componentToJson(
+                manager.decode(net.minecraft.util.text.ITextComponent.class, value)));
     }
 
     private static ResourceLocation id(String name) { return new ResourceLocation("rml", name); }
@@ -330,7 +379,14 @@ public final class NativeTypeDecoders {
             String[] entries = manager.decode(String[].class, value);
             for (String entry : entries) {
                 if (entry.startsWith("#")) groups.add(new ResourceLocation(entry.substring(1)));
-                else ids.add(new ResourceLocation(entry));
+                else {
+                    ResourceLocation key = new ResourceLocation(entry);
+                    boolean known = "item".equals(registry) ? net.minecraftforge.fml.common.registry.ForgeRegistries.ITEMS.containsKey(key)
+                            : "block".equals(registry) ? net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS.containsKey(key)
+                            : PLAYER.equals(key) || net.minecraftforge.fml.common.registry.ForgeRegistries.ENTITIES.containsKey(key);
+                    if (!known) throw error(value, "Unknown " + registry + " in matcher: " + key);
+                    ids.add(key);
+                }
             }
         }
         return new Names(registry, tags, ids, groups, value == null);

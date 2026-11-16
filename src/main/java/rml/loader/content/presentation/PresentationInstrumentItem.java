@@ -12,20 +12,22 @@ import net.minecraft.world.World;
 
 /** Hand-playable authored instrument; the server broadcasts the authored sound to nearby players. */
 final class PresentationInstrumentItem extends Item {
-    private final SoundEvent sound;
-    private final float volume;
-    private final float pitch;
+    private final PresentationCodecs.SoundPlayback playback;
 
-    PresentationInstrumentItem(SoundEvent sound, float volume, float pitch) {
-        this.sound = sound;
-        this.volume = volume;
-        this.pitch = pitch;
+    PresentationInstrumentItem(SoundEvent sound, PresentationCodecs.SoundPlayback playback) {
+        this.playback = playback;
+        setMaxStackSize(1);
         setCreativeTab(net.minecraft.creativetab.CreativeTabs.MISC);
     }
 
+    @Override public int getMaxItemUseDuration(ItemStack stack) { return playback.duration; }
+    @Override public net.minecraft.item.EnumAction getItemUseAction(ItemStack stack) { return net.minecraft.item.EnumAction.BOW; }
+
     @Override public ActionResult<ItemStack> onItemRightClick(World world, EntityPlayer player, EnumHand hand) {
         ItemStack stack = player.getHeldItem(hand);
-        if (!world.isRemote) world.playSound(null, player.posX, player.posY, player.posZ, sound, SoundCategory.RECORDS, volume, pitch);
+        player.setActiveHand(hand);
+        player.getCooldownTracker().setCooldown(this, playback.duration);
+        if (!world.isRemote) PresentationPlayback.play(world, player.posX, player.posY, player.posZ, playback, player.getEntityId(), false);
         return new ActionResult<>(EnumActionResult.SUCCESS, stack);
     }
 }

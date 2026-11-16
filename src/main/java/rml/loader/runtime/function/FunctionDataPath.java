@@ -7,40 +7,54 @@ import net.minecraft.nbt.NBTTagList;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Cached-free parser for native NBT path syntax used by a single data command. */
+/** Native NBT paths, with reusable compiled accessors for decoded expressions. */
 public final class FunctionDataPath {
     private FunctionDataPath() { }
 
     public static NBTBase get(NBTTagCompound root, String path) {
-        List<Object> parts = parse(path);
-        NBTBase current = root;
-        for (Object part : parts) {
-            if (part instanceof String) {
-                if (!(current instanceof NBTTagCompound)) return null;
-                NBTTagCompound compound = (NBTTagCompound) current;
-                if (!compound.hasKey((String) part)) return null;
-                current = compound.getTag((String) part);
-            } else if (part instanceof Integer) {
-                if (!(current instanceof NBTTagList)) return null;
-                NBTTagList list = (NBTTagList) current;
-                int index = (Integer) part;
-                if (index < 0 || index >= list.tagCount()) return null;
-                current = list.get(index);
-            } else {
-                if (!(current instanceof NBTTagList)) return null;
-                current = firstMatch((NBTTagList) current, ((MatchPart) part).compound);
+        return compile(path).get(root);
+    }
+
+    public static Compiled compile(String path) { return new Compiled(path, parse(path).toArray()); }
+
+    public static final class Compiled {
+        private final String path;
+        private final Object[] parts;
+        private Compiled(String path, Object[] parts) { this.path = path; this.parts = parts; }
+
+        public void set(NBTTagCompound root, NBTBase value) { FunctionDataPath.set(root, parts, path, value); }
+
+        public NBTBase get(NBTTagCompound root) {
+            NBTBase current = root;
+            for (Object part : parts) {
+                if (part instanceof String) {
+                    if (!(current instanceof NBTTagCompound)) return null;
+                    current = ((NBTTagCompound) current).getTag((String) part);
+                } else if (part instanceof Integer) {
+                    if (!(current instanceof NBTTagList)) return null;
+                    NBTTagList list = (NBTTagList) current;
+                    int index = (Integer) part;
+                    if (index < 0 || index >= list.tagCount()) return null;
+                    current = list.get(index);
+                } else {
+                    if (!(current instanceof NBTTagList)) return null;
+                    current = firstMatch((NBTTagList) current, ((MatchPart) part).compound);
+                }
                 if (current == null) return null;
             }
+            return current;
         }
-        return current;
     }
 
     public static void set(NBTTagCompound root, String path, NBTBase value) {
-        List<Object> parts = parse(path);
+        compile(path).set(root, value);
+    }
+
+    private static void set(NBTTagCompound root, Object[] parts, String path, NBTBase value) {
         NBTBase parent = root;
-        for (int i = 0; i < parts.size() - 1; i++) {
-            Object part = parts.get(i);
-            Object next = parts.get(i + 1);
+        for (int i = 0; i < parts.length - 1; i++) {
+            Object part = parts[i];
+            Object next = parts[i + 1];
             if (part instanceof String) {
                 NBTTagCompound compound = requireCompound(parent, path);
                 String key = (String) part;
@@ -68,12 +82,13 @@ public final class FunctionDataPath {
                 parent = selected;
             }
         }
-        Object last = parts.get(parts.size() - 1);
+        Object last = parts[parts.length - 1];
         if (last instanceof String) requireCompound(parent, path).setTag((String) last, value);
         else if (last instanceof Integer) {
             NBTTagList list = requireList(parent, path);
             int index = (Integer) last;
             if (index < 0 || index > list.tagCount()) throw invalid(path);
+            if (list.tagCount() != 0 && list.getTagType() != value.getId()) throw invalid(path);
             if (index == list.tagCount()) list.appendTag(value);
             else list.set(index, value);
         } else {

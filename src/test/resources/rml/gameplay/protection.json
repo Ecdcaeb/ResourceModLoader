@@ -1,0 +1,14 @@
+{
+  "weight": "common",
+  "max_level": 4,
+  "slots": ["armor"],
+  "effects": {
+    "damage_protection": [{
+      "requirements": {"type": "rml:all_of", "terms": [
+        {"type": "rml:damage_source", "absolute": false},
+        {"type": "rml:inverted", "term": {"type": "rml:damage_source", "names": ["outOfWorld"]}}
+      ]},
+      "effect": {"type": "rml:add", "amount": {"type": "minecraft:linear", "base": 1, "per_level_above_first": 1}}
+    }]
+  }
+}
