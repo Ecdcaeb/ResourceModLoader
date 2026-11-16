@@ -35,25 +35,11 @@ public final class ContentCatalog {
                 throw new IllegalArgumentException("Compiled content must be JSON: " + source.getUri());
             }
             try {
-                JsonObject object = source.toJson().getAsJsonObject();
-                if (!object.has("format") || !"1".equals(object.get("format").getAsString())) {
-                    throw new IllegalArgumentException("Unsupported compiled content format");
-                }
-                String type = object.get("type").getAsString();
-                String name = object.get("id").getAsString();
-                JsonElement value = object.get("value");
-                if (type.isEmpty() || !IDENTIFIER.matcher(name).matches() || value == null || value.isJsonNull()) {
-                    throw new IllegalArgumentException("Invalid compiled content identity or value");
-                }
                 String pack = source.getContainerHolder().getContainer().getModId();
-                String key = pack + "|" + type + "|" + name;
+                CompiledResource resource = decode(pack, source.getUri().toString(), source.toJson().getAsJsonObject());
+                String key = pack + "|" + resource.getType() + "|" + resource.getId();
                 if (seen.put(key, Boolean.TRUE) != null) throw new IllegalArgumentException("Duplicate compiled content: " + key);
-                List<CompiledResource> resources = byPack.get(pack);
-                if (resources == null) {
-                    resources = new ArrayList<>();
-                    byPack.put(pack, resources);
-                }
-                resources.add(new CompiledResource(pack, type, new ResourceLocation(name), source.getUri().toString(), value));
+                byPack.computeIfAbsent(pack, ignored -> new ArrayList<>()).add(resource);
             } catch (IOException | RuntimeException | rml.deserializer.JsonDeserializeException e) {
                 throw new IllegalArgumentException("Invalid compiled content at " + source.getUri() + ": " + e.getMessage(), e);
             }
@@ -63,6 +49,22 @@ public final class ContentCatalog {
 
     public void reload() { snapshot = read(); }
     public Snapshot snapshot() { return snapshot; }
+
+    /** Shared decoder for discovered packs and detached compiler archives. */
+    static CompiledResource decode(String pack, String source, JsonObject object) {
+        if (!object.has("format") || !"1".equals(object.get("format").getAsString()))
+            throw new IllegalArgumentException("Unsupported compiled content format");
+        String type = object.get("type").getAsString();
+        String name = object.get("id").getAsString();
+        JsonElement value = object.get("value");
+        if (type.isEmpty() || !IDENTIFIER.matcher(name).matches() || value == null || value.isJsonNull())
+            throw new IllegalArgumentException("Invalid compiled content identity or value");
+        return new CompiledResource(pack, type, new ResourceLocation(name), source, value);
+    }
+
+    public static Snapshot compiledSnapshot(String pack, List<CompiledResource> resources) {
+        return new Snapshot(Collections.singletonMap(pack, resources));
+    }
 
     public static final class Snapshot {
         private final Map<String, List<CompiledResource>> byPack;

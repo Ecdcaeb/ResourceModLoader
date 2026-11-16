@@ -33,6 +33,7 @@ public final class RMLFunctionCommand extends CommandBase {
         register(runtime.getPresentation().getCommands(), runtime.getPresentation()::execute);
         register(runtime.getTimeTests().getCommands(), runtime.getTimeTests()::execute);
         register(Collections.singleton("capabilities"), (server, sender, args) -> capabilities(runtime, sender, args));
+        register(Collections.singleton("agent"), runtime.getAgent()::execute);
         register(Collections.singleton("tools"), (server, sender, args) -> sender.sendMessage(new TextComponentString(
                 runtime.getTools().execute(server, java.util.Arrays.copyOfRange(args, 1, args.length)).toString())));
     }
@@ -150,6 +151,9 @@ public final class RMLFunctionCommand extends CommandBase {
             List<String> names = new ArrayList<>(commands.keySet());
             names.add("functions");
             return getListOfStringsMatchingLastWord(args, names);
+        }
+        if ("agent".equals(args[0])) {
+            return args.length == 2 ? getListOfStringsMatchingLastWord(args, "start", "status", "stop") : Collections.emptyList();
         }
         if ("tools".equals(args[0])) {
             if (args.length == 2) return getListOfStringsMatchingLastWord(args, "inspect", "check", "apply", "deactivate");

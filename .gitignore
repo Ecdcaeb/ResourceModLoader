@@ -28,3 +28,9 @@ releases/
 libsource/
 misc/
 
+# Python Agent
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/

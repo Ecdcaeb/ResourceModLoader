@@ -194,7 +194,13 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         }
 
         @Subscribe
+        public void serverStarted(net.minecraftforge.fml.common.event.FMLServerStartedEvent event) {
+            ResourceModLoader.runtime().getAgent().serverStarted(net.minecraftforge.fml.common.FMLCommonHandler.instance().getMinecraftServerInstance());
+        }
+
+        @Subscribe
         public void serverStopping(net.minecraftforge.fml.common.event.FMLServerStoppingEvent event) {
+            ResourceModLoader.runtime().getAgent().serverStopping();
             ResourceModLoader.runtime().getTimeTests().stop();
         }
 

@@ -30,6 +30,7 @@ public final class LoaderRuntime {
     private final ModuleLoader modules;
     private final FunctionModule functions;
     private final RuntimeTools tools;
+    private final rml.loader.agent.AgentSupervisor agent;
     private final ConfigModule configs;
     private final LootTableModule lootTables;
     private final OreDictionaryModule oreDictionary;
@@ -87,6 +88,7 @@ public final class LoaderRuntime {
         providers.registerRuntime("structure", compiledStructures::prepare);
         functions = new FunctionModule(packs, modules, content, providers, compiledTags, functionEngine, logger);
         tools = new RuntimeTools(this);
+        agent = new rml.loader.agent.AgentSupervisor(this, logger);
         configs = new ConfigModule(modules);
         lootTables = new LootTableModule(modules);
         oreDictionary = new OreDictionaryModule(modules);
@@ -129,6 +131,7 @@ public final class LoaderRuntime {
     public java.util.Set<String> getContentTypes() { return providers.getTypes(); }
     public boolean isStartupContent(String type) { return providers.isStartup(type); }
     public RuntimeTools getTools() { return tools; }
+    public rml.loader.agent.AgentSupervisor getAgent() { return agent; }
 
     public void initializeNative() {
         rml.deserializer.DeserializerManager decoders = rml.loader.deserialize.Deserializer.MANAGER;

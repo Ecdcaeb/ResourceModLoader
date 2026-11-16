@@ -145,7 +145,11 @@ task timeWorldDataContractTest(type: JavaExec, dependsOn: testClasses) {
  'worldgenCapabilityContractTest': 'rml.loader.content.worldgen.WorldgenCapabilityContractTest',
  'presentationSubmissionContractTest': 'rml.loader.content.presentation.PresentationSubmissionContractTest',
  'presentationRegistryPhaseContractTest': 'rml.loader.content.presentation.PresentationRegistryPhaseContractTest',
- 'timeCompositionContractTest': 'rml.loader.content.time.TimeCompositionContractTest'].each { taskName, entrypoint ->
+ 'timeCompositionContractTest': 'rml.loader.content.time.TimeCompositionContractTest',
+ 'agentBridgeJournalContractTest': 'rml.loader.agent.BridgeJournalContractTest',
+ 'agentBridgeArchivesContractTest': 'rml.loader.agent.BridgeArchivesContractTest',
+ 'detachedCompiledPackContractTest': 'rml.loader.content.DetachedCompiledPackContractTest',
+ 'detachedImportContractTest': 'rml.loader.runtime.DetachedImportContractTest'].each { taskName, entrypoint ->
     tasks.create(name: taskName, type: JavaExec, dependsOn: testClasses) {
         classpath = sourceSets.test.runtimeClasspath
         main = entrypoint

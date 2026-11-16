@@ -317,9 +317,9 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 
 ## 15. 服务端托管 Agent 与 TUI 会话
 
-采用“Minecraft 服务端启动 Agent 服务，TUI 连接同一会话”的交互方向。以下为待实现的 Agent 层契约；现有实现仍是前述运行工具与内容提供者，尚不包含 Agent 服务进程或 TUI。
+已实现“Minecraft 服务端启动 Agent 服务，TUI 连接同一会话”：Java 监督器、原生工具桥接、受管理工作区、ADK 服务与终端入口均在仓库内。模型连接由实例配置提供；未配置模型时服务仍可查询状态，生成请求返回 `model_not_configured`。
 
-Agent 层优先使用独立进程中的 Google ADK Python，固定 SDK 版本；游戏侧保留 Java 8，模型由 Agent 服务配置选择。ADK 负责 Agent/Runner、工具调用、会话和事件，RML 负责源码工作区、编译产物及游戏执行。ADK 的 `adk run` 是本地交互入口；连接服务器上已运行 Agent 的 RML TUI 使用服务接口，避免为每个终端重复启动 Agent。
+Agent 服务使用 Python 3.11+ 与固定版本 `google-adk==2.14.1`，游戏侧保留 Java 8。ADK 的 Runner、SQLite 会话和文件 artifact 服务负责模型执行与持久状态；RML 负责源码、Java 编译器、原生运行工具和游戏执行。`litellm==1.102.1` 适配其他模型或兼容端点，TUI 通过 HTTP/SSE 连接已有服务。
 
 ```mermaid
 flowchart LR
@@ -332,32 +332,62 @@ flowchart LR
 
 ### 启动与终端归属
 
-1. 服务端启用 Agent 功能后，监督器异步启动服务，传入实例标识、工作区、运行工具端点和模型配置。启动模型或等待网络不占用 Minecraft tick 线程。
-2. 服务报告 ready 后，创建或恢复玩家对应的 Agent 会话。一个服务进程管理多个隔离会话，无需每个玩家启动一份服务。
-3. 本地桌面启动器可以同时打开终端并 attach；已有终端也可以连接。远程服务器返回连接入口，由用户在本机或 SSH 会话中打开 TUI，服务端不能直接在远程玩家电脑弹出终端。
-4. 同一终端只有一个输入与渲染所有者。统一启动器可由 TUI 接管 Minecraft 子进程的日志和控制台输入；已经运行的服务器使用独立终端连接，避免 TUI 与原服务器控制台争抢 stdin。
+1. 世界完成启动后，监督器读取 `config/rml-agent.json`。`enabled:true` 自动启动服务；`/rml agent start` 也可显式启动。Python 进程启动、网络等待与编译不占用 Minecraft tick 线程。
+2. 服务 ready 后恢复控制台会话及已有玩家连接文件；玩家首次执行 start 时创建自己的会话。一个进程管理多个隔离会话，连接文件存于该世界的 `rml-agent/connections/`。
+3. 游戏返回 `rml-agent tui --connection "<连接文件>"`。终端独立连接，关闭终端不停止 Minecraft 或 Agent 服务。远程访问通过 SSH 转发本地服务端口，再用 `--connect` 覆盖连接文件中的地址。
+4. TUI 显示回复、工具结果、文件差异和编译日志，输入区发送请求。`/status` 查询会话，`/cancel` 或 Ctrl-C 取消当前请求，`/exit` 或 Ctrl-D 分离。Minecraft 控制台保留自己的输入和日志。
 
-拟议入口为服务端 `/rml agent start|status|stop`，终端 `rml-agent tui --connect <endpoint> --session <agent-session>`。这些命令尚未实现，不能作为当前安装说明。关闭 TUI 默认 detach；取消当前请求与停止 Agent 服务是独立操作，均不自动停止 Minecraft。
+服务端命令为 `/rml agent start|status|stop`；终端入口为 `rml-agent tui`，另提供 `status` 和流式单次请求 `run`。停止服务与取消请求是不同操作。停止后的启动会等待旧进程清理，恢复原有会话令牌并更新连接地址；本地 TUI 重连时重新读取连接文件。
+
+### 安装与模型配置
+
+先构建 `:compiler:executableJar`，将 `compiler/build/libs/rml-compiler.jar` 放到游戏目录，或在配置中指定绝对路径。安装服务包：
+
+```text
+python -m pip install ./agent
+```
+
+第一次启动世界会生成 `config/rml-agent.json`。`python` 是启动命令的参数数组，可填写虚拟环境 Python 的绝对路径；模型密钥通过 `api_key_env` 指定的环境变量提供，不放入 JSON。下面保留空模型名称，填写所选提供者的实际模型标识后才能生成：
+
+```json
+{
+  "enabled": true,
+  "python": ["python"],
+  "compiler": "rml-compiler.jar",
+  "service_host": "127.0.0.1",
+  "service_port": 0,
+  "model": {
+    "provider": "gemini",
+    "name": "",
+    "api_key_env": "GOOGLE_API_KEY"
+  }
+}
+```
+
+其他提供者使用 `provider:"litellm"` 和对应的 LiteLLM 模型标识；自定义端点可填写 `base_url`。在启动 Minecraft 的环境中设置相应密钥，模型配置更改后停止并重新启动 Agent 服务。服务仅监听回环地址；`service_port:0` 自动选择端口，固定端口适合长期 SSH 转发。编译进程复用 Minecraft 的 Java 可执行文件，不要求系统 PATH 另有 Java。
+
+连接文件包含该会话的访问令牌。也可使用 `--connect <URL> --session <UUID> --token-env <环境变量名>` 连接；`rml-agent run --connection <文件> "需求" --json` 输出实际事件 JSON 行，适合自动化调用。
+
 
 ### 会话、事件与工具
 
 会话按服务器实例、玩家 UUID 和工作区隔离。`agentSessionId` 是可持久化的对话身份，`runtimeSessionId` 与 `revision` 来自游戏运行时，二者不得混用。服务器重启后恢复对话，并重新 inspect 世界会话与版本；旧候选不自动重放。
 
-ADK 的 API Server 提供会话创建、`/run` 与 `/run_sse`；TUI 使用流式事件显示回复、工具开始/结束、文件差异、构建日志和游戏断言。连接恢复从保存的会话及事件游标恢复显示，不重新执行已经成功的游戏写操作。会话/事件使用持久存储，构建产物与画面使用 artifact 存储。
+服务提供会话管理、`POST /v1/sessions/{id}/runs` 与 `GET /v1/sessions/{id}/events?after=<游标>`。ADK 对话、运行请求与带单调序号的事件分别持久保存；SSE 断线只分离显示，重连重放保存的事件，不重新发起模型请求或游戏写操作。服务重启将未完成请求标记为 interrupted，未确认的工具结果要求重新 inspect。编译 ZIP 可通过会话 artifact 接口下载。
 
-现有 `inspect/check/apply/deactivate` 作为工具适配器复用，游戏 API 调用统一进入服务端主线程队列。Agent 可以拆分内容构建任务，但同一工作区的最终合并和游戏提交由一个负责人串行完成；提交仍带候选标识与预期运行时版本。沿用操作员权限，多个对话会话不自动获得服务器管理权限。
+`AgentBridge` 将 inspect、校验、提交、停用和命令执行送入服务端主线程。ZIP 读取、校验散列和安装文件写入在后台执行。编译包复用既有内容协议和候选机制，不伪造 Forge 容器；同一会话的工作区操作串行，提交带候选标识和预期 revision。游戏操作执行时重新检查玩家在线状态与操作员权限，保留原生玩家身份并捕获实际消息。不同会话不能提交彼此的候选。
 
-还需实现受管理工作区、编译产物导入与服务/TUI 协议。当前 `check` 只读取已登记的包，因此启动器应在游戏启动前准备创作包，或增加明确的运行时包导入能力；不能把新 ZIP 写入 `mods/` 后就宣称运行中安装成功。新增原生注册项仍返回 `requires_restart`。
+每个会话的源码位于 `<世界>/rml-agent/workspaces/<会话>/source`，编译结果以独立 UUID 和 SHA-256 保存。文件修改要求匹配已有散列；校验后改写源码不改变候选。可重载内容允许在当前世界中导入，原生函数 reload 后仍保留；新增注册项返回 `requires_restart`。`install_build` 将验证后的 ZIP 原子写入游戏 `mods/rml-agent-<会话>.zip`，供下次 JVM 启动时正常发现，当前世界不会因此新增注册项。
 
-取消请求会停止模型生成并取消尚未执行的工具任务；已提交的内容或世界变化沿用现有撤销边界。Agent 服务异常时，游戏继续运行并显示服务状态；关闭服务器时停止接收新工具调用、完成或取消在途任务、保存会话并回收子进程。
+取消请求停止模型生成、编译子进程及尚未执行的原生任务；已提交的内容和世界变化不自动撤销。桥接按请求身份保存磁盘回执，内存只缓存有限响应，重放旧请求不会再次执行。未知结果明确报告 unknown，不能换新请求标识盲目重试。Agent 服务异常不会停止游戏；服务器关闭时拒绝新工具调用、取消排队任务、保存会话并回收子进程。
 
-### 验收
+### 验收入口与边界
 
-- 服务端启动 Agent 后，本地 TUI 一步连接并提出玩法需求；源码编辑、编译、check、apply 的实际结果进入同一事件流。
-- 关闭并重新连接 TUI，保留会话、工作区与工具结果，不重复运行已提交的操作。
-- 两个玩家并发会话不串台；同一内容的版本冲突沿用 `revision_conflict`，不能静默覆盖。
-- 模型慢响应、取消与服务退出期间，Minecraft tick 继续推进；专用服务器无需图形终端即可运行。
-- 验收使用真实模型调用与真实游戏工具；缺少模型配置时明确返回未配置状态，不生成伪造完成结果。
+- `python -m pip install -e "agent[test]"` 安装 Python 测试依赖；`RML_TEST_COMPILER` 指向实际编译器 JAR 时，`pytest agent/tests` 同时执行真实编译集成场景。
+- 根工程 `check` 包含桥接回执、归档、独立编译包和原生导入契约，覆盖旧回执重放、候选版本冲突、导入后 reload 和启动期定义拒绝。
+- 真实客户端已验证服务自动启动、缺失模型的明确错误、原生工具编译与应用、玩家身份、旧包共存、跨会话拒绝、artifact 下载、重复请求只执行一次，以及新增物品的重启安装路径。实际 Windows 终端完成连接、状态显示和分离，服务会话继续存在。
+- 冷启动已验证安装包的函数和原生物品实际生效，旧式函数仍可执行。连续 stop/start 后，控制台与玩家连接文件恢复同一会话和令牌；旧进程已退出，世界 tick 持续推进，重放重启前的原生命令回执没有重复修改计分板。
+- 本轮尚未配置模型名称与凭据，因此没有执行真实模型生成验收。上述游戏链路使用真实工具和真实世界，模型调用数为 0；它们不替代“模型读取需求并自主调用工具”的验收。
 
 参考官方资料：[ADK 项目](https://github.com/google/adk-python)、[API Server 与 SSE](https://github.com/google/adk-docs/blob/main/docs/runtime/api-server.md)、[交互式命令行及会话存储](https://github.com/google/adk-docs/blob/main/docs/runtime/command-line.md)、[Runner 事件循环](https://github.com/google/adk-docs/blob/main/docs/runtime/event-loop.md)。
 

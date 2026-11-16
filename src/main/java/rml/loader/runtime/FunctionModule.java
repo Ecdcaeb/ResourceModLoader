@@ -19,6 +19,7 @@ import rml.loader.content.CompiledResource;
 import rml.loader.content.data.DataContext;
 import rml.loader.content.CompiledTagModule;
 import rml.loader.content.ContentCatalog;
+import rml.loader.content.DetachedCompiledPack;
 import rml.runtime.ContentRuntime;
 import rml.runtime.ContentException;
 import rml.runtime.ContentUnit;
@@ -96,47 +97,64 @@ public final class FunctionModule implements AutoCloseable {
                 selected.put(id, pack);
             }
         }
-        if (packId != null && selected.isEmpty()) throw new IllegalArgumentException("Pack has no runtime content: " + packId);
+        Set<String> selectedIds = new LinkedHashSet<>(selected.keySet());
+        for (String id : current.imported.keySet()) if (packId == null || packId.equals(id)) selectedIds.add(id);
+        if (packId != null && selectedIds.isEmpty()) throw new IllegalArgumentException("Pack has no runtime content: " + packId);
         try {
-            ContentCatalog.Snapshot compiled = content.read(packId);
-            requireUnchangedStartup(compiled, selected.keySet());
+            ContentCatalog.Snapshot discovered = content.read(packId);
+            Map<String, List<CompiledResource>> compiled = new TreeMap<>(discovered.getPacks());
+            for (String id : selectedIds) {
+                DetachedCompiledPack imported = current.imported.get(id);
+                if (imported != null) compiled.put(id, imported.getContent().resourcesForPack(id));
+                requireUnchangedStartup(ContentCatalog.compiledSnapshot(id, compiled.getOrDefault(id, Collections.emptyList())), Collections.singleton(id));
+            }
             Map<String, List<ContainerHolder.ModuleConsumeContext>> sources = new TreeMap<>();
-            for (String id : selected.keySet()) sources.put(id, new ArrayList<>());
+            for (String id : selectedIds) sources.put(id, new ArrayList<>());
             for (ContainerHolder.ModuleConsumeContext source : modules.read(functions, FunctionModule.class, packId)) {
                 List<ContainerHolder.ModuleConsumeContext> files = sources.get(source.getContainerHolder().getContainer().getModId());
-                if (files != null && source.isExtension("mcfunction", "executor")) files.add(source);
+                if (files != null && !current.imported.containsKey(source.getContainerHolder().getContainer().getModId())
+                        && source.isExtension("mcfunction", "executor")) files.add(source);
             }
             Set<ResourceLocation> available = new HashSet<>();
             for (ResourceLocation name : current.manager.getFunctions().keySet()) {
-                if (!current.scheduler.belongsTo(name, selected.keySet())) available.add(name);
+                if (!current.scheduler.belongsTo(name, selectedIds)) available.add(name);
             }
             for (List<ContainerHolder.ModuleConsumeContext> files : sources.values()) {
                 for (ContainerHolder.ModuleConsumeContext source : files) {
                     if (source.isExtension("mcfunction")) declare(available, source.getResourceLocation());
                 }
             }
-            for (String id : selected.keySet()) {
-                for (CompiledResource resource : compiled.resourcesForPack(id)) {
+            for (String id : selectedIds) {
+                for (CompiledResource resource : compiled.getOrDefault(id, Collections.emptyList())) {
                     if ("function".equals(resource.getType())) declare(available, resource.getId());
                 }
             }
             List<PackDefinition> definitions = new ArrayList<>();
-            for (Map.Entry<String, ContainerHolder> entry : selected.entrySet()) {
+            for (String id : selectedIds) {
                 List<ContentUnit> units = new ArrayList<>();
-                for (ContainerHolder.ModuleConsumeContext source : sources.get(entry.getKey())) {
+                for (ContainerHolder.ModuleConsumeContext source : sources.get(id)) {
                     units.add(new SourceUnit(current, source, available));
                 }
-                for (CompiledResource resource : compiled.resourcesForPack(entry.getKey())) {
+                for (CompiledResource resource : compiled.getOrDefault(id, Collections.emptyList())) {
                     if (!providers.isStartup(resource.getType())) {
                         units.add(new CompiledUnit(current, resource, available));
                     }
                 }
                 Set<String> dependencies = new LinkedHashSet<>();
-                for (ModuleType type : new ModuleType[]{functions, compiledType}) {
-                    Module declaration = entry.getValue().getModules().get(type);
-                    if (declaration != null) dependencies.addAll(declaration.getDependencies());
+                DetachedCompiledPack imported = current.imported.get(id);
+                String version;
+                if (imported != null) {
+                    dependencies.addAll(imported.getDependencies());
+                    version = imported.getVersion();
+                } else {
+                    ContainerHolder holder = selected.get(id);
+                    for (ModuleType type : new ModuleType[]{functions, compiledType}) {
+                        Module declaration = holder.getModules().get(type);
+                        if (declaration != null) dependencies.addAll(declaration.getDependencies());
+                    }
+                    version = holder.getContainer().getVersion();
                 }
-                definitions.add(new PackDefinition(entry.getKey(), entry.getValue().getContainer().getVersion(), dependencies, units));
+                definitions.add(new PackDefinition(id, version, dependencies, units));
             }
             ContentRuntime.Candidate prepared = current.runtime.prepare(definitions);
             current.checked = new CheckResult(prepared, current.runtime.getRevision(), definitions);
@@ -148,6 +166,36 @@ public final class FunctionModule implements AutoCloseable {
         }
     }
 
+    /** Prepares an already decoded archive on the owning thread, without registering a Forge mod. */
+    public CheckResult checkCompiled(DetachedCompiledPack pack) {
+        Session current = requireSession();
+        current.checkThread();
+        current.checked = null;
+        try {
+            requireUnchangedStartup(pack.getContent(), Collections.singleton(pack.getId()));
+            Set<ResourceLocation> available = new HashSet<>();
+            for (ResourceLocation name : current.manager.getFunctions().keySet()) {
+                if (!current.scheduler.belongsTo(name, Collections.singleton(pack.getId()))) available.add(name);
+            }
+            List<CompiledResource> resources = pack.getContent().resourcesForPack(pack.getId());
+            for (CompiledResource resource : resources) {
+                if ("function".equals(resource.getType())) declare(available, resource.getId());
+            }
+            List<ContentUnit> units = new ArrayList<>();
+            for (CompiledResource resource : resources) {
+                if (!providers.isStartup(resource.getType())) units.add(new CompiledUnit(current, resource, available));
+            }
+            List<PackDefinition> definitions = Collections.singletonList(new PackDefinition(pack.getId(), pack.getVersion(), pack.getDependencies(), units));
+            current.checked = new CheckResult(current.runtime.prepare(definitions), current.runtime.getRevision(), definitions);
+            current.checked.imported = pack;
+            lastError = null;
+            return current.checked;
+        } catch (RuntimeException failure) {
+            lastError = failure.getMessage();
+            throw failure;
+        }
+    }
+
     /** Commits exactly the checked content, without reading its source files again. */
     public void apply(String candidateId, long expectedRevision) {
         Session current = requireSession();
@@ -156,6 +204,7 @@ public final class FunctionModule implements AutoCloseable {
         if (checked == null || !checked.candidateId.equals(candidateId))
             throw new ContentException("stale_candidate", null, null, "No matching checked candidate in this server session");
         requireRevision(current, expectedRevision);
+        long before = current.runtime.getRevision();
         try {
             current.runtime.apply(checked.candidate);
             lastError = null;
@@ -163,6 +212,8 @@ public final class FunctionModule implements AutoCloseable {
             lastError = failure.getMessage();
             throw failure;
         } finally {
+            if (checked.imported != null && current.runtime.getRevision() != before)
+                current.imported.put(checked.imported.getId(), checked.imported);
             current.checked = null;
         }
     }
@@ -173,10 +224,12 @@ public final class FunctionModule implements AutoCloseable {
         if (!current.id.equals(sessionId))
             throw new ContentException("stale_session", null, null, "The server session has changed");
         requireRevision(current, expectedRevision);
+        long before = current.runtime.getRevision();
         try {
             current.runtime.deactivate(packIds);
             lastError = null;
         } finally {
+            if (current.runtime.getRevision() != before) for (String id : packIds) current.imported.remove(id);
             current.checked = null;
         }
     }
@@ -223,6 +276,7 @@ public final class FunctionModule implements AutoCloseable {
         private final ContentRuntime.Candidate candidate;
         private final long revision;
         private final Map<String, List<String>> units;
+        private DetachedCompiledPack imported;
 
         private CheckResult(ContentRuntime.Candidate candidate, long revision, List<PackDefinition> definitions) {
             this.candidate = candidate;
@@ -410,6 +464,7 @@ public final class FunctionModule implements AutoCloseable {
         private final FunctionSchedule scheduler;
         private final String id = UUID.randomUUID().toString();
         private CheckResult checked;
+        private final Map<String, DetachedCompiledPack> imported = new TreeMap<>();
 
         private Session(FunctionManager manager, Map<ResourceLocation, FunctionObject> functions) {
             this.manager = manager;

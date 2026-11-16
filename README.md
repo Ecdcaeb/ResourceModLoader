@@ -66,3 +66,14 @@ The source catalog follows Minecraft's data-driven registries. The target game r
 See the [source example](dev/datapack-example), [decoder API](docs/zh_cn/java/deserializer/README.md), and [source and runtime guide](docs/zh_cn/2_RML_2.0_Plan.md#14-增强数据包的当前工程入口). The example clock drives the overworld from time zero; use a preview world. `/rml capabilities` lists actual runtime providers, and `/rml capabilities decoders` lists registered decoder names.
 
 Agent integrations can use `/rml tools inspect`, `check [pack]`, `apply <candidate> <revision>`, and `deactivate <session> <revision> <pack> [pack...]`. Every response is JSON with diagnostics and the current state. Check prepares a detached candidate; apply commits that exact candidate with revision protection. See the [runtime tool contract](docs/zh_cn/modules/FUNCTIONS/README.md#agent-运行工具).
+
+### Server-hosted Agent and terminal
+
+The `agent/` Python 3.11+ package runs Google ADK 2.14.1 in a process owned by the Minecraft server. Install it with `python -m pip install ./agent`, build `:compiler:executableJar`, and configure `config/rml-agent.json` with the Python command, compiler JAR and model provider. Supply credentials through the configured environment variable before starting Minecraft. An unconfigured model is reported explicitly.
+
+`/rml agent start|status|stop` manages the service. Start returns a private connection file for `rml-agent tui --connection <file>`; enabling automatic startup restores the console session and existing connections. The TUI displays actual model/tool events, file diffs and compiler output. Ctrl-C cancels a request; Ctrl-D detaches while the service continues running.
+
+Each operator has an isolated, persistent workspace and conversation. Compiled builds enter the real runtime through checked candidates and revision protection. Native commands retain the player's identity and return their actual messages. Registry additions require installing the build for the next JVM launch. Durable request receipts prevent repeated game mutations after reconnects or service restarts.
+
+See [Agent setup, sessions and verification](docs/zh_cn/2_RML_2.0_Plan.md#15-服务端托管-agent-与-tui-会话) for model configuration, SSH connections, artifact access and the distinction between live application and startup installation.
+

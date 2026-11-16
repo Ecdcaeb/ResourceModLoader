@@ -97,6 +97,10 @@ public class RMLTransformer implements IClassTransformer {
     private static final MethodName ITEM_SHRINK = MethodName.of()
             .mcp("shrink", "(I)V").srg("func_190918_g", "(I)V").notch("g", "(I)V")
             .classes("net/minecraft/item/ItemStack", "aip").build();
+    private static final MethodName SEND_MESSAGE = MethodName.of()
+            .mcp("sendMessage", "(Lnet/minecraft/util/text/ITextComponent;)V")
+            .srg("func_145747_a", "(Lnet/minecraft/util/text/ITextComponent;)V")
+            .notch("a", "(Lhh;)V").build();
 
 
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
@@ -447,6 +451,8 @@ public class RMLTransformer implements IClassTransformer {
             });
         }
         public static void initMinecraftTransformers(){
+            register("net.minecraft.server.MinecraftServer", Transformers::captureCommandMessages);
+            register("net.minecraft.entity.player.EntityPlayerMP", Transformers::captureCommandMessages);
             register("net.minecraft.item.ItemStack", cn -> {
                 Tasks tasks = new Tasks("dataItemDamage");
                 for (MethodNode method : cn.methods) {
@@ -691,6 +697,22 @@ public class RMLTransformer implements IClassTransformer {
                         else bar.throwError();
                         return -1;
                     });
+        }
+
+        private static int captureCommandMessages(ClassNode node) {
+            Tasks tasks = new Tasks("sendMessage");
+            for (MethodNode method : node.methods) {
+                if (!SEND_MESSAGE.is(method)) continue;
+                InsnList hook = new InsnList();
+                hook.add(new VarInsnNode(Opcodes.ALOAD, 0));
+                hook.add(new VarInsnNode(Opcodes.ALOAD, 1));
+                hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/agent/CommandCapture", "message",
+                        "(Lnet/minecraft/command/ICommandSender;Lnet/minecraft/util/text/ITextComponent;)V", false));
+                method.instructions.insert(hook);
+                tasks.complete("sendMessage");
+            }
+            if (!tasks.isCompleted()) tasks.throwError();
+            return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
         }
 
         private static void prependCompiledLookup(MethodNode method, int idSlot, String hook, String result) {
