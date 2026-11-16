@@ -245,6 +245,9 @@ public final class ContentRuntime implements AutoCloseable {
         return Collections.unmodifiableList(snapshots);
     }
 
+    /** Monotonic commit revision, including removals when no packs remain active. */
+    public synchronized long getRevision() { return revision; }
+
     @Override
     public synchronized void close() {
         checkThread.run();

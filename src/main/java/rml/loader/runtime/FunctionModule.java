@@ -20,6 +20,7 @@ import rml.loader.content.data.DataContext;
 import rml.loader.content.CompiledTagModule;
 import rml.loader.content.ContentCatalog;
 import rml.runtime.ContentRuntime;
+import rml.runtime.ContentException;
 import rml.runtime.ContentUnit;
 import rml.runtime.OwnedRegistry;
 import rml.runtime.PackDefinition;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 
 /** World-session adapter for native functions and compiled runtime content. */
 public final class FunctionModule implements AutoCloseable {
@@ -76,8 +78,15 @@ public final class FunctionModule implements AutoCloseable {
     }
 
     public void reload(String packId) {
+        CheckResult checked = check(packId);
+        apply(checked.getCandidateId(), checked.getRevision());
+    }
+
+    /** Prepares one detached candidate; a subsequent check supersedes the previous one. */
+    public CheckResult check(String packId) {
         Session current = requireSession();
         current.checkThread();
+        current.checked = null;
         ModuleType functions = ModuleType.valueOf(new ResourceLocation("rml", "functions"));
         ModuleType compiledType = ModuleType.valueOf(ContentCatalog.MODULE);
         Map<String, ContainerHolder> selected = new TreeMap<>();
@@ -90,6 +99,7 @@ public final class FunctionModule implements AutoCloseable {
         if (packId != null && selected.isEmpty()) throw new IllegalArgumentException("Pack has no runtime content: " + packId);
         try {
             ContentCatalog.Snapshot compiled = content.read(packId);
+            requireUnchangedStartup(compiled, selected.keySet());
             Map<String, List<ContainerHolder.ModuleConsumeContext>> sources = new TreeMap<>();
             for (String id : selected.keySet()) sources.put(id, new ArrayList<>());
             for (ContainerHolder.ModuleConsumeContext source : modules.read(functions, FunctionModule.class, packId)) {
@@ -128,17 +138,113 @@ public final class FunctionModule implements AutoCloseable {
                 }
                 definitions.add(new PackDefinition(entry.getKey(), entry.getValue().getContainer().getVersion(), dependencies, units));
             }
-            current.runtime.apply(current.runtime.prepare(definitions));
+            ContentRuntime.Candidate prepared = current.runtime.prepare(definitions);
+            current.checked = new CheckResult(prepared, current.runtime.getRevision(), definitions);
             lastError = null;
+            return current.checked;
         } catch (RuntimeException e) {
             lastError = e.getMessage();
             throw e;
         }
     }
 
+    /** Commits exactly the checked content, without reading its source files again. */
+    public void apply(String candidateId, long expectedRevision) {
+        Session current = requireSession();
+        current.checkThread();
+        CheckResult checked = current.checked;
+        if (checked == null || !checked.candidateId.equals(candidateId))
+            throw new ContentException("stale_candidate", null, null, "No matching checked candidate in this server session");
+        requireRevision(current, expectedRevision);
+        try {
+            current.runtime.apply(checked.candidate);
+            lastError = null;
+        } catch (RuntimeException failure) {
+            lastError = failure.getMessage();
+            throw failure;
+        } finally {
+            current.checked = null;
+        }
+    }
+
+    public void deactivate(String sessionId, long expectedRevision, Collection<String> packIds) {
+        Session current = requireSession();
+        current.checkThread();
+        if (!current.id.equals(sessionId))
+            throw new ContentException("stale_session", null, null, "The server session has changed");
+        requireRevision(current, expectedRevision);
+        try {
+            current.runtime.deactivate(packIds);
+            lastError = null;
+        } finally {
+            current.checked = null;
+        }
+    }
+
+    private static void requireRevision(Session current, long expectedRevision) {
+        if (current.runtime.getRevision() != expectedRevision)
+            throw new ContentException("revision_conflict", null, null, "Expected revision " + expectedRevision
+                    + " but active revision is " + current.runtime.getRevision());
+    }
+
+    private void requireUnchangedStartup(ContentCatalog.Snapshot candidate, Set<String> packIds) {
+        ContentCatalog.Snapshot loaded = content.snapshot();
+        for (String packId : packIds) {
+            Map<String, CompiledResource> previous = new TreeMap<>();
+            for (CompiledResource resource : loaded.resourcesForPack(packId)) {
+                if (providers.isStartup(resource.getType())) previous.put(resource.getType() + "/" + resource.getId(), resource);
+            }
+            for (CompiledResource resource : candidate.resourcesForPack(packId)) {
+                if (!providers.isStartup(resource.getType())) continue;
+                String key = resource.getType() + "/" + resource.getId();
+                CompiledResource original = previous.remove(key);
+                if (original == null || !original.getValue().equals(resource.getValue()))
+                    throw new ContentException("requires_restart", packId, key, "Startup definition changed at " + resource.getSource());
+            }
+            if (!previous.isEmpty()) {
+                String key = previous.keySet().iterator().next();
+                throw new ContentException("requires_restart", packId, key, "Startup definition was removed: " + key);
+            }
+        }
+    }
+
+    public String getSessionId() { return session == null ? null : session.id; }
+
+    public long getRevision() {
+        Session current = requireSession();
+        current.checkThread();
+        return current.runtime.getRevision();
+    }
+
+    public CheckResult getCheckedCandidate() { return session == null ? null : session.checked; }
+
+    public static final class CheckResult {
+        private final String candidateId = UUID.randomUUID().toString();
+        private final ContentRuntime.Candidate candidate;
+        private final long revision;
+        private final Map<String, List<String>> units;
+
+        private CheckResult(ContentRuntime.Candidate candidate, long revision, List<PackDefinition> definitions) {
+            this.candidate = candidate;
+            this.revision = revision;
+            Map<String, List<String>> units = new TreeMap<>();
+            for (PackDefinition pack : definitions) {
+                List<String> ids = new ArrayList<>();
+                for (ContentUnit unit : pack.getUnits()) ids.add(unit.getId());
+                Collections.sort(ids);
+                units.put(pack.getId(), Collections.unmodifiableList(ids));
+            }
+            this.units = Collections.unmodifiableMap(units);
+        }
+
+        public String getCandidateId() { return candidateId; }
+        public long getRevision() { return revision; }
+        public Map<String, List<String>> getUnits() { return units; }
+    }
+
     public void deactivate(String packId) {
-        requireSession().runtime.deactivate(Collections.singleton(packId));
-        lastError = null;
+        Session current = requireSession();
+        deactivate(current.id, current.runtime.getRevision(), Collections.singleton(packId));
     }
 
     public void schedule(ResourceLocation function, String delay, boolean replace) {
@@ -188,7 +294,7 @@ public final class FunctionModule implements AutoCloseable {
     }
 
     private Session requireSession() {
-        if (session == null) throw new IllegalStateException("The server function manager is not ready");
+        if (session == null) throw new ContentException("session_not_ready", null, null, "The server function manager is not ready");
         return session;
     }
 
@@ -299,6 +405,8 @@ public final class FunctionModule implements AutoCloseable {
         private final OwnedRegistry<ResourceLocation, FunctionObject> functions;
         private final ContentRuntime runtime;
         private final FunctionSchedule scheduler;
+        private final String id = UUID.randomUUID().toString();
+        private CheckResult checked;
 
         private Session(FunctionManager manager, Map<ResourceLocation, FunctionObject> functions) {
             this.manager = manager;

@@ -33,6 +33,8 @@ public final class RMLFunctionCommand extends CommandBase {
         register(runtime.getPresentation().getCommands(), runtime.getPresentation()::execute);
         register(runtime.getTimeTests().getCommands(), runtime.getTimeTests()::execute);
         register(Collections.singleton("capabilities"), (server, sender, args) -> capabilities(runtime, sender, args));
+        register(Collections.singleton("tools"), (server, sender, args) -> sender.sendMessage(new TextComponentString(
+                runtime.getTools().execute(server, java.util.Arrays.copyOfRange(args, 1, args.length)).toString())));
     }
 
     @Override public String getName() { return "rml"; }
@@ -117,7 +119,7 @@ public final class RMLFunctionCommand extends CommandBase {
     public List<ICommand> getNativeAliases(MinecraftServer server) {
         List<ICommand> aliases = new ArrayList<>();
         for (String name : commands.keySet()) {
-            if (!server.getCommandManager().getCommands().containsKey(name)) aliases.add(new Alias(name));
+            if (!"tools".equals(name) && !server.getCommandManager().getCommands().containsKey(name)) aliases.add(new Alias(name));
         }
         return aliases;
     }
@@ -148,6 +150,15 @@ public final class RMLFunctionCommand extends CommandBase {
             List<String> names = new ArrayList<>(commands.keySet());
             names.add("functions");
             return getListOfStringsMatchingLastWord(args, names);
+        }
+        if ("tools".equals(args[0])) {
+            if (args.length == 2) return getListOfStringsMatchingLastWord(args, "inspect", "check", "apply", "deactivate");
+            if (args.length == 3 && "check".equals(args[1])) {
+                List<String> ids = new ArrayList<>();
+                for (ContentRuntime.PackSnapshot pack : functions.snapshot()) ids.add(pack.getId());
+                return getListOfStringsMatchingLastWord(args, ids);
+            }
+            return Collections.emptyList();
         }
         if (!"functions".equals(args[0])) return Collections.emptyList();
         if (args.length == 2) return getListOfStringsMatchingLastWord(args, "status", "reload", "unload");

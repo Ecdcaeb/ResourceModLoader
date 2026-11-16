@@ -335,9 +335,11 @@ public final class RuntimeContractTest {
         ContentRuntime foreign = new ContentRuntime(ANY_THREAD);
         PackDefinition first = pack("p", "1", emptyUnit("u"));
         ContentRuntime.Candidate candidate = runtime.prepare(Collections.singletonList(first));
+        equal(0L, runtime.getRevision(), "Preparing a candidate does not advance the visible revision");
         code("stale_candidate", () -> foreign.apply(candidate));
         runtime.apply(candidate);
         code("stale_candidate", () -> runtime.apply(candidate));
+        equal(1L, runtime.getRevision(), "Only the committed candidate advances the revision");
         ContentRuntime.Candidate stale = runtime.prepare(Collections.singletonList(pack("p", "2", emptyUnit("u"))));
         ContentRuntime.Candidate current = runtime.prepare(Collections.singletonList(pack("p", "3", emptyUnit("u"))));
         runtime.apply(current);
@@ -345,10 +347,12 @@ public final class RuntimeContractTest {
         ContentRuntime.Candidate beforeUnload = runtime.prepare(Collections.singletonList(first));
         runtime.deactivate(strings("p"));
         code("stale_candidate", () -> runtime.apply(beforeUnload));
+        equal(3L, runtime.getRevision(), "Removing the last pack still advances the visible revision");
         runtime.apply(runtime.prepare(Collections.singletonList(first)));
         ContentRuntime.Candidate survivesFailure = runtime.prepare(Collections.singletonList(first));
         code("activation_failed", () -> runtime.apply(runtime.prepare(Collections.singletonList(
                 pack("p", "bad", unit("u", strings(), () -> scope -> { throw new Exception("fail"); }))))));
+        equal(4L, runtime.getRevision(), "Failed activation preserves the visible revision");
         runtime.apply(survivesFailure);
         runtime.close();
         runtime.close();
