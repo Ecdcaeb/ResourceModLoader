@@ -387,7 +387,8 @@ python -m pip install ./agent
 - 根工程 `check` 包含桥接回执、归档、独立编译包和原生导入契约，覆盖旧回执重放、候选版本冲突、导入后 reload 和启动期定义拒绝。
 - 真实客户端已验证服务自动启动、缺失模型的明确错误、原生工具编译与应用、玩家身份、旧包共存、跨会话拒绝、artifact 下载、重复请求只执行一次，以及新增物品的重启安装路径。实际 Windows 终端完成连接、状态显示和分离，服务会话继续存在。
 - 冷启动已验证安装包的函数和原生物品实际生效，旧式函数仍可执行。连续 stop/start 后，控制台与玩家连接文件恢复同一会话和令牌；旧进程已退出，世界 tick 持续推进，重放重启前的原生命令回执没有重复修改计分板。
-- 本轮尚未配置模型名称与凭据，因此没有执行真实模型生成验收。上述游戏链路使用真实工具和真实世界，模型调用数为 0；它们不替代“模型读取需求并自主调用工具”的验收。
+- 真实模型已通过端到端验收：从自然语言需求出发，自主读取工作区与运行时、生成 `model_proof.mcfunction`、编译、校验、应用并调用函数。独立游戏查询确认主世界 `(0,81,0)` 为钻石块，`storage proof:agent` 的 `value` 为整数 `123`；最终运行状态为 `run_completed`。临时转接层首次超时后，模型沿用同一 ADK 会话中的查询结果完成任务。
+- 本次模型连接使用 LiteLLM 经临时本地 OpenAI 兼容端点调用宿主的真实模型；工具选择和源码均由模型生成，工具由 ADK 在真实工作区和游戏中执行。转接层仅用于验收，不随 RML 发布，也未读取或转交宿主模型凭据；独立部署仍需按上文配置自己的模型提供者、名称和连接凭据。
 
 参考官方资料：[ADK 项目](https://github.com/google/adk-python)、[API Server 与 SSE](https://github.com/google/adk-docs/blob/main/docs/runtime/api-server.md)、[交互式命令行及会话存储](https://github.com/google/adk-docs/blob/main/docs/runtime/command-line.md)、[Runner 事件循环](https://github.com/google/adk-docs/blob/main/docs/runtime/event-loop.md)。
 
