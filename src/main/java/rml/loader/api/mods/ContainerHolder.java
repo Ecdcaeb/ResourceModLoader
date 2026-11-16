@@ -3,180 +3,129 @@ package rml.loader.api.mods;
 import com.google.gson.JsonElement;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.FMLContainerHolder;
+import net.minecraftforge.fml.common.ModContainer;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.FormattedMessage;
 import rml.deserializer.JsonDeserializeException;
+import rml.io.PackFile;
 import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.mods.module.Module;
 import rml.loader.api.mods.module.ModuleType;
-import net.minecraftforge.fml.common.ModContainer;
 import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.deserialize.Deserializer;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.HashMap;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
+/** Immutable Forge identity and declarations. Registration does not execute content. */
 @PublicAPI
-public class ContainerHolder implements FMLContainerHolder {
-    public final ModContainer container;
-    public final HashMap<ModuleType, Module> modules;
-    public final int packVersion;
-    public ContainerHolder(ModContainer container, Module[] modules){
-        this(container, modules, 2);
+public final class ContainerHolder implements FMLContainerHolder {
+    private final ModContainer container;
+    private final Map<ModuleType, Module> modules;
+    private final int packVersion;
+
+    public ContainerHolder(ModContainer container, Module[] modules) {
+        this(container, modules, 3);
     }
 
-    public ContainerHolder(ModContainer container, Module[] modules, int packVersion){
-        this.container = container;
-        this.modules = new HashMap<>();
-        for(Module module : modules){
-            this.modules.put(module.moduleType, module);
-        }
+    public ContainerHolder(ModContainer container, Module[] modules, int packVersion) {
+        this.container = Objects.requireNonNull(container, "container");
         this.packVersion = packVersion;
+        Map<String, Module> ordered = new TreeMap<>();
+        for (Module module : Objects.requireNonNull(modules, "modules")) {
+            Objects.requireNonNull(module, "module");
+            if (ordered.put(module.getModuleType().getName().toString(), module) != null) {
+                throw new IllegalArgumentException("Duplicate module in " + container.getModId());
+            }
+        }
+        Map<ModuleType, Module> declarations = new LinkedHashMap<>();
+        for (Module module : ordered.values()) declarations.put(module.getModuleType(), module);
+        this.modules = Collections.unmodifiableMap(declarations);
     }
 
-    public ModContainer getContainer() {
-        return container;
-    }
-
-    public HashMap<ModuleType,Module> getModules() {
-        return modules;
-    }
-
-    public boolean hasModule(ModuleType module){
-        return modules.containsKey(module) && modules.get(module) != null;
-    }
-
-    public ContainerHolder(ModContainer container){
+    public ContainerHolder(ModContainer container) {
         this(container, ModuleType.getAllForDefault());
     }
 
+    public ModContainer getContainer() { return container; }
+    public Map<ModuleType, Module> getModules() { return modules; }
+    public int getPackVersion() { return packVersion; }
+    public boolean hasModule(ModuleType module) { return modules.containsKey(module); }
+
     @Override
-    public ModContainer getFMLContainer() {
-        return getContainer();
-    }
+    public ModContainer getFMLContainer() { return container; }
 
     @Override
     public String toString() {
-        return "ContainerHolder{" +
-                "container=" + container +
-                ", modules=" + modules +
-                ", packVersion=" + packVersion +
-                '}';
+        return "RML pack " + container.getModId() + " (format " + packVersion + ")";
     }
 
-    public static class ModuleConsumeContext {
+    /** Source snapshot that remains valid after its archive/directory reader closes. */
+    public static final class ModuleConsumeContext {
         private final ContainerHolder containerHolder;
         private final Module module;
-        private final Path root;
-        private final Path file;
-        private Logger logger;
-        public ModuleConsumeContext(Logger logger, ContainerHolder containerHolder, Module module, Path root, Path file) {
-            this.containerHolder = containerHolder;
-            this.module = module;
-            this.root = root;
-            this.file = file;
-            this.logger = logger;
+        private final PackFile file;
+        private final Logger logger;
+
+        public ModuleConsumeContext(Logger logger, ContainerHolder containerHolder, Module module, PackFile file) {
+            this.logger = Objects.requireNonNull(logger, "logger");
+            this.containerHolder = Objects.requireNonNull(containerHolder, "containerHolder");
+            this.module = Objects.requireNonNull(module, "module");
+            this.file = Objects.requireNonNull(file, "file");
         }
 
-        public ContainerHolder getContainerHolder() {
-            return containerHolder;
+        public ContainerHolder getContainerHolder() { return containerHolder; }
+        public Module getModule() { return module; }
+        public URI getUri() { return file.getUri(); }
+        public String getRelativePath() { return file.getRelativePath(); }
+
+        public void error(Throwable throwable, String message, Object... args) {
+            FormattedMessage detail = new FormattedMessage(message, args);
+            String text = "RML " + containerHolder.getContainer().getModId() + " / "
+                    + module.getModuleType().getName() + " / " + getRelativePath() + ": " + detail.getFormattedMessage();
+            if (module.isForceLoaded()) throw new IllegalStateException(text, throwable);
+            logger.error(text, throwable);
         }
 
-        public Module getModule() {
-            return module;
-        }
-
-        public Path getFile() {
-            return file;
-        }
-
-        public Path getRoot() {
-            return root;
-        }
-
-        public static void runThrow(Throwable throwable, String msg, Object... args){
-            throw new RuntimeException(new FormattedMessage("Error at loading RML Module. " + msg, args).getFormattedMessage(), throwable);
-        }
-
-        public void error(Throwable throwable, String msg, Object... args){
-            error(logger, throwable, msg, args);
-        }
-
-        public void error(Logger logger, Throwable throwable, String msg, Object... args){
-            if (this.getModule().isForceLoaded()) runThrow(throwable, "Error at load module " + this.getModule() + "  " + msg, args);
-            else logger.error(new FormattedMessage("Error at load module " + this.getModule() + "  " + msg, args).getFormattedMessage(), throwable);
-        }
-
-        public void info(String msg, Object... args) {
-            logger.info(msg, args);
-        }
-
-        public String getRelativePath() {
-            return getRoot().relativize(getFile()).toString();
-        }
+        public void info(String message, Object... args) { logger.info(message, args); }
 
         public ResourceLocation getResourceLocation() {
-            String name = FilenameUtils.removeExtension(getRelativePath()).replaceAll("\\\\", "/");
-            return new ResourceLocation(getContainerHolder().getContainer().getModId(), name);
+            return new ResourceLocation(containerHolder.getContainer().getModId(),
+                    FilenameUtils.removeExtension(getRelativePath()));
         }
 
-        public String getExtension(){
-            return FilenameUtils.getExtension(getFile().toString());
-        }
+        public String getExtension() { return FilenameUtils.getExtension(file.getPath()); }
 
-        public boolean isExtension(String... str) {
-            String ext = getExtension();
-            for (String st : str) {
-                if (st.equals(ext)) {
-                    return true;
-                }
-            }
+        public boolean isExtension(String... extensions) {
+            String extension = getExtension();
+            for (String candidate : extensions) if (candidate.equals(extension)) return true;
             return false;
         }
 
-        public InputStream openStream() throws IOException {
-            return Files.newInputStream(this.getFile());
-        }
-
-        public BufferedReader openBufferedReader() throws IOException {
-            return Files.newBufferedReader(this.getFile());
-        }
-
-        public BufferedReader openBufferedReader(Charset charset) throws IOException {
-            return Files.newBufferedReader(this.getFile(), charset);
-        }
+        public InputStream openStream() { return file.openStream(); }
+        public BufferedReader openBufferedReader() { return file.openReader(StandardCharsets.UTF_8); }
+        public BufferedReader openBufferedReader(Charset charset) { return file.openReader(charset); }
 
         public JsonElement toJson() throws IOException, JsonDeserializeException {
-            try (BufferedReader bufferedReader = this.openBufferedReader()) {
-                return JsonHelper.parse(bufferedReader);
+            try (BufferedReader reader = openBufferedReader()) {
+                return JsonHelper.parse(reader);
             }
         }
 
-        public <T> T deserialize(Class<T> cls) throws JsonDeserializeException, IOException {
-            return Deserializer.decode(cls, toJson());
+        public <T> T deserialize(Class<T> type) throws JsonDeserializeException, IOException {
+            return Deserializer.decode(type, toJson());
         }
 
-        public void setLogger(Logger logger) {
-            this.logger = logger;
-        }
-
-        @PublicAPI
-        public byte[] getBytes(Charset charset) throws IOException {
-            try (BufferedReader bufferedReader = this.openBufferedReader()) {
-                return IOUtils.toByteArray(bufferedReader, charset);
-            }
-        }
-
-        @PublicAPI
-        public byte[] getBytes() throws IOException {
-            try (InputStream inputStream = this.openStream()){
-                return IOUtils.toByteArray(inputStream);
-            }
-        }
+        public byte[] getBytes() { return file.getBytes(); }
     }
 }

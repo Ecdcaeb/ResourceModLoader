@@ -1,8 +1,7 @@
 [
   {
     "type":"rml:tick",
-    "world":0,
-    "function":"rml_example:test",
+    "function":"rml_example:give_little_diamonds",
     "ticks":996,
     "world":[0]
   }

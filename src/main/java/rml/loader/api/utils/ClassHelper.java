@@ -16,6 +16,7 @@ public class ClassHelper {
      * @return <tt>klass</tt>
      */
     public static <T> Class<T> forceInit(Class<T> klass) {
+        if (klass.isPrimitive()) return klass;
         try {
             Class.forName(klass.getName(), true, klass.getClassLoader());
         } catch (ClassNotFoundException e) {

@@ -54,8 +54,8 @@ public class SimpleBrewRecipe extends NamedEmptyRecipeImpl implements IBrewingRe
         public IRecipe parse(JsonContext context, JsonObject json) {
             try{
                 ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
-                Ingredient input= CraftingHelper.getIngredient(json.getAsJsonObject("input"),context);
-                Ingredient ingredient= CraftingHelper.getIngredient(json.getAsJsonObject("ingredient"),context);
+                Ingredient input= CraftingHelper.getIngredient(json.get("input"),context);
+                Ingredient ingredient= CraftingHelper.getIngredient(json.get("ingredient"),context);
                 return new SimpleBrewRecipe(output,input,ingredient);
             }catch (Exception e){
                 throw new JsonSyntaxException(e);

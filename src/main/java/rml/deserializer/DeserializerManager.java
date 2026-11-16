@@ -2,16 +2,29 @@ package rml.deserializer;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonObject;
 import net.minecraft.util.ResourceLocation;
 import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PublicAPI;
 import rml.loader.api.utils.ClassHelper;
 
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -32,6 +45,16 @@ public class DeserializerManager {
     public final HashMap<Class<?>, HashMap<ResourceLocation, AbstractDeserializer<?>>> registry = new HashMap<>();
     public Consumer<Class<?>> initializer = (str) -> {};
     public final Set<Class<?>> initializedClasses = new HashSet<>();
+    private final Map<Class<?>, GenericDeserializer> genericDecoders = new HashMap<>();
+
+    @FunctionalInterface
+    public interface GenericDeserializer {
+        Object deserialize(DeserializerManager manager, Type[] arguments, JsonElement value) throws JsonDeserializeException;
+    }
+
+    public void addGenericEntry(Class<?> rawType, GenericDeserializer decoder) {
+        genericDecoders.put(Objects.requireNonNull(rawType, "rawType"), Objects.requireNonNull(decoder, "decoder"));
+    }
 
     /**
      * Add a deserializer
@@ -90,6 +113,8 @@ public class DeserializerManager {
         clazz = DeserializerBuilder.avoidPrimitive(clazz);
 
         try {
+            if (jsonElement == null) throw new JsonDeserializeException(null, "Missing value for " + clazz.getTypeName());
+            if (JsonElement.class.isAssignableFrom(clazz)) return clazz.cast(jsonElement);
             if (clazz.isArray()){
                 Class<?> clazzComponentType = clazz.getComponentType();
                 if (jsonElement.isJsonArray()){
@@ -108,6 +133,11 @@ public class DeserializerManager {
                 if (!initializedClasses.contains(clazz)) {
                     initializer.accept(clazz);
                     initializedClasses.add(clazz);
+                }
+                if (clazz.isEnum() && !defaults.containsKey(clazz) && jsonElement.isJsonPrimitive()) {
+                    @SuppressWarnings({"rawtypes", "unchecked"})
+                    T value = (T) Enum.valueOf((Class) clazz, jsonElement.getAsString().toUpperCase(Locale.ROOT));
+                    return value;
                 }
                 if (jsonElement.isJsonObject()){
                     JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -138,6 +168,84 @@ public class DeserializerManager {
             if (throwable instanceof JsonDeserializeException) throw throwable;
             else throw new JsonDeserializeException(jsonElement, "unexpected Exception when decoding json, ", throwable);
         }
+    }
+
+    /** Preserves nested element types; consumers can use Gson's existing TypeToken. */
+    @SuppressWarnings("unchecked")
+    public <T> T decode(Type type, JsonElement value) throws JsonDeserializeException {
+        Objects.requireNonNull(type, "type");
+        if (type instanceof Class<?>) return (T) decode((Class<?>) type, value);
+        try {
+            if (type instanceof WildcardType) {
+                WildcardType wildcard = (WildcardType) type;
+                if (wildcard.getLowerBounds().length != 0 || wildcard.getUpperBounds()[0] == Object.class) {
+                    throw new JsonDeserializeException(value, "A concrete decoded value type is required: " + type);
+                }
+                return decode(wildcard.getUpperBounds()[0], value);
+            }
+            if (type instanceof GenericArrayType) {
+                Type component = ((GenericArrayType) type).getGenericComponentType();
+                int count = value.isJsonArray() ? value.getAsJsonArray().size() : 1;
+                Object result = Array.newInstance(rawClass(component), count);
+                for (int index = 0; index < count; index++) {
+                    JsonElement element = value.isJsonArray() ? value.getAsJsonArray().get(index) : value;
+                    Array.set(result, index, decodeElement(component, element, "[" + index + "]"));
+                }
+                return (T) result;
+            }
+            if (!(type instanceof ParameterizedType)) {
+                throw new JsonDeserializeException(value, "Unsupported unresolved decoded type: " + type);
+            }
+            ParameterizedType parameterized = (ParameterizedType) type;
+            Class<?> raw = rawClass(parameterized.getRawType());
+            Type[] arguments = parameterized.getActualTypeArguments();
+            GenericDeserializer custom = genericDecoders.get(raw);
+            if (custom != null) return (T) custom.deserialize(this, arguments, value);
+            if (raw == Optional.class) {
+                return (T) (value == null || value.isJsonNull() ? Optional.empty() : Optional.ofNullable(decode(arguments[0], value)));
+            }
+            if (value == null || value.isJsonNull()) throw new JsonDeserializeException(value, "Missing value for " + type);
+            if (raw == List.class || raw == Collection.class || raw == Iterable.class || raw == Set.class) {
+                int count = value.isJsonArray() ? value.getAsJsonArray().size() : 1;
+                Collection<Object> result = raw == Set.class ? new LinkedHashSet<>() : new ArrayList<>(count);
+                for (int index = 0; index < count; index++) {
+                    JsonElement element = value.isJsonArray() ? value.getAsJsonArray().get(index) : value;
+                    result.add(decodeElement(arguments[0], element, "[" + index + "]"));
+                }
+                return (T) result;
+            }
+            if (raw == Map.class) {
+                if (!value.isJsonObject()) throw new JsonDeserializeException(value, "Expected an object for " + type);
+                Map<Object, Object> result = new LinkedHashMap<>();
+                for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                    Object key = decodeElement(arguments[0], new JsonPrimitive(entry.getKey()), "." + entry.getKey() + " (key)");
+                    if (result.containsKey(key)) throw new JsonDeserializeException(value, "Duplicate decoded map key: " + entry.getKey());
+                    result.put(key, decodeElement(arguments[1], entry.getValue(), "." + entry.getKey()));
+                }
+                return (T) result;
+            }
+            throw new JsonDeserializeException(value, "No generic deserializer registered for " + type);
+        } catch (JsonDeserializeException failure) {
+            throw failure;
+        } catch (RuntimeException failure) {
+            throw new JsonDeserializeException(value, "Cannot decode " + type.getTypeName(), failure);
+        }
+    }
+
+    private Object decodeElement(Type type, JsonElement value, String path) throws JsonDeserializeException {
+        try {
+            return decode(type, value);
+        } catch (JsonDeserializeException failure) {
+            throw new JsonDeserializeException(value, "At " + path + ": " + failure.getMessage(), failure);
+        }
+    }
+
+    public static Class<?> rawClass(Type type) {
+        if (type instanceof Class<?>) return (Class<?>) type;
+        if (type instanceof ParameterizedType) return rawClass(((ParameterizedType) type).getRawType());
+        if (type instanceof GenericArrayType) return Array.newInstance(rawClass(((GenericArrayType) type).getGenericComponentType()), 0).getClass();
+        if (type instanceof WildcardType) return rawClass(((WildcardType) type).getUpperBounds()[0]);
+        throw new IllegalArgumentException("Unresolved decoded type: " + type);
     }
 
 
@@ -200,7 +308,7 @@ public class DeserializerManager {
         {
             astring[1] = toSplit.substring(i + 1);
 
-            if (i > 1)
+            if (i > 0)
             {
                 astring[0] = toSplit.substring(0, i);
             }

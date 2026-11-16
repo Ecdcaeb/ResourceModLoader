@@ -78,5 +78,10 @@
         "name" : "rml:justenoughdimensions",
         "isFile" : false,
         "defaultLocation" : "justenoughdimensions"
+    },
+    {
+        "name" : "rml:content",
+        "isFile" : false,
+        "defaultLocation" : "content"
     }
 ]

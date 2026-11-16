@@ -1,0 +1,19 @@
+apply plugin: 'java-library'
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+task runtimeContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.runtime.RuntimeContractTest'
+}
+
+task sourceContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.io.PackSourceContractTest'
+}
+
+check.dependsOn runtimeContractTest, sourceContractTest

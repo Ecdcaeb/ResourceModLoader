@@ -1,6 +1,5 @@
 package rml.layer.compat.groovyscripts;
 
-import com.google.common.collect.HashBiMap;
 import net.minecraft.util.ResourceLocation;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.Argument;
@@ -12,6 +11,8 @@ import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.deserialize.Deserializer;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -25,7 +26,7 @@ import java.util.Map;
 public class RMLGrsLoader {
     public static void load(){
         ClassHelper.forceInit(RunConfig.class);
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (context) -> {
+        ResourceModLoader.runtime().getModules().load(ModuleType.valueOf(new ResourceLocation("rml", "mod_groovy_script")), (context) -> {
             try {
                 MOD.put(context.getContainerHolder(), context.deserialize(RunConfig.class));
             } catch (Exception e) {
@@ -33,7 +34,11 @@ public class RMLGrsLoader {
             }
         }, RMLGrsLoader.class);
     }
-    public static HashBiMap<ContainerHolder, RunConfig> MOD = HashBiMap.create();
+    private static final Map<ContainerHolder, RunConfig> MOD = new LinkedHashMap<>();
+
+    public static Map<ContainerHolder, RunConfig> getScripts() {
+        return Collections.unmodifiableMap(MOD);
+    }
 
     public static class RunConfig{
         public static final Argument<Map<String, String[]>> ARG_CLASSES = Argument.map("classes", String[].class);

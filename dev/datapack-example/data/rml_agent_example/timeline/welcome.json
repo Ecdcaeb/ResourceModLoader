@@ -1,0 +1,10 @@
+{
+  "clock": "rml_agent_example:main",
+  "loop": false,
+  "events": [
+    {
+      "at": 20,
+      "function": "rml_agent_example:announce"
+    }
+  ]
+}

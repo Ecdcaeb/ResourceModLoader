@@ -1,0 +1,12 @@
+{
+  "setup": [
+    {
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "state": "minecraft:gold_block"
+    }
+  ]
+}

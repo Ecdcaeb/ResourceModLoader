@@ -1,0 +1,395 @@
+package rml.loader.deserialize;
+
+import com.google.common.base.Optional;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityList;
+import net.minecraft.entity.EntityLivingBase;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTBase;
+import net.minecraft.nbt.NBTTagByte;
+import net.minecraft.nbt.NBTTagByteArray;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagDouble;
+import net.minecraft.nbt.NBTTagFloat;
+import net.minecraft.nbt.NBTTagInt;
+import net.minecraft.nbt.NBTTagIntArray;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.nbt.NBTTagLong;
+import net.minecraft.nbt.NBTTagLongArray;
+import net.minecraft.nbt.NBTTagShort;
+import net.minecraft.nbt.NBTTagString;
+import net.minecraft.nbt.NBTUtil;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.WorldServer;
+import rml.deserializer.AbstractDeserializer;
+import rml.deserializer.DeserializerManager;
+import rml.deserializer.JsonDeserializeException;
+import rml.deserializer.value.DoubleRange;
+import rml.deserializer.value.IntRange;
+import rml.deserializer.value.WeightedList;
+import rml.loader.content.CompiledTagModule;
+import rml.loader.content.data.DataContext;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/** Native values shared by every registry codec. Nested values use the caller's registry. */
+public final class NativeTypeDecoders {
+    private static final ResourceLocation PLAYER = new ResourceLocation("minecraft", "player");
+    private NativeTypeDecoders() { }
+
+    @FunctionalInterface public interface ItemMatcher { boolean test(ItemStack stack, DataContext context); }
+    @FunctionalInterface public interface BlockMatcher { boolean test(WorldServer world, BlockPos position, IBlockState state); }
+    @FunctionalInterface public interface EntityMatcher { boolean test(Entity entity, DataContext context); }
+
+    public static void register(DeserializerManager manager, CompiledTagModule tags) {
+        register(manager, IntRange.class, "int_range", value -> intRange(manager, value));
+        register(manager, DoubleRange.class, "double_range", value -> doubleRange(manager, value));
+        register(manager, Vec3d.class, "vec3", value -> vector(manager, value));
+        register(manager, Vec2f.class, "vec2", value -> {
+            double[] parts = components(manager, value, new String[]{"x", "y"});
+            if (Math.abs(parts[0]) > Float.MAX_VALUE || Math.abs(parts[1]) > Float.MAX_VALUE) throw error(value, "Vector exceeds float range");
+            return new Vec2f((float) parts[0], (float) parts[1]);
+        });
+        register(manager, BlockPos.class, "block_pos", value -> {
+            JsonElement[] parts = elements(value, new String[]{"x", "y", "z"});
+            return new BlockPos(integer(manager, parts[0]), integer(manager, parts[1]), integer(manager, parts[2]));
+        });
+        register(manager, AxisAlignedBB.class, "box", value -> {
+            JsonObject object = object(value);
+            Vec3d min = manager.decode(Vec3d.class, required(object, "min"));
+            Vec3d max = manager.decode(Vec3d.class, required(object, "max"));
+            if (min.x > max.x || min.y > max.y || min.z > max.z) throw error(value, "Box minimum exceeds maximum");
+            return new AxisAlignedBB(min, max);
+        });
+        register(manager, UUID.class, "uuid", value -> UUID.fromString(manager.decode(String.class, payload(value))));
+        register(manager, IBlockState.class, "block_state", value -> blockState(manager, value));
+        manager.addGenericEntry(WeightedList.class, (registry, arguments, value) -> {
+            if (arguments.length != 1) throw error(value, "WeightedList requires one element type");
+            JsonElement entries = value.isJsonArray() ? value : required(object(value), "entries");
+            if (!entries.isJsonArray()) throw error(value, "Weighted entries must be an array");
+            List<Object> values = new ArrayList<>(entries.getAsJsonArray().size());
+            long[] weights = new long[entries.getAsJsonArray().size()];
+            int index = 0;
+            for (JsonElement entry : entries.getAsJsonArray()) {
+                JsonObject weighted = object(entry);
+                values.add(registry.decode(arguments[0], required(weighted, "data")));
+                weights[index++] = weighted.has("weight") ? exactLong(registry, weighted.get("weight")) : 1;
+            }
+            return new WeightedList<>(values, weights);
+        });
+        register(manager, NBTBase.class, "nbt", value -> nbt(manager, value));
+        nbtType(manager, "byte", value -> new NBTTagByte((byte) boundedInteger(manager, value, Byte.MIN_VALUE, Byte.MAX_VALUE)));
+        nbtType(manager, "short", value -> new NBTTagShort((short) boundedInteger(manager, value, Short.MIN_VALUE, Short.MAX_VALUE)));
+        nbtType(manager, "int", value -> new NBTTagInt(integer(manager, value)));
+        nbtType(manager, "long", value -> new NBTTagLong(exactLong(manager, value)));
+        nbtType(manager, "float", value -> {
+            float number = manager.decode(Float.class, value);
+            if (!Float.isFinite(number)) throw error(value, "Expected a finite float");
+            return new NBTTagFloat(number);
+        });
+        nbtType(manager, "double", value -> new NBTTagDouble(finite(manager, value)));
+        nbtType(manager, "string", value -> new NBTTagString(manager.decode(String.class, value)));
+        nbtType(manager, "byte_array", value -> new NBTTagByteArray(manager.decode(byte[].class, value)));
+        nbtType(manager, "int_array", value -> new NBTTagIntArray(manager.decode(int[].class, value)));
+        nbtType(manager, "long_array", value -> new NBTTagLongArray(manager.decode(long[].class, value)));
+        nbtType(manager, "list", value -> nbtList(manager, value));
+        nbtType(manager, "compound", value -> nbtCompound(manager, object(value)));
+        register(manager, ItemMatcher.class, "item_match", value -> itemMatcher(manager, tags, value));
+        register(manager, BlockMatcher.class, "block_match", value -> blockMatcher(manager, tags, value));
+        register(manager, EntityMatcher.class, "entity_match", value -> entityMatcher(manager, tags, value));
+        for (String operation : new String[]{"all_of", "any_of", "not"}) {
+            manager.addEntry(new AbstractDeserializer<>(id(operation), ItemMatcher.class,
+                    value -> itemLogic(manager, object(value), operation)));
+            manager.addEntry(new AbstractDeserializer<>(id(operation), BlockMatcher.class,
+                    value -> blockLogic(manager, object(value), operation)));
+            manager.addEntry(new AbstractDeserializer<>(id(operation), EntityMatcher.class,
+                    value -> entityLogic(manager, object(value), operation)));
+        }
+    }
+
+    private static <T> void register(DeserializerManager manager, Class<T> type, String name, AbstractDeserializer.IDeserializer<T> decoder) {
+        manager.addDefaultEntry(new AbstractDeserializer<>(id(name), type, decoder));
+    }
+
+    private static ResourceLocation id(String name) { return new ResourceLocation("rml", name); }
+
+    private static IntRange intRange(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (!value.isJsonObject()) {
+            int exact = integer(manager, value);
+            return new IntRange(exact, exact);
+        }
+        JsonObject object = value.getAsJsonObject();
+        return new IntRange(object.has("min") ? integer(manager, object.get("min")) : Integer.MIN_VALUE,
+                object.has("max") ? integer(manager, object.get("max")) : Integer.MAX_VALUE);
+    }
+
+    private static DoubleRange doubleRange(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (!value.isJsonObject()) {
+            double exact = finite(manager, value);
+            return new DoubleRange(exact, exact);
+        }
+        JsonObject object = value.getAsJsonObject();
+        return new DoubleRange(object.has("min") ? finite(manager, object.get("min")) : Double.NEGATIVE_INFINITY,
+                object.has("max") ? finite(manager, object.get("max")) : Double.POSITIVE_INFINITY);
+    }
+
+    private static Vec3d vector(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        double[] parts = components(manager, value, new String[]{"x", "y", "z"});
+        return new Vec3d(parts[0], parts[1], parts[2]);
+    }
+
+    private static double[] components(DeserializerManager manager, JsonElement value, String[] fields) throws JsonDeserializeException {
+        JsonElement[] values = elements(value, fields);
+        double[] result = new double[fields.length];
+        for (int index = 0; index < fields.length; index++) result[index] = finite(manager, values[index]);
+        return result;
+    }
+
+    private static JsonElement[] elements(JsonElement value, String[] fields) throws JsonDeserializeException {
+        JsonElement[] result = new JsonElement[fields.length];
+        if (value.isJsonArray()) {
+            JsonArray array = value.getAsJsonArray();
+            if (array.size() != fields.length) throw error(value, "Expected " + fields.length + " coordinates");
+            for (int index = 0; index < result.length; index++) result[index] = array.get(index);
+        } else {
+            JsonObject object = object(value);
+            for (int index = 0; index < result.length; index++) result[index] = required(object, fields[index]);
+        }
+        return result;
+    }
+
+    private static IBlockState blockState(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        JsonObject properties = null;
+        JsonElement name = value;
+        if (value.isJsonObject()) {
+            JsonObject object = value.getAsJsonObject();
+            name = required(object, "Name");
+            if (object.has("Properties")) properties = object(object.get("Properties"));
+        }
+        ResourceLocation key = manager.decode(ResourceLocation.class, name);
+        if (!Block.REGISTRY.containsKey(key)) throw error(value, "Unknown block: " + key);
+        Block block = Block.REGISTRY.getObject(key);
+        IBlockState state = block.getDefaultState();
+        if (properties != null) {
+            for (Map.Entry<String, JsonElement> entry : properties.entrySet()) {
+                IProperty<?> property = block.getBlockState().getProperty(entry.getKey());
+                if (property == null) throw error(value, "Unknown property " + entry.getKey() + " on " + key);
+                state = property(state, property, manager.decode(String.class, entry.getValue()), value);
+            }
+        }
+        return state;
+    }
+
+    private static <T extends Comparable<T>> IBlockState property(IBlockState state, IProperty<T> property, String name, JsonElement source) throws JsonDeserializeException {
+        Optional<T> value = property.parseValue(name);
+        if (!value.isPresent()) throw error(source, "Invalid " + property.getName() + " value: " + name);
+        return state.withProperty(property, value.get());
+    }
+
+    private static void nbtType(DeserializerManager manager, String name, AbstractDeserializer.IDeserializer<NBTBase> decoder) {
+        manager.addEntry(new AbstractDeserializer<>(id(name), NBTBase.class, value -> decoder.apply(required(object(value), "value"))));
+    }
+
+    private static NBTBase nbt(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonObject()) return nbtCompound(manager, value.getAsJsonObject());
+        if (value.isJsonArray()) return nbtList(manager, value);
+        if (!value.isJsonPrimitive()) throw error(value, "NBT has no null value");
+        if (value.getAsJsonPrimitive().isBoolean()) return new NBTTagByte((byte) (value.getAsBoolean() ? 1 : 0));
+        if (value.getAsJsonPrimitive().isString()) return new NBTTagString(value.getAsString());
+        BigDecimal number = value.getAsBigDecimal();
+        if (number.scale() <= 0) {
+            long integer = number.longValueExact();
+            return integer >= Integer.MIN_VALUE && integer <= Integer.MAX_VALUE ? new NBTTagInt((int) integer) : new NBTTagLong(integer);
+        }
+        return new NBTTagDouble(finite(manager, value));
+    }
+
+    private static NBTTagCompound nbtCompound(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
+        NBTTagCompound result = new NBTTagCompound();
+        for (Map.Entry<String, JsonElement> entry : object.entrySet()) result.setTag(entry.getKey(), manager.decode(NBTBase.class, entry.getValue()));
+        return result;
+    }
+
+    private static NBTTagList nbtList(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (!value.isJsonArray()) throw error(value, "NBT list requires an array");
+        NBTTagList result = new NBTTagList();
+        for (JsonElement element : value.getAsJsonArray()) {
+            NBTBase child = manager.decode(NBTBase.class, element);
+            if (result.tagCount() != 0 && result.getTagType() != child.getId()) throw error(value, "NBT list elements must share one native tag type");
+            result.appendTag(child);
+        }
+        return result;
+    }
+
+    private static ItemMatcher itemMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
+        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
+        Names names = names(manager, tags, "item", object == null ? value : object.get("items"));
+        IntRange count = object != null && object.has("count") ? manager.decode(IntRange.class, object.get("count")) : null;
+        IntRange damage = object != null && object.has("damage") ? manager.decode(IntRange.class, object.get("damage")) : null;
+        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        return (stack, context) -> !stack.isEmpty() && names.test(stack.getItem().getRegistryName())
+                && (count == null || count.test(stack.getCount())) && (damage == null || damage.test(stack.getItemDamage()))
+                && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true));
+    }
+
+    private static BlockMatcher blockMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
+        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
+        Names names = names(manager, tags, "block", object == null ? value : object.get("blocks"));
+        JsonObject properties = object != null && object.has("properties") ? object(object.get("properties")) : new JsonObject();
+        String[] propertyNames = new String[properties.size()];
+        String[] propertyValues = new String[properties.size()];
+        int propertyIndex = 0;
+        for (Map.Entry<String, JsonElement> entry : properties.entrySet()) {
+            propertyNames[propertyIndex] = entry.getKey();
+            propertyValues[propertyIndex++] = manager.decode(String.class, entry.getValue());
+        }
+        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        return (world, position, state) -> {
+            if (!names.test(state.getBlock().getRegistryName())) return false;
+            for (int index = 0; index < propertyNames.length; index++) {
+                IProperty<?> property = state.getBlock().getBlockState().getProperty(propertyNames[index]);
+                if (property == null || !propertyValue(state, property).equals(propertyValues[index])) return false;
+            }
+            if (nbt == null) return true;
+            TileEntity tile = world.getTileEntity(position);
+            return tile != null && NBTUtil.areNBTEquals(nbt, tile.writeToNBT(new NBTTagCompound()), true);
+        };
+    }
+
+    private static <T extends Comparable<T>> String propertyValue(IBlockState state, IProperty<T> property) {
+        return property.getName(state.getValue(property));
+    }
+
+    private static EntityMatcher entityMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
+        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
+        Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
+        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
+        Boolean alive = object != null && object.has("alive") ? manager.decode(Boolean.class, object.get("alive")) : null;
+        Boolean onFire = object != null && object.has("on_fire") ? manager.decode(Boolean.class, object.get("on_fire")) : null;
+        return (entity, context) -> {
+            ResourceLocation key = entity instanceof EntityPlayer ? PLAYER : EntityList.getKey(entity);
+            if (!names.test(key) || alive != null && entity.isEntityAlive() != alive || onFire != null && entity.isBurning() != onFire) return false;
+            if (health != null && (!(entity instanceof EntityLivingBase) || !health.test(((EntityLivingBase) entity).getHealth()))) return false;
+            if (nbt == null) return true;
+            NBTTagCompound actual = new NBTTagCompound();
+            entity.writeToNBT(actual);
+            return NBTUtil.areNBTEquals(nbt, actual, true);
+        };
+    }
+
+    private static NBTTagCompound compoundMatcher(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        NBTBase decoded = manager.decode(NBTBase.class, value);
+        if (!(decoded instanceof NBTTagCompound)) throw error(value, "NBT matcher requires a compound");
+        return (NBTTagCompound) decoded;
+    }
+
+    private static ItemMatcher itemLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
+        if ("not".equals(operation)) { ItemMatcher child = manager.decode(ItemMatcher.class, required(object, "term")); return (stack, context) -> !child.test(stack, context); }
+        ItemMatcher[] terms = manager.decode(ItemMatcher[].class, required(object, "terms"));
+        boolean all = "all_of".equals(operation);
+        return (stack, context) -> { for (ItemMatcher term : terms) if (term.test(stack, context) != all) return !all; return all; };
+    }
+
+    private static BlockMatcher blockLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
+        if ("not".equals(operation)) { BlockMatcher child = manager.decode(BlockMatcher.class, required(object, "term")); return (world, position, state) -> !child.test(world, position, state); }
+        BlockMatcher[] terms = manager.decode(BlockMatcher[].class, required(object, "terms"));
+        boolean all = "all_of".equals(operation);
+        return (world, position, state) -> { for (BlockMatcher term : terms) if (term.test(world, position, state) != all) return !all; return all; };
+    }
+
+    private static EntityMatcher entityLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
+        if ("not".equals(operation)) { EntityMatcher child = manager.decode(EntityMatcher.class, required(object, "term")); return (entity, context) -> !child.test(entity, context); }
+        EntityMatcher[] terms = manager.decode(EntityMatcher[].class, required(object, "terms"));
+        boolean all = "all_of".equals(operation);
+        return (entity, context) -> { for (EntityMatcher term : terms) if (term.test(entity, context) != all) return !all; return all; };
+    }
+
+    private static Names names(DeserializerManager manager, CompiledTagModule tags, String registry, JsonElement value) throws JsonDeserializeException {
+        Set<ResourceLocation> ids = new HashSet<>();
+        List<ResourceLocation> groups = new ArrayList<>();
+        if (value != null) {
+            String[] entries = manager.decode(String[].class, value);
+            for (String entry : entries) {
+                if (entry.startsWith("#")) groups.add(new ResourceLocation(entry.substring(1)));
+                else ids.add(new ResourceLocation(entry));
+            }
+        }
+        return new Names(registry, tags, ids, groups, value == null);
+    }
+
+    private static final class Names {
+        private final String registry;
+        private final CompiledTagModule tags;
+        private final Set<ResourceLocation> ids;
+        private final ResourceLocation[] groups;
+        private final boolean any;
+        private Names(String registry, CompiledTagModule tags, Set<ResourceLocation> ids, List<ResourceLocation> groups, boolean any) {
+            this.registry = registry; this.tags = tags; this.ids = ids; this.groups = groups.toArray(new ResourceLocation[0]); this.any = any;
+        }
+        private boolean test(ResourceLocation key) {
+            if (any) return true;
+            if (key == null) return false;
+            if (ids.contains(key)) return true;
+            for (ResourceLocation tag : groups) if (tags.contains(registry, tag, key)) return true;
+            return false;
+        }
+    }
+
+    private static int integer(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) return value.getAsBigDecimal().intValueExact();
+        return manager.decode(Integer.class, value);
+    }
+
+    private static int boundedInteger(DeserializerManager manager, JsonElement value, int min, int max) throws JsonDeserializeException {
+        int result = integer(manager, value);
+        if (result < min || result > max) throw error(value, "Integer is outside [" + min + "," + max + "]");
+        return result;
+    }
+
+    private static long exactLong(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) return value.getAsBigDecimal().longValueExact();
+        return manager.decode(Long.class, value);
+    }
+
+    private static double finite(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        double result = manager.decode(Double.class, value);
+        if (!Double.isFinite(result)) throw error(value, "Expected a finite number");
+        return result;
+    }
+
+    private static JsonElement payload(JsonElement value) throws JsonDeserializeException {
+        return value.isJsonObject() ? required(value.getAsJsonObject(), "value") : value;
+    }
+
+    private static JsonObject object(JsonElement value) throws JsonDeserializeException {
+        if (value == null || !value.isJsonObject()) throw error(value, "Expected an object");
+        return value.getAsJsonObject();
+    }
+
+    private static JsonElement required(JsonObject object, String name) throws JsonDeserializeException {
+        JsonElement result = object.get(name);
+        if (result == null || result.isJsonNull()) throw error(object, "Missing field " + name);
+        return result;
+    }
+
+    private static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
+}

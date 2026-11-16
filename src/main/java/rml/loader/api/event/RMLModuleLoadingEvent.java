@@ -1,52 +1,34 @@
 package rml.loader.api.event;
 
-import rml.loader.api.annotations.PrivateAPI;
-import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.mods.ContainerHolder;
-import rml.loader.api.mods.module.ModuleType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.eventhandler.Cancelable;
 import net.minecraftforge.fml.common.eventhandler.Event;
-import rml.loader.ResourceModLoader;
+import rml.loader.api.annotations.PublicAPI;
+import rml.loader.api.mods.ContainerHolder;
+import rml.loader.api.mods.module.ModuleType;
 
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-/**
- * @Project ResourceModLoader
- * @Author Hileb
- * @Date 2024/4/5 15:29
- *
- * Posted when a module is about to load.
- * {@link ResourceModLoader#loadModule(ModuleType, java.util.function.Consumer)}
- * {@link ResourceModLoader#loadModule(ModuleType, java.util.function.Consumer, Class)}
- * Cancel to skip every remaining container for that module.
- **/
-
+/** Selection hook over a detached set. Listeners cannot mutate the pack registry. */
 @PublicAPI
 @Cancelable
-public class RMLModuleLoadingEvent extends Event {
-    public final HashSet<ContainerHolder> containerHolders;
-    public final ModuleType module;
-    public RMLModuleLoadingEvent(HashSet<ContainerHolder> containerHolders, ModuleType module){
-        this.containerHolders = containerHolders;
+public final class RMLModuleLoadingEvent extends Event {
+    private final Set<ContainerHolder> containerHolders;
+    private final ModuleType module;
+
+    public RMLModuleLoadingEvent(Collection<ContainerHolder> containers, ModuleType module) {
+        this.containerHolders = new LinkedHashSet<>(containers);
         this.module = module;
     }
 
-    public HashSet<ContainerHolder> getContainerHolders() {
-        return containerHolders;
+    public Set<ContainerHolder> getContainerHolders() { return containerHolders; }
+    public ModuleType getModule() { return module; }
+
+    public static Set<ContainerHolder> post(Collection<ContainerHolder> containers, ModuleType module) {
+        RMLModuleLoadingEvent event = new RMLModuleLoadingEvent(containers, module);
+        if (MinecraftForge.EVENT_BUS.post(event)) event.containerHolders.clear();
+        return event.containerHolders;
     }
-
-    public ModuleType getModule() {
-        return module;
-    }
-
-
-    @PrivateAPI
-    public static HashSet<ContainerHolder> post(HashSet<ContainerHolder> containerHolders, ModuleType module){
-        RMLModuleLoadingEvent event = new RMLModuleLoadingEvent(containerHolders, module);
-        if (MinecraftForge.EVENT_BUS.post(event)) event.getContainerHolders().clear();
-        return event.getContainerHolders();
-    }
-
-
 }

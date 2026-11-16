@@ -25,6 +25,9 @@ import rml.loader.api.utils.ObjectHelper;
 import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.api.world.text.RMLTextEffects;
+import rml.loader.core.RMLFMLLoadingPlugin;
+import rml.loader.content.CompiledLootModule;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import rml.loader.api.world.villagers.IVillager;
 import rml.loader.core.RMLModDiscover;
 import rml.loader.core.RMLTransformer;
@@ -61,14 +64,19 @@ import net.minecraftforge.registries.IForgeRegistry;
 @PrivateAPI
 public class RMLForgeEventHandler {
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void loadFunction(FunctionLoadEvent event){
-        RMLLoaders.Function.load(event);
+        ResourceModLoader.runtime().getFunctions().onLoad(event);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void runScheduledFunctions(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.START) ResourceModLoader.runtime().getFunctions().tick();
     }
 
     @SubscribeEvent
     public static void registerLootTable(LootTableRegistryEvent event){
-        RMLLoaders.LootTable.load(event);
+        ResourceModLoader.runtime().getLootTables().load(event);
     }
 
     @SubscribeEvent
@@ -80,6 +88,7 @@ public class RMLForgeEventHandler {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void afterRecipeRegister(RegistryEvent.Register<IRecipe> event){
+        ResourceModLoader.runtime().getCompiledRecipes().register(event.getRegistry());
         if (NamedEmptyRecipeImpl.removeCaches != null){
             ForgeRegistry<IRecipe> registry=(ForgeRegistry<IRecipe>) event.getRegistry();
             for(IRecipe recipe: NamedEmptyRecipeImpl.removeCaches){
@@ -92,14 +101,14 @@ public class RMLForgeEventHandler {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void registerVillagerProfession(RegistryEvent.Register<VillagerRegistry.VillagerProfession> event){
         IForgeRegistry<VillagerRegistry.VillagerProfession> forgeRegistry = event.getRegistry();
-        for(IVillager village : RMLLoaders.CustomVillageLoader.load()){
+        for (IVillager village : ResourceModLoader.runtime().getVillagers().read()) {
             village.run(forgeRegistry);
         }
     }
 
     public static void construct(FMLConstructionEvent event){
-        RMLLoaders.ConfigLoader.load();
-        RMLLoaders.ConfigNodeLoader.load();
+        ResourceModLoader.runtime().getConfigs().loadDefinitions();
+        ResourceModLoader.runtime().getConfigs().loadNodes();
         if (Loader.isModLoaded(GroovyScript.ID)){
             RMLGrsLoader.load();
         }
@@ -110,12 +119,15 @@ public class RMLForgeEventHandler {
         RMLModDiscover.discover(asmDataTable, BeDiscovered.MOD_LOADING);
         ClassHelper.forceInit(RMLDeserializer.class);
         ClassHelper.forceInit(MCDeserializers.class);
+        ResourceModLoader.runtime().getContent().reload();
 
     }
 
     public static void preInit(FMLPreInitializationEvent event){
         MinecraftForge.EVENT_BUS.register(RMLForgeEventHandler.class);
         MinecraftForge.EVENT_BUS.register(SimpleAnvilRecipe.class);
+        CompiledLootModule.registerConditions();
+        ResourceModLoader.runtime().initializeNative();
         if (FMLLaunchHandler.side() == Side.CLIENT){
             //MinecraftForge.EVENT_BUS.register(RMLTextEffects.ChangeModClickAction.class);
         }
@@ -126,17 +138,20 @@ public class RMLForgeEventHandler {
             MinecraftForge.EVENT_BUS.register(RMLCrTLoader.class);
         }
         RMLModDiscover.discover(event.getAsmData(), BeDiscovered.PRE_INIT);
-        RMLLoaders.MissingRemap.load();
+        ResourceModLoader.runtime().getRegistryRemaps().load();
     }
 
     public static void onInit(FMLInitializationEvent event){
+        ResourceModLoader.runtime().getGameplay().initializeClient();
         if (Loader.isModLoaded("justenoughdimensions")){
             JEDLoader.load();
         }
     }
 
     public static void postInit(FMLPostInitializationEvent event){
-        RMLLoaders.OreDic.load();
+        ResourceModLoader.runtime().getOreDictionary().load();
+        RMLFMLLoadingPlugin.Container.INSTANCE.getMetadata().childMods = ResourceModLoader.runtime().getPacks().all()
+                .stream().map(ContainerHolder::getContainer).collect(java.util.stream.Collectors.toList());
     }
 
     @SideOnly(Side.CLIENT)
@@ -158,20 +173,21 @@ public class RMLForgeEventHandler {
                                         )
                                 )
                 );
-                for (ModContainer container : ResourceModLoader.getCurrentRMLContainers()) {
+                for (ContainerHolder holder : ResourceModLoader.runtime().getPacks().all()) {
+                    ModContainer container = holder.getContainer();
                     event.getTextComponents().add(
                             new TextComponentString(container.getName())
                                     .setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true)
                                             .setClickEvent(RMLTextEffects.ChangeModClickAction.CHANGE_MOD.makeEvent(container.getModId()))
-                                            .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(ObjectHelper.allToString("\n", ResourceModLoader.of(container).getModules()))))
+                                            .setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(ObjectHelper.allToString("\n", holder.getModules()))))
                                     )
                     );
                 }
             }else {
-                ContainerHolder containerHolder = ResourceModLoader.of(event.getMod());
+                ContainerHolder containerHolder = ResourceModLoader.runtime().getPacks().find(event.getMod().getModId());
                 if (containerHolder != null) {
                     event.getTextComponents().add(new TextComponentTranslation("rml.gui.modmenu.enablerml").setStyle(new Style().setColor(TextFormatting.BLUE).setUnderlined(true).setClickEvent(RMLTextEffects.ChangeModClickAction.CHANGE_MOD.makeEvent("rml"))));
-                    if (containerHolder.packVersion < ResourceModLoader.PACK_VERSION) {
+                    if (containerHolder.getPackVersion() < ResourceModLoader.PACK_VERSION) {
                         event.getTextComponents().add(new TextComponentTranslation("rml.legacy.pack.warn").setStyle(new Style().setColor(TextFormatting.RED)));
                     }
                 }

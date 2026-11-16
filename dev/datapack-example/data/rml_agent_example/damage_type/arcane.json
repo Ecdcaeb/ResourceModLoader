@@ -1,0 +1,7 @@
+{
+  "message_id": "rml_agent_example.arcane",
+  "exhaustion": 0.1,
+  "scaling": "never",
+  "magic": true,
+  "bypasses_armor": true
+}

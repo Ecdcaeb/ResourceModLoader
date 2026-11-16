@@ -30,18 +30,18 @@ public class RMKKubeJs {
     @SubscribeEvent
     public static void onJSLoad(BindingsEvent event){
         RMLFMLLoadingPlugin.Container.LOGGER.info("Inject KubeJS");
-        ResourceModLoader.loadContainerHolders(ModuleType.valueOf(new ResourceLocation("rml", "mod_kubejs")), containerHolder -> {
+        ResourceModLoader.runtime().getModules().forEachContainer(ModuleType.valueOf(new ResourceLocation("rml", "mod_kubejs")), containerHolder -> {
             if (!packs.containsKey(containerHolder.getContainer().getModId())) {
                 packs.put(containerHolder.getContainer().getModId(), newPack.invoke(ScriptManager.instance, containerHolder.getContainer().getModId()));
             }
         });
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_kubejs")), (context) -> {
+        ResourceModLoader.runtime().getModules().load(ModuleType.valueOf(new ResourceLocation("rml", "mod_kubejs")), (context) -> {
             if (context.isExtension("js")) {
                 try {
                     char[] fileBytes = ByteSource.wrap(context.getBytes()).asCharSource(StandardCharsets.UTF_8).read().toCharArray();
-                    load(ScriptManager.instance, context.getFile().toUri().toString(), fileBytes, context.getContainerHolder().getContainer().getModId());
+                    load(ScriptManager.instance, context.getUri().toString(), fileBytes, context.getContainerHolder().getContainer().getModId());
                 } catch (IOException e) {
-                    context.error(e, "Error at Loading kubejs file for {}", context.getFile());
+                    context.error(e, "Error at Loading kubejs file for {}", context.getUri());
                 }
             }}, RMKKubeJs.class);
     }

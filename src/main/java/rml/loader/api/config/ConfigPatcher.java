@@ -6,11 +6,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import rml.deserializer.JsonDeserializeException;
-import rml.loader.ResourceModLoader;
+import rml.loader.runtime.ModuleLoader;
 import rml.loader.api.annotations.ASMInvoke;
 import rml.loader.api.annotations.PrivateAPI;
 import rml.loader.api.annotations.PublicAPI;
-import rml.loader.api.utils.file.FileHelper;
 import rml.loader.api.utils.file.JsonHelper;
 import rml.loader.api.reflection.jvm.FieldAccessor;
 import rml.loader.api.reflection.jvm.ReflectionHelper;
@@ -98,8 +97,8 @@ public abstract class ConfigPatcher {
         syncForClassesGeneratedConfigs(configuration);
     }
 
-    @PrivateAPI public static void searchRedefault(){
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_redefault")), (context) -> {
+    @PrivateAPI public static void searchRedefault(ModuleLoader modules){
+        modules.load(ModuleType.valueOf(new ResourceLocation("rml", "config_redefault")), (context) -> {
 
             String name = FilenameUtils.removeExtension(context.getRelativePath()).replaceAll("\\\\", "/");
             ResourceLocation key = context.getResourceLocation();
@@ -115,13 +114,7 @@ public abstract class ConfigPatcher {
                     }
                     break;
                 case "patch":
-                    try {
-                        cachedOverrides.put(name, new Cfg(context.getBytes(StandardCharsets.UTF_8)));
-                    } catch (JsonParseException e) {
-                        context.error(e, "Parsing error loading redefault override {}", key);
-                    } catch (IOException e) {
-                        context.error(e, "Couldn't read config redefault {} from {}", key, context.getFile());
-                    }
+                    cachedRedefault.put(name, new Cfg(context.getBytes()));
                     break;
                 default:
                     break;
@@ -130,8 +123,8 @@ public abstract class ConfigPatcher {
         RMLFMLLoadingPlugin.Container.LOGGER.info("Search {} config redefault",cachedRedefault.size());
     }
 
-    @PrivateAPI public static void searchOverride(){
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "config_override")), (context) -> {
+    @PrivateAPI public static void searchOverride(ModuleLoader modules){
+        modules.load(ModuleType.valueOf(new ResourceLocation("rml", "config_override")), (context) -> {
             String name = FilenameUtils.removeExtension(context.getRelativePath()).replaceAll("\\\\", "/");
             ResourceLocation key = context.getResourceLocation();
             switch (context.getExtension()){
@@ -141,17 +134,11 @@ public abstract class ConfigPatcher {
                     } catch (JsonParseException | ClassCastException | JsonDeserializeException e) {
                         context.error(e, "Parsing error loading config override {}", key);
                     } catch (IOException e) {
-                        context.error(e, "Couldn't read config override {} from {}", key, context.getFile());
+                        context.error(e, "Couldn't read config override {} from {}", key, context.getUri());
                     }
                     break;
                 case "patch":
-                    try {
-                        cachedOverrides.put(name, new Cfg(context.getBytes(StandardCharsets.UTF_8)));
-                    } catch (JsonParseException e) {
-                        context.error(e, "Parsing error loading config override {}", key);
-                    } catch (IOException e) {
-                        context.error(e, "Couldn't read config override {} from {}", key, context.getFile());
-                    }
+                    cachedOverrides.put(name, new Cfg(context.getBytes()));
                     break;
                 default:
                     break;

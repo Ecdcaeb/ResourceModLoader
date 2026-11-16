@@ -1,0 +1,15 @@
+{
+  "environment": "rml_agent_example:gold_block",
+  "timeout": 20,
+  "retries": 0,
+  "assertions": [
+    {
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "block": "minecraft:gold_block"
+    }
+  ]
+}

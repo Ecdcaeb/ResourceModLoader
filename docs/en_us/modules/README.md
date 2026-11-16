@@ -22,6 +22,7 @@ Modules are the `modules` array in `rml.info`. Each element is a JSON object:
 | --- | --- | --- |
 | `name` | yes | Module type id. Unprefixed names use the `rml` domain. |
 | `location` | no | Path under `/assets/<domain>/`. Defaults to the type's built-in path. |
-| `forceLoaded` | no | If `true`, a load error crashes the game. Defaults to `false`. |
+| `forceLoaded` | no | For startup modules, `true` makes loading errors fatal; defaults to `false`. Managed functions always validate the complete candidate and do not allow partial activation through this flag. |
+| `requires` | no | Array of content dependency modids; defaults to empty. The function runtime validates this graph, rejects cycles, and prevents unloading packs with active dependents. |
 
 If `modules` is missing, every default module type is enabled.

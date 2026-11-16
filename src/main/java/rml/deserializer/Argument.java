@@ -7,6 +7,7 @@ import rml.loader.api.annotations.EarlyClass;
 import rml.loader.api.annotations.PublicAPI;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -33,20 +34,19 @@ public abstract class Argument<T> implements DeserializerBuilder.IAction {
     }
 
     public static <E> Argument<E> type(String name, Class<E> clazz) {
+        return type(name, (Type) clazz);
+    }
+
+    public static <E> Argument<E> type(String name, Type type) {
         return new Argument<E>(name) {
             @Override
             public void execute(DeserializerManager manager, JsonObject jsonObject, DeserializerBuilder.Context context) throws JsonDeserializeException {
                 JsonElement element = DeserializerManager.getFromPath(jsonObject, name);
-                if (element != null){
-                    try {
-                        final Class<?> clazz2 = DeserializerBuilder.avoidPrimitive(clazz);
-                        Object obj = manager.decode(clazz2, element);
-                        context.put(name, obj);
-                    } catch (JsonDeserializeException e) {
-                        throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error!", e);
-                    }
-                } else {
-                    throw new JsonDeserializeException(jsonObject, "field " + name + " is required");
+                if (element == null) throw new JsonDeserializeException(jsonObject, "field " + name + " is required");
+                try {
+                    context.put(name, manager.decode(type, element));
+                } catch (JsonDeserializeException failure) {
+                    throw new JsonDeserializeException(jsonObject, "field " + name + " decoding error", failure);
                 }
             }
         };

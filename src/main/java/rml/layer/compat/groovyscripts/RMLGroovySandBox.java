@@ -16,11 +16,13 @@ import rml.loader.api.mods.ContainerHolder;
 import rml.loader.api.reflection.jvm.FieldAccessor;
 import rml.loader.api.reflection.jvm.MethodAccessor;
 import rml.loader.api.reflection.jvm.ReflectionHelper;
-import rml.loader.api.utils.file.FileHelper;
+import rml.io.PackSource;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -53,18 +55,20 @@ public class RMLGroovySandBox {
 
     public static void load(GroovyScriptSandbox sandbox, Binding binding, Set<String> executedClasses, boolean run){
         String loader = f_currentLoadStage.get(sandbox).getName();
-        HashSet<NamedScript> files = new HashSet<>();
-        for(Map.Entry<ContainerHolder, RMLGrsLoader.RunConfig> entry : RMLGrsLoader.MOD.entrySet()){
-            for(String classPath : entry.getValue().getClasses(loader)){
-                ResourceLocation name = new ResourceLocation(entry.getKey().getContainer().getModId(), classPath);
-                byte[] file = FileHelper.findFile(entry.getKey().getContainer(), classPath);
-                if (file == null) {
-                    GroovyLog.get().errorMC("RML Groovy script '{}' was not found in pack '{}'", classPath, entry.getKey().getContainer().getModId());
-                    continue;
+        List<NamedScript> files = new ArrayList<>();
+        for (Map.Entry<ContainerHolder, RMLGrsLoader.RunConfig> entry : RMLGrsLoader.getScripts().entrySet()) {
+            try (PackSource source = PackSource.open(entry.getKey().getContainer().getSource().toPath())) {
+                for (String classPath : entry.getValue().getClasses(loader)) {
+                    ResourceLocation name = new ResourceLocation(entry.getKey().getContainer().getModId(), classPath);
+                    byte[] file = source.readFile(classPath);
+                    if (file == null) {
+                        GroovyLog.get().errorMC("RML Groovy script '{}' was not found in pack '{}'", classPath, entry.getKey().getContainer().getModId());
+                        continue;
+                    }
+                    if (Preprocessor.validatePreprocessor(name, file)) files.add(new NamedScript(name, file));
                 }
-                if (Preprocessor.validatePreprocessor(name, file)) {
-                    files.add(new NamedScript(name, file));
-                }
+            } catch (IOException e) {
+                throw new IllegalStateException("Cannot read Groovy sources in " + entry.getKey(), e);
             }
         }
 

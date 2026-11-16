@@ -1,6 +1,7 @@
 package rml.loader.core;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.eventbus.EventBus;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraftforge.common.ForgeVersion;
 import net.minecraftforge.fml.common.*;
@@ -8,6 +9,8 @@ import net.minecraftforge.fml.common.event.FMLConstructionEvent;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.relauncher.CoreModManager;
 import net.minecraftforge.fml.relauncher.IFMLLoadingPlugin;
 import org.apache.logging.log4j.LogManager;
@@ -22,6 +25,7 @@ import rml.loader.api.reflection.jvm.ReflectionHelper;
 import rml.loader.api.utils.ObjectHelper;
 import rml.loader.ResourceModLoader;
 import rml.loader.deserialize.RMLForgeEventHandler;
+import rml.loader.runtime.RMLFunctionCommand;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -143,6 +147,22 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
             INSTANCE = this;
         }
 
+        @Override
+        public boolean registerBus(EventBus bus, LoadController controller) {
+            bus.register(this);
+            return true;
+        }
+
+        @Override
+        public File getSource() { return source; }
+
+        @Override
+        @net.minecraftforge.fml.relauncher.SideOnly(net.minecraftforge.fml.relauncher.Side.CLIENT)
+        public Class<?> getCustomResourcePackClass() {
+            return source.isDirectory() ? net.minecraftforge.fml.client.FMLFolderResourcePack.class
+                    : net.minecraftforge.fml.client.FMLFileResourcePack.class;
+        }
+
 
         @Subscribe
         @PrivateAPI public void preInit(FMLPreInitializationEvent event){
@@ -163,6 +183,24 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Subscribe
         public void init(FMLInitializationEvent event){
             RMLForgeEventHandler.onInit(event);
+        }
+
+        @Subscribe
+        public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+            net.minecraft.command.CommandHandler commands = (net.minecraft.command.CommandHandler) event.getServer().getCommandManager();
+            RMLFunctionCommand command = new RMLFunctionCommand(ResourceModLoader.runtime());
+            commands.registerCommand(command);
+            for (net.minecraft.command.ICommand alias : command.getNativeAliases(event.getServer())) commands.registerCommand(alias);
+        }
+
+        @Subscribe
+        public void serverStopping(net.minecraftforge.fml.common.event.FMLServerStoppingEvent event) {
+            ResourceModLoader.runtime().getTimeTests().stop();
+        }
+
+        @Subscribe
+        public void serverStopped(FMLServerStoppedEvent event) {
+            ResourceModLoader.runtime().getFunctions().close();
         }
 
     }

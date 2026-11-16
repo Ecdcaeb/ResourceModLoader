@@ -21,7 +21,7 @@ public class JEDLoader {
     public static final MethodAccessor<Void, fi.dy.masa.justenoughdimensions.config.DimensionConfig> parseDimensionConfig = ReflectionHelper.getMethodAccessor(DimensionConfig.class, "parseDimensionConfig", "parseDimensionConfig", JsonElement.class);
 
     public static void load(){
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "justenoughdimensions")), (context) -> {
+        ResourceModLoader.runtime().getModules().load(ModuleType.valueOf(new ResourceLocation("rml", "justenoughdimensions")), (context) -> {
             try{
                 if (context.isExtension("json")) {
                     fromJson(context.toJson());
@@ -31,7 +31,7 @@ public class JEDLoader {
             } catch (JsonSyntaxException | JsonDeserializeException e){
                 context.error(e, "Could not read as Json {}", context.getResourceLocation());
             }
-        });
+        }, JEDLoader.class);
     }
 
     public static void fromJson(JsonElement jsonElement){

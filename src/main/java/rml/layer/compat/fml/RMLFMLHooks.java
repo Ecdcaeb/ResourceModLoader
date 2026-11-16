@@ -11,6 +11,10 @@ import rml.loader.api.event.early.FMLBeforeStageEvent;
 import net.minecraftforge.fml.common.LoadController;
 import net.minecraftforge.fml.common.LoaderState;
 import rml.loader.deserialize.Deserializer;
+import rml.loader.ResourceModLoader;
+import rml.loader.module.SplashTextModule;
+
+import java.util.ArrayList;
 
 /**
  * @Project ResourceModLoader
@@ -43,6 +47,15 @@ public class RMLFMLHooks {
             }catch (JsonDeserializeException e){
                 throw new JsonSyntaxException("Could not decode ItemStack", e);
             }
+        }
+
+        public static ArrayList<String> addSplashTexts(ArrayList<String> destination) {
+            ResourceModLoader.runtime().getSplashTexts().appendTo(destination);
+            return destination;
+        }
+
+        public static String formatSplashText(String text) {
+            return SplashTextModule.format(text);
         }
     }
 }

@@ -1,65 +1,32 @@
 package rml.loader.api.world.function;
 
-import rml.loader.ResourceModLoader;
-import net.minecraft.advancements.FunctionManager;
-import net.minecraft.command.FunctionObject;
-import net.minecraft.command.ICommandSender;
-import net.minecraft.server.MinecraftServer;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 
-import javax.annotation.Nullable;
-import java.util.HashSet;
+import java.util.Objects;
 
-/**
- * @Project ResourceModLoader
- * @Author Hileb
- * @Date 2024/5/25 16:31
- **/
-public class FunctionExecutor {
-    public ResourceLocation function;
-    public static final RMLCommandSender SENDER = new RMLCommandSender();
-    public static final HashSet<ResourceLocation> invalidFunctions = new HashSet<>();
-    public FunctionExecutor(ResourceLocation function){
-        this.function = function;
+/** Deserialized execution rule. Construction never registers listeners or runs commands. */
+public abstract class FunctionExecutor {
+    public enum Trigger { WORLD_LOAD, TICK }
+
+    private final ResourceLocation function;
+    private final int[] worlds;
+    private final Trigger trigger;
+    private final int ticks;
+
+    protected FunctionExecutor(ResourceLocation function, IntArrayList worlds, Trigger trigger, int ticks) {
+        this.function = Objects.requireNonNull(function, "function");
+        this.worlds = Objects.requireNonNull(worlds, "worlds").toIntArray();
+        this.trigger = Objects.requireNonNull(trigger, "trigger");
+        this.ticks = ticks;
     }
-    public static void execute(WorldServer worldServer, ResourceLocation resourceLocation){
-        if (!invalidFunctions.contains(resourceLocation)){
-            FunctionManager manager = worldServer.getFunctionManager();
-            RMLCommandSender sender = SENDER;
-            sender.worldServer = worldServer;
-            FunctionObject functionObject = manager.getFunction(resourceLocation);
-            if (functionObject != null)manager.execute(functionObject, sender);
-            else {
-                ResourceModLoader.LOGGER.error("Invalid FunctionExecutor for Invalid Function {}, PLZ report to resource-mod {} authors", resourceLocation, resourceLocation.getNamespace());
-                invalidFunctions.add(resourceLocation);
-            }
-            sender.worldServer = null;
-        }
-    }
-    public static class RMLCommandSender implements ICommandSender{
-        public WorldServer worldServer = null;
 
-        @Override
-        public String getName() {
-            return "rml super command sender";
-        }
+    public ResourceLocation getFunction() { return function; }
 
-        @Override
-        public boolean canUseCommand(int permLevel, String commandName) {
-            return true;
-        }
-
-        @Override
-        public World getEntityWorld() {
-            return worldServer;
-        }
-
-        @Nullable
-        @Override
-        public MinecraftServer getServer() {
-            return worldServer.getMinecraftServer();
-        }
+    public boolean matches(Trigger trigger, int dimension, long worldTime) {
+        if (this.trigger != trigger) return false;
+        if (trigger == Trigger.TICK && (ticks == 0 || (ticks > 0 && worldTime % ticks != 0))) return false;
+        for (int world : worlds) if (world == dimension) return true;
+        return false;
     }
 }

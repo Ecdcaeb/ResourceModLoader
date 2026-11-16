@@ -76,6 +76,7 @@ repositories {
 
 
 dependencies {
+    compile project(':runtime')
     compileOnly 'com.cleanroommc:groovyscript:1.4.3'
     compileOnly files('libs/KubeJS-forge-1.12.2-1.1.0.63.jar')
     compile 'curse.maven:just-enough-dimensions-254317:2932048'
@@ -108,10 +109,43 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+task deserializerContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.deserializer.DeserializerContractTest'
+}
+
+task compiledLootContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.loader.content.CompiledLootContractTest'
+}
+
+task functionDataPathContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.loader.runtime.function.FunctionDataPathContractTest'
+}
+
+task damageDefinitionContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.loader.content.gameplay.DamageDefinitionContractTest'
+}
+
+task functionNbtContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.loader.runtime.FunctionNbtContractTest'
+}
+
+task timeWorldDataContractTest(type: JavaExec, dependsOn: testClasses) {
+    classpath = sourceSets.test.runtimeClasspath
+    main = 'rml.loader.content.time.TimeWorldDataContractTest'
+}
+
+check.dependsOn deserializerContractTest, compiledLootContractTest, functionDataPathContractTest, damageDefinitionContractTest, functionNbtContractTest, timeWorldDataContractTest
+
 
 // Example for how to get properties into the manifest for reading by the runtime..
 jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from project(':runtime').sourceSets.main.output
     manifest {
         attributes([
                 'Specification-Title': "rml",

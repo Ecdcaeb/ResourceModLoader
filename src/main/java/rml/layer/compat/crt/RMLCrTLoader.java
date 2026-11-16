@@ -8,8 +8,6 @@ import rml.loader.ResourceModLoader;
 import rml.loader.api.mods.module.ModuleType;
 import rml.loader.core.RMLFMLLoadingPlugin;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @Project ResourceModLoader
@@ -35,19 +33,12 @@ public class RMLCrTLoader {
 
     public static IScriptProvider getScriptProviders(){
         RMLScriptProvider providerCustom = new RMLScriptProvider();
-        ResourceModLoader.loadModule(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (context) -> {
+        ResourceModLoader.runtime().getModules().load(ModuleType.valueOf(new ResourceLocation("rml", "mod_crt")), (context) -> {
             if (context.isExtension("zs")) {
 
                 ResourceLocation key = context.getResourceLocation();
-                try{
-                    byte[] fileBytes = context.getBytes(StandardCharsets.UTF_8);
-
-                    providerCustom.add("rml/" + key.getNamespace() + "/" + key.getPath(), fileBytes);
-
-                    RMLFMLLoadingPlugin.Container.LOGGER.debug("Injected {} for CrT", key);
-                } catch (IOException e) {
-                    context.error(e, "IOException when RML loading {}", key);
-                }
+                providerCustom.add("rml/" + key.getNamespace() + "/" + key.getPath(), context.getBytes());
+                RMLFMLLoadingPlugin.Container.LOGGER.debug("Injected {} for CrT", key);
             }
         }, RMLCrTLoader.class);
         return providerCustom;

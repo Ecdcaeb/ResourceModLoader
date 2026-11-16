@@ -35,6 +35,8 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -54,7 +56,8 @@ public class RMLModDiscover {
     public static void inject(List<ModContainer> modContainers){
         RMLFMLLoadingPlugin.Container.LOGGER.info("rml inject ModContainer(s)");
 
-        final HashSet<File> mods = getModsLocations();
+        final List<File> mods = new ArrayList<>(getModsLocations());
+        mods.sort(Comparator.comparing(File::getAbsolutePath));
 
         // add modules
         for (String str : new String[]{"rml.modules", "META-INF/rml/modules.json"}) {
@@ -92,7 +95,7 @@ public class RMLModDiscover {
                         if (element.isJsonArray()) {
                             JsonArray jsonArray = element.getAsJsonArray();
                             for (int i = 0, size = jsonArray.size(); i < size; i++) {
-                                modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
+                                modContainers.add(ResourceModLoader.runtime().getPacks().register(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)).getContainer());
                             }
                         }
                     }
@@ -108,7 +111,7 @@ public class RMLModDiscover {
                         JsonArray jsonArray = JsonHelper.getArray(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
                         for(int i = 0, size = jsonArray.size(); i<size ; i++){
-                            modContainers.add(ResourceModLoader.enableRML(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)));
+                            modContainers.add(ResourceModLoader.runtime().getPacks().register(makeContainer(jsonArray.get(i).getAsJsonObject(), modFile)).getContainer());
                         }
                     } catch (IOException e) {
                         RMLFMLLoadingPlugin.Container.LOGGER.error("could not read "+modFile.getAbsolutePath());
@@ -170,8 +173,8 @@ public class RMLModDiscover {
     }
 
     @PrivateAPI public static void afterInject(){
-        ConfigPatcher.Json.searchRedefault();
-        ConfigPatcher.Json.searchOverride();
+        ConfigPatcher.searchRedefault(ResourceModLoader.runtime().getModules());
+        ConfigPatcher.searchOverride(ResourceModLoader.runtime().getModules());
         RMLAfterInjectEvent.BUS.post(new RMLAfterInjectEvent());
     }
 

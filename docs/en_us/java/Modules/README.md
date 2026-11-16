@@ -4,7 +4,11 @@
 
 Resolve a module type with `rml.loader.api.mods.module.ModuleType#valueOf`.
 
-`rml.loader.ResourceModLoader#loadModule` walks every enabled container that has that module, sets the active mod container, and runs your consumer on each file.
+Run startup consumers with `ResourceModLoader.runtime().getModules().load(type, consumer, Caller.class)`. Pack and regular-file order is stable. The loader sets the active Forge container for each consumer and always restores the previous container.
+
+`read(type, Caller.class)` returns detached source snapshots after closing directory walks and archives. Use `read(type, Caller.class, modid)` to prepare one pack. Source errors abort preparation. Managed providers must keep parsing free of game effects and listener registration.
+
+The old static `loadModule` entry point is removed. File contexts expose `getUri()`, `getRelativePath()`, `openBufferedReader()`, and binary-preserving `getBytes()`.
 
 ### Create
 

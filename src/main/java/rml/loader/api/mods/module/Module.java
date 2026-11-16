@@ -10,7 +10,10 @@ import rml.deserializer.AbstractDeserializer;
 import rml.loader.deserialize.Deserializer;
 import rml.deserializer.JsonDeserializeException;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @Project ResourceModLoader
@@ -20,44 +23,50 @@ import java.util.Optional;
 
 @PublicAPI
 @BeDiscovered(BeDiscovered.PRE_INIT)
-public class Module {
+public final class Module {
     public static final AbstractDeserializer<Module> DESERIALIZER = Deserializer.MANAGER.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "default"), Module.class, Module::decode0));
 
-    public final ModuleType moduleType;
-    public final String location;
-    public final boolean forceLoaded;
+    private final ModuleType moduleType;
+    private final String location;
+    private final boolean forceLoaded;
+    private final List<String> dependencies;
 
-    public Module(ModuleType moduleTypeIn, String locationIn, boolean forceLoadedIn) {
-        this.moduleType = moduleTypeIn;
-        this.location = locationIn;
-        this.forceLoaded = forceLoadedIn;
+    public Module(ModuleType moduleType, String location, boolean forceLoaded) {
+        this(moduleType, location, forceLoaded, Collections.emptyList());
+    }
+
+    public Module(ModuleType moduleType, String location, boolean forceLoaded, List<String> dependencies) {
+        this.moduleType = Objects.requireNonNull(moduleType, "Unknown module type");
+        this.location = Objects.requireNonNull(location, "location");
+        this.forceLoaded = forceLoaded;
+        List<String> copy = new ArrayList<>();
+        for (String dependency : dependencies) {
+            if (dependency == null || dependency.isEmpty() || copy.contains(dependency)) {
+                throw new IllegalArgumentException("Invalid or duplicate module dependency: " + dependency);
+            }
+            copy.add(dependency);
+        }
+        this.dependencies = Collections.unmodifiableList(copy);
     }
 
     public Module(ModuleType moduleType) {
-        this(moduleType, moduleType.defaultLocation, false);
+        this(moduleType, Objects.requireNonNull(moduleType, "Unknown module type").getDefaultLocation(), false);
     }
 
-    public static Module decode0(JsonElement jsonElement) throws JsonDeserializeException {
+    public static Module decode0(JsonElement element) throws JsonDeserializeException {
         try {
-            if (jsonElement instanceof JsonPrimitive) {
-                JsonPrimitive jsonPrimitive = (JsonPrimitive) jsonElement;
-                ModuleType moduleType = ModuleType.valueOf(jsonPrimitive.getAsString());
-                return new Module(moduleType);
-            } else if (jsonElement instanceof JsonObject) {
-                JsonObject jsonObject = (JsonObject) jsonElement;
-                ModuleType moduleType = ModuleType.valueOf(jsonObject.get("name").getAsString());
-                String location;
-                boolean forceLoaded;
-                if (jsonObject.has("location")) {
-                    location = jsonObject.get("location").getAsString();
-                } else location = moduleType.getDefaultLocation();
-                if (jsonObject.has("forceLoaded")) {
-                    forceLoaded = jsonObject.get("forceLoaded").getAsBoolean();
-                } else forceLoaded = false;
-                return new Module(moduleType, location, forceLoaded);
-            } else throw new IllegalArgumentException("unable to setup a module for " + jsonElement);
-        }catch (Exception e){
-            throw new JsonDeserializeException(jsonElement, e);
+            if (element instanceof JsonPrimitive) return new Module(ModuleType.valueOf(element.getAsString()));
+            JsonObject object = element.getAsJsonObject();
+            ModuleType type = Objects.requireNonNull(ModuleType.valueOf(object.get("name").getAsString()), "Unknown module type");
+            String location = object.has("location") ? object.get("location").getAsString() : type.getDefaultLocation();
+            boolean forceLoaded = object.has("forceLoaded") && object.get("forceLoaded").getAsBoolean();
+            List<String> dependencies = new ArrayList<>();
+            if (object.has("requires")) {
+                for (JsonElement dependency : object.getAsJsonArray("requires")) dependencies.add(dependency.getAsString());
+            }
+            return new Module(type, location, forceLoaded, dependencies);
+        } catch (RuntimeException e) {
+            throw new JsonDeserializeException(element, e);
         }
     }
 
@@ -76,5 +85,9 @@ public class Module {
 
     public boolean isForceLoaded() {
         return forceLoaded;
+    }
+
+    public List<String> getDependencies() {
+        return dependencies;
     }
 }

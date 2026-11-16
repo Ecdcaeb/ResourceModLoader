@@ -48,8 +48,8 @@ public class SimpleAnvilRecipe extends NamedEmptyRecipeImpl {
         @Override
         public IRecipe parse(JsonContext context, JsonObject json) {
             try{
-                Ingredient a1= CraftingHelper.getIngredient(json.getAsJsonObject("right"),context);
-                Ingredient a2= CraftingHelper.getIngredient(json.getAsJsonObject("left"),context);
+                Ingredient a1= CraftingHelper.getIngredient(json.get("right"),context);
+                Ingredient a2= CraftingHelper.getIngredient(json.get("left"),context);
                 ItemStack output= CraftingHelper.getItemStack(json.getAsJsonObject("output"),context);
                 int level=json.get("level").getAsInt();
                 return new SimpleAnvilRecipe(a2,a1,output,level);

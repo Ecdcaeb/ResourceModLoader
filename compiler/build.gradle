@@ -1,0 +1,40 @@
+apply plugin: 'java-library'
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':runtime')
+    implementation 'com.google.code.gson:gson:2.8.0'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+[
+    sourceContractTest: 'rml.compiler.source.ProjectReaderContractTest',
+    languageContractTest: 'rml.compiler.lang.LanguageContractTest',
+    ruleContractTest: 'rml.compiler.rules.RuleCompilerContractTest',
+    compilerContractTest: 'rml.compiler.CompilerContractTest'
+].each { taskName, entrypoint ->
+    task(taskName, type: JavaExec, dependsOn: testClasses) {
+        classpath = sourceSets.test.runtimeClasspath
+        main = entrypoint
+    }
+    check.dependsOn taskName
+}
+
+task executableJar(type: Jar, dependsOn: classes) {
+    archiveName = 'rml-compiler.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest { attributes 'Main-Class': 'rml.compiler.Main' }
+    from sourceSets.main.output
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    exclude 'META-INF/*.SF', 'META-INF/*.RSA', 'META-INF/*.DSA'
+}
+
+assemble.dependsOn executableJar

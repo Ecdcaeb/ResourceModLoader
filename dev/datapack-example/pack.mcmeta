@@ -1,0 +1,16 @@
+{
+  "pack": {
+    "pack_format": 1,
+    "description": "RML enhanced data-pack example"
+  },
+  "rml": {
+    "language_version": 1,
+    "id": "rml_agent_example",
+    "name": "RML Agent Example",
+    "version": "1.0",
+    "minecraft": "1.12.2",
+    "constants": {
+      "reward_item": "minecraft:diamond"
+    }
+  }
+}

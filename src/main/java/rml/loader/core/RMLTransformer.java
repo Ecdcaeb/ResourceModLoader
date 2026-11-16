@@ -64,6 +64,21 @@ public class RMLTransformer implements IClassTransformer {
             .srg("func_179140_f", "()V")
             .notch("g", "()V")
             .build();
+    private static final MethodName LOOT_LOOKUP = MethodName.of()
+            .mcp("getLootTableFromLocation", "(Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/storage/loot/LootTable;")
+            .srg("func_186521_a", "(Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/storage/loot/LootTable;")
+            .notch("a", "(Lnf;)Lbfs;").build();
+    private static final MethodName TEMPLATE_LOOKUP = MethodName.of()
+            .mcp("get", "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/gen/structure/template/Template;")
+            .srg("func_189942_b", "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/gen/structure/template/Template;")
+            .notch("b", "(Lnet/minecraft/server/MinecraftServer;Lnf;)Lbcj;").build();
+    private static final MethodName TEMPLATE_CREATE = MethodName.of()
+            .mcp("getTemplate", "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/gen/structure/template/Template;")
+            .srg("func_186237_a", "(Lnet/minecraft/server/MinecraftServer;Lnet/minecraft/util/ResourceLocation;)Lnet/minecraft/world/gen/structure/template/Template;")
+            .notch("a", "(Lnet/minecraft/server/MinecraftServer;Lnf;)Lbcj;").build();
+    private static final MethodName ADVANCEMENT_LOAD = MethodName.of()
+            .mcp("loadAdvancements", "(Ljava/util/Map;)V").srg("func_192083_a", "(Ljava/util/Map;)V")
+            .notch("a", "(Ljava/util/Map;)V").classes("net/minecraft/advancements/AdvancementList", "j").build();
 
 
     public static final HashMap<String, ToIntFunction<ClassNode>> transformers=new HashMap<>();
@@ -324,7 +339,7 @@ public class RMLTransformer implements IClassTransformer {
                             if ("renderMainMenu".equals(mn.name)){
                                 ASMUtil.injectBefore(mn.instructions, ()->{
                                     InsnList hook = new InsnList();
-                                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "processComponent", "(Ljava/lang/String;)Ljava/lang/String;", false));
+                                    hook.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "formatSplashText", "(Ljava/lang/String;)Ljava/lang/String;", false));
                                     return hook;
                                 }, (node)->node.getOpcode() == Opcodes.ARETURN);
                                 tasks.complete("renderMainMenu");
@@ -414,6 +429,47 @@ public class RMLTransformer implements IClassTransformer {
             });
         }
         public static void initMinecraftTransformers(){
+            register("net.minecraft.world.storage.loot.LootTableManager", cn -> {
+                Tasks tasks = new Tasks("compiledLoot");
+                for (MethodNode method : cn.methods) {
+                    if (LOOT_LOOKUP.is(method)) {
+                        prependCompiledLookup(method, 1, "findLootTable", "net/minecraft/world/storage/loot/LootTable");
+                        tasks.complete("compiledLoot");
+                    }
+                }
+                if (!tasks.isCompleted()) tasks.throwError();
+                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+            });
+            register("net.minecraft.world.gen.structure.template.TemplateManager", cn -> {
+                Tasks tasks = new Tasks("compiledTemplate", "compiledTemplateCreate");
+                for (MethodNode method : cn.methods) {
+                    if (TEMPLATE_LOOKUP.is(method) || TEMPLATE_CREATE.is(method)) {
+                        prependCompiledLookup(method, 2, "findStructure", "net/minecraft/world/gen/structure/template/Template");
+                        tasks.complete(TEMPLATE_LOOKUP.is(method) ? "compiledTemplate" : "compiledTemplateCreate");
+                    }
+                }
+                if (!tasks.isCompleted()) tasks.throwError();
+                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+            });
+            register("net.minecraft.advancements.AdvancementManager", cn -> {
+                Tasks tasks = new Tasks("compiledAdvancements");
+                for (MethodNode method : cn.methods) {
+                    for (ListIterator<AbstractInsnNode> iterator = method.instructions.iterator(); iterator.hasNext();) {
+                        AbstractInsnNode instruction = iterator.next();
+                        if (instruction instanceof MethodInsnNode && ADVANCEMENT_LOAD.is((MethodInsnNode) instruction)) {
+                            MethodInsnNode call = (MethodInsnNode) instruction;
+                            call.setOpcode(Opcodes.INVOKESTATIC);
+                            call.owner = "rml/loader/content/CompiledContentHooks";
+                            call.name = "loadAdvancements";
+                            call.desc = "(Lnet/minecraft/advancements/AdvancementList;Ljava/util/Map;)V";
+                            call.itf = false;
+                            tasks.complete("compiledAdvancements");
+                        }
+                    }
+                }
+                if (!tasks.isCompleted()) tasks.throwError();
+                return ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES;
+            });
             register("net.minecraft.advancements.FunctionManager",
                     (cn)->{
                         Tasks tasks = new Tasks("m_193061");
@@ -465,7 +521,7 @@ public class RMLTransformer implements IClassTransformer {
                         for(MethodNode mn:cn.methods){
                             /**
                              *  try {
-                             *             List<String> list = MCMainScreenTextLoader.inject(Lists.newArrayList());
+                             *             List<String> list = RMLFMLHooks.LateHooks.addSplashTexts(Lists.newArrayList());
                              *             iresource = Minecraft.getMinecraft().getResourceManager().getResource(SPLASH_TEXTS);
                              * **/
                             if ("<init>".equals(mn.name)){
@@ -476,7 +532,7 @@ public class RMLTransformer implements IClassTransformer {
                                     if (node.getOpcode() == Opcodes.INVOKESTATIC){
                                         MethodInsnNode methodInsnNode = (MethodInsnNode) node;
                                         if ("com/google/common/collect/Lists".equals(methodInsnNode.owner) && "newArrayList".equals(methodInsnNode.name) && "()Ljava/util/ArrayList;".equals(methodInsnNode.desc)){
-                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/deserialize/RMLLoaders$MCMainScreenTextLoader", "inject", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
+                                            iterator.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/layer/compat/fml/RMLFMLHooks$LateHooks", "addSplashTexts", "(Ljava/util/ArrayList;)Ljava/util/ArrayList;", false));
                                             tasks.complete("<init>");
                                             break;
                                         }
@@ -542,6 +598,20 @@ public class RMLTransformer implements IClassTransformer {
                         else bar.throwError();
                         return -1;
                     });
+        }
+
+        private static void prependCompiledLookup(MethodNode method, int idSlot, String hook, String result) {
+            InsnList code = new InsnList();
+            LabelNode nativePath = new LabelNode();
+            code.add(new VarInsnNode(Opcodes.ALOAD, idSlot));
+            code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "rml/loader/content/CompiledContentHooks", hook,
+                    "(Lnet/minecraft/util/ResourceLocation;)L" + result + ";", false));
+            code.add(new InsnNode(Opcodes.DUP));
+            code.add(new JumpInsnNode(Opcodes.IFNULL, nativePath));
+            code.add(new InsnNode(Opcodes.ARETURN));
+            code.add(nativePath);
+            code.add(new InsnNode(Opcodes.POP));
+            method.instructions.insert(code);
         }
 
         public static void initGroovyScriptTransformer(){
