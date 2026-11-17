@@ -227,6 +227,11 @@ public final class AgentBridge implements AutoCloseable {
                 case "scenario_cancel":
                     result = runtime.getTimeTests().cancelScenario(server, scenarioOwner(entry), string(arguments, "run_id"));
                     break;
+                case "preview_stop":
+                    if (!PreviewBootstrap.isActive()) throw new IllegalArgumentException("not_a_preview");
+                    result.addProperty("stopping", true);
+                    PreviewBootstrap.requestStop();
+                    break;
                 case "install":
                     refreshState();
                     ioWorkers.execute(() -> install(entry, build));
@@ -365,6 +370,9 @@ public final class AgentBridge implements AutoCloseable {
                 break;
             case "scenario_status": case "scenario_cancel":
                 BridgeArchives.uuid(string(arguments, "run_id"));
+                break;
+            case "preview_stop":
+                if (!PreviewBootstrap.isActive()) throw new IllegalArgumentException("not_a_preview");
                 break;
             default: throw new IllegalArgumentException("Unknown operation");
         }

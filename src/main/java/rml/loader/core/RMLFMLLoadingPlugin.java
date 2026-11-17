@@ -178,6 +178,7 @@ public class RMLFMLLoadingPlugin implements IFMLLoadingPlugin {
         @Subscribe
         @PrivateAPI public void postInit(FMLPostInitializationEvent event){
             RMLForgeEventHandler.postInit(event);
+            rml.loader.agent.PreviewBootstrap.initialize();
         }
 
         @Subscribe

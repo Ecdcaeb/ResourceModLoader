@@ -148,6 +148,7 @@ task timeWorldDataContractTest(type: JavaExec, dependsOn: testClasses) {
  'timeCompositionContractTest': 'rml.loader.content.time.TimeCompositionContractTest',
  'agentBridgeJournalContractTest': 'rml.loader.agent.BridgeJournalContractTest',
  'agentBridgeArchivesContractTest': 'rml.loader.agent.BridgeArchivesContractTest',
+ 'previewProcessContractTest': 'rml.loader.agent.PreviewProcessContractTest',
  'detachedCompiledPackContractTest': 'rml.loader.content.DetachedCompiledPackContractTest',
  'detachedImportContractTest': 'rml.loader.runtime.DetachedImportContractTest'].each { taskName, entrypoint ->
     tasks.create(name: taskName, type: JavaExec, dependsOn: testClasses) {

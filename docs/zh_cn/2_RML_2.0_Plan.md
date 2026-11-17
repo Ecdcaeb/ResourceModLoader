@@ -400,3 +400,26 @@ Agent 的 `run_scenario(scenario, x, y, z)` 运行已安装的 `test_instance`�
 
 参考官方资料：[ADK 项目](https://github.com/google/adk-python)、[API Server 与 SSE](https://github.com/google/adk-docs/blob/main/docs/runtime/api-server.md)、[交互式命令行及会话存储](https://github.com/google/adk-docs/blob/main/docs/runtime/command-line.md)、[Runner 事件循环](https://github.com/google/adk-docs/blob/main/docs/runtime/event-loop.md)。
 
+
+## 16. 隔离预览实例
+
+`create_preview(build_id, seed)` 使用当前会话保存的编译产物创建独立游戏 JVM 和全新存档。启动期原生注册在预览进程中完成；创建预览不向主世界导入候选，也不改变主世界的活动内容版本。预览安装的 ZIP 必须与该构建记录的 SHA-256 一致，之后修改工作区源码不会改变这份预览内容。
+
+Java 监督器从当前 Forge 实例生成启动描述，复用现有 Java、游戏代码、库和 assets。客户端模式打开名为 `RML Preview` 的独立窗口，进入指定种子的创造模式平坦世界；专用服务端模式创建只监听回环地址的独立服务，返回连接地址。服务端预览只复制父实例已有的 EULA 文件并要求其已接受，不代替用户接受协议。远程使用预览服务时需要单独转发返回的游戏端口。
+
+预览目录位于 `<世界>/rml-agent/previews/<预览 UUID>`。仅复制 mods、config、resourcepacks、scripts 和窗口设置，不复制父世界、玩家存档或 Agent 服务状态；排除 `config/rml-agent.json`。同 ID 的旧资源包由候选 ZIP 替换；若一个归档同时声明该 ID 与其他包，则拒绝创建，避免丢失其他内容。链接和 Windows reparse point 不参与复制或清理。父服务的桥接令牌、服务令牌、模型凭据和游戏登录参数不转交给预览。预览进程使用自己的桥接凭据，不能再次启动 Agent 服务。
+
+Agent 工具按会话校验预览归属：
+
+- `inspect_preview(preview_id)` 返回进程状态与实际原生运行时信息。
+- `preview_command(preview_id, command)` 仅在该预览中执行命令。
+- `run_preview_scenario(preview_id, scenario, x, y, z)` 等待预览内的断言与清理结果；取消请求会取消那里的场景。
+- `preview_scenario_status`、`cancel_preview_scenario` 查询或取消预览内的场景。
+- `close_preview(preview_id)` 结束预览并删除其临时目录，保留会话中的源码、编译 ZIP 和 artifact。
+
+每会话最多保留一个活动预览，整个 Agent 服务最多同时运行两个。状态包括 `starting`、`running`、`exited`、`failed`、`interrupted`、`stopping`、`closed` 和 `cleanup_failed`，会话状态接口同时列出所属预览。启动失败返回真实进程日志；创建过程被取消时回收已经启动的进程。销毁一旦开始，即使调用方取消等待，也会完成进程回收和安全清理；清理失败保留归属信息并明确报告。
+
+一个不加载 Forge 的小型 Java 启动监督进程持有游戏子进程句柄，其最大堆为 64 MiB，游戏 JVM 默认最大堆为 2 GiB。Agent 服务持有监督进程的 stdin；服务退出或异常终止导致管道关闭时，监督进程结束并回收它拥有的游戏进程，覆盖游戏启动前后两个阶段。服务重启将遗留预览记录标记为 `interrupted`，不会按保存的 PID 接管或终止其他进程；遗留目录仍可按原会话清理。
+
+预览提供进程、注册表与存档隔离，使用已安装的原生模组。确认体验后，仍通过 `check_build` / `apply_candidate` 或 `install_build` 将同一构建显式应用到目标环境。普通的 `game_command`、`run_scenario` 继续作用于主世界；预览工具始终要求明确的预览 ID。
+

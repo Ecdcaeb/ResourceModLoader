@@ -57,6 +57,10 @@ public final class AgentSupervisor {
 
     /** Called once the world and runtime session exist, for both integrated and dedicated servers. */
     public void serverStarted(MinecraftServer server) {
+        if (PreviewBootstrap.isActive()) {
+            PreviewBootstrap.serverStarted(runtime, server);
+            return;
+        }
         Binding previous = binding;
         if (previous != null) { previous.closed = true; stop(previous); }
         Binding current = new Binding(server);
@@ -71,6 +75,10 @@ public final class AgentSupervisor {
     }
 
     public void serverStopping() {
+        if (PreviewBootstrap.isActive()) {
+            PreviewBootstrap.serverStopping();
+            return;
+        }
         Binding current = binding;
         if (current != null) {
             current.closed = true;
@@ -80,6 +88,7 @@ public final class AgentSupervisor {
     }
 
     public void execute(MinecraftServer server, ICommandSender sender, String[] args) throws CommandException {
+        if (PreviewBootstrap.isActive()) throw new CommandException("Preview instances are controlled by their owning Agent service");
         if (args.length != 2) throw new WrongUsageException("/rml agent start|status|stop");
         String principal = principal(server, sender);
         Binding current = binding;
@@ -135,6 +144,8 @@ public final class AgentSupervisor {
                         current.gameDirectory.resolve("mods"), service.bridgeToken);
                 Path ready = current.stateDirectory.resolve("ready-" + UUID.randomUUID() + ".json");
                 service.readyFile = ready;
+                Path previewProfile = current.stateDirectory.resolve("preview-profile.json");
+                PreviewLaunchProfile.write(current.server, current.gameDirectory, previewProfile);
                 List<String> command = new ArrayList<>(config.python);
                 java.util.Collections.addAll(command, "-m", "rml_agent", "serve", "--config", config.file.toString(),
                         "--state-dir", current.stateDirectory.toString(), "--bridge", service.bridge.getEndpoint(),
@@ -142,6 +153,7 @@ public final class AgentSupervisor {
                 ProcessBuilder process = new ProcessBuilder(command).directory(current.gameDirectory.toFile());
                 process.environment().put("RML_BRIDGE_TOKEN", service.bridgeToken);
                 process.environment().put("RML_SERVICE_TOKEN", service.serviceToken);
+                process.environment().put("RML_PREVIEW_PROFILE", previewProfile.toString());
                 process.environment().put("PYTHONUNBUFFERED", "1");
                 process.environment().put("RML_JAVA", current.gameDirectory.getFileSystem().getPath(System.getProperty("java.home"), "bin",
                         System.getProperty("os.name").startsWith("Windows") ? "java.exe" : "java").toString());

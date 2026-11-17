@@ -95,7 +95,7 @@ def create_app(config: dict, state_dir: Path, bridge_url: str, instance_id: str,
         result = {"id": session["id"], "workspace": str(workspace.source), "pack_id": workspace.pack_id,
                   "principal": session["principal"], "model_configured": engine.model_configured,
                   "model_error": engine.model_error, "active_run": store.active(session["id"]),
-                  "last_seq": store.last_seq(session["id"])}
+                  "last_seq": store.last_seq(session["id"]), "previews": engine.previews.summaries(session["id"])}
         if include_token:
             result["token"] = session["token"]
         return result

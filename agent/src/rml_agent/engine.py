@@ -18,6 +18,7 @@ from google.adk.sessions import DatabaseSessionService
 from google.genai import types
 
 from .bridge import Bridge
+from .preview import PreviewManager
 from .store import Store
 from .workspace import Workspace, digest
 
@@ -58,6 +59,11 @@ class Engine:
         self.closing = False
         self._secrets = [value for value in (os.getenv("RML_BRIDGE_TOKEN"), os.getenv("RML_SERVICE_TOKEN"),
                          os.getenv(self.model_config["api_key_env"]) if self.model_config else None) if value]
+        profile = os.environ.get("RML_PREVIEW_PROFILE")
+        model_settings = config.get("model")
+        secret_env = model_settings.get("api_key_env", "") if isinstance(model_settings, dict) else ""
+        self.previews = PreviewManager(Path(profile) if profile else None, state_dir / "previews",
+                                       secret_env if isinstance(secret_env, str) else "")
 
     @property
     def model_configured(self) -> bool:
@@ -77,6 +83,7 @@ class Engine:
     async def initialize(self) -> None:
         # Public read initializes ADK's SQLite tables without creating fake conversation.
         await self.sessions.list_sessions(app_name=APP_NAME)
+        await self.previews.initialize()
         self.store.interrupt()
 
     def workspace(self, session_id: str) -> Workspace:
@@ -130,9 +137,12 @@ class Engine:
             self.store.interrupt()
         finally:
             try:
-                await self.bridge.close()
+                await self.previews.close()
             finally:
-                await self.sessions.close()
+                try:
+                    await self.bridge.close()
+                finally:
+                    await self.sessions.close()
 
     def _model(self):
         config = self.model_config
@@ -196,6 +206,11 @@ class Engine:
                 "and cleanup failures are not passes. Tests restore only declared blocks, block entities and world time; "
                 "use an appropriate test area, since entity/inventory changes and external tasks are not rolled back. "
                 "After interruption, inspect_runtime.scenario_runs and scenario_status recover retained results without rerunning. "
+                "create_preview launches the exact compiled build in an independent JVM and fresh save; its native "
+                "registrations and world mutations do not apply to the host world. Use preview_command and "
+                "run_preview_scenario for that instance, inspect_preview for actual status, and close_preview to "
+                "dispose it when finished. Keep a ready preview open for the player to experience when requested. "
+                "Only check/apply or install the same build in the host world when the operator requests promotion. "
                 "Use the operator's actual request to determine intended edits, commands and deployment."), tools=tools)
             runner = Runner(app_name=APP_NAME, agent=agent, session_service=self.sessions, artifact_service=self.artifacts)
             async with aclosing(runner.run_async(
@@ -343,26 +358,33 @@ class Engine:
             """Execute a real Minecraft command as the authenticated operator and return its actual messages/result."""
             return await perform("game_command", {"command": command}, lambda: native("command", {"command": command}))
 
+        async def wait_scenario(invoke, arguments, preview_id=None):
+            scenario_run = arguments["run_id"]
+            def progress(response):
+                payload = response["result"]
+                emit("scenario", dict(payload, preview_id=preview_id) if preview_id else payload)
+            try:
+                response = await invoke("scenario_start", arguments)
+                while response.get("ok") and response["result"]["status"] == "running":
+                    progress(response)
+                    await asyncio.sleep(1)
+                    response = await invoke("scenario_status", {"run_id": scenario_run})
+                if response.get("ok"):
+                    progress(response)
+                return dict(response, scenario_run_id=scenario_run)
+            except asyncio.CancelledError:
+                # The id is known before start dispatch, including a lost start response.
+                cancellation = await invoke("scenario_cancel", {"run_id": scenario_run})
+                payload = {"run_id": scenario_run, "response": cancellation}
+                if preview_id:
+                    payload["preview_id"] = preview_id
+                emit("scenario_cancel", payload)
+                raise
+
         async def run_scenario(scenario: str, x: int, y: int, z: int) -> dict:
             """Run an installed world test at an explicit origin, await its assertions/cleanup, and cancel native work on interruption."""
-            scenario_run = str(uuid.uuid4())
-            arguments = {"run_id": scenario_run, "scenario": scenario, "x": x, "y": y, "z": z}
-            async def action():
-                try:
-                    response = await native("scenario_start", arguments)
-                    while response.get("ok") and response["result"]["status"] == "running":
-                        emit("scenario", response["result"])
-                        await asyncio.sleep(1)
-                        response = await native("scenario_status", {"run_id": scenario_run})
-                    if response.get("ok"):
-                        emit("scenario", response["result"])
-                    return dict(response, scenario_run_id=scenario_run)
-                except asyncio.CancelledError:
-                    # The id is known before start dispatch, including a lost start response.
-                    cancellation = await native("scenario_cancel", {"run_id": scenario_run})
-                    emit("scenario_cancel", {"run_id": scenario_run, "response": cancellation})
-                    raise
-            return await perform("run_scenario", arguments, action)
+            arguments = {"run_id": str(uuid.uuid4()), "scenario": scenario, "x": x, "y": y, "z": z}
+            return await perform("run_scenario", arguments, lambda: wait_scenario(native, arguments))
 
         async def scenario_status(run_id: str) -> dict:
             """Read this session's retained native scenario result without starting another test."""
@@ -380,6 +402,55 @@ class Engine:
                 return await native("install", build_arguments(build_id))
             return await perform("install_build", {"build_id": build_id}, action)
 
+        async def create_preview(build_id: str, seed: int = 0) -> dict:
+            """Launch this exact owned build in a separate JVM and fresh save. This never applies the build to the host world."""
+            async def action():
+                record = self.store.build(session["id"], build_id)
+                return await self.previews.create(session["id"], build_id, workspace.build_path(build_id),
+                                                  record["sha256"], workspace.pack_id, seed, emit)
+            return await perform("create_preview", {"build_id": build_id, "seed": seed}, action)
+
+        async def inspect_preview(preview_id: str) -> dict:
+            """Read this session's preview status and, while running, its actual native runtime and scenario results."""
+            async def action():
+                status = await self.previews.status(session["id"], preview_id)
+                result = {"preview": status}
+                if status["status"] == "running":
+                    result["runtime"] = await self.previews.invoke(session["id"], preview_id, "inspect", {}, emit)
+                return result
+            return await perform("inspect_preview", {"preview_id": preview_id}, action)
+
+        async def preview_command(preview_id: str, command: str) -> dict:
+            """Execute a native command only in an owned preview JVM; the host world is unaffected."""
+            return await perform("preview_command", {"preview_id": preview_id, "command": command},
+                                 lambda: self.previews.invoke(session["id"], preview_id, "command", {"command": command}, emit))
+
+        async def run_preview_scenario(preview_id: str, scenario: str, x: int, y: int, z: int) -> dict:
+            """Run and await a world test only in an owned preview; interruption cancels the native scenario there."""
+            arguments = {"run_id": str(uuid.uuid4()), "scenario": scenario, "x": x, "y": y, "z": z}
+            async def invoke(operation, values):
+                return await self.previews.invoke(session["id"], preview_id, operation, values, emit)
+            return await perform("run_preview_scenario", dict(arguments, preview_id=preview_id),
+                                 lambda: wait_scenario(invoke, arguments, preview_id))
+
+        async def preview_scenario_status(preview_id: str, run_id: str) -> dict:
+            """Read a retained native scenario result inside an owned preview without running it again."""
+            arguments = {"run_id": str(uuid.UUID(run_id))}
+            return await perform("preview_scenario_status", dict(arguments, preview_id=preview_id),
+                                 lambda: self.previews.invoke(session["id"], preview_id, "scenario_status", arguments, emit))
+
+        async def cancel_preview_scenario(preview_id: str, run_id: str) -> dict:
+            """Cancel a scenario in an owned preview and return that world's actual cleanup result."""
+            arguments = {"run_id": str(uuid.UUID(run_id))}
+            return await perform("cancel_preview_scenario", dict(arguments, preview_id=preview_id),
+                                 lambda: self.previews.invoke(session["id"], preview_id, "scenario_cancel", arguments, emit))
+
+        async def close_preview(preview_id: str) -> dict:
+            """Stop an owned preview process and delete its disposable save after exit; compiled builds are preserved."""
+            return await perform("close_preview", {"preview_id": preview_id},
+                                 lambda: self.previews.close_preview(session["id"], preview_id))
+
         return [inspect_runtime, list_files, read_file, write_file, delete_file, compile_project,
                 check_build, apply_candidate, deactivate_pack, game_command, install_build,
-                run_scenario, scenario_status, cancel_scenario]
+                run_scenario, scenario_status, cancel_scenario, create_preview, inspect_preview,
+                preview_command, run_preview_scenario, preview_scenario_status, cancel_preview_scenario, close_preview]

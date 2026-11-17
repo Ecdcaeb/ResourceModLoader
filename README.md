@@ -77,5 +77,7 @@ Each operator has an isolated, persistent workspace and conversation. Compiled b
 
 `run_scenario` waits for an installed world test's assertions and cleanup, returning its native pass/fail/cancel result. Cancelling the Agent request cancels that scenario. Retained results can be queried or cancelled within the owning session; the game exposes the same behavior through `/rml test run|status|cancel`. Tests restore captured blocks, block entities and world time; use an appropriate test area because this is not an isolated preview world.
 
+`create_preview(build_id, seed)` starts an owned build in a separate game JVM with a fresh save. Client hosts open an independent preview window; dedicated hosts expose a loopback preview server. `inspect_preview`, `preview_command` and `run_preview_scenario` operate on that instance. `close_preview` reaps its process and removes its disposable save while retaining the compiled build. The same build can later be checked and applied or installed in the host world through the existing explicit tools. See [isolated previews](docs/zh_cn/2_RML_2.0_Plan.md#16-隔离预览实例) for lifecycle and environment boundaries.
+
 See [Agent setup, sessions and verification](docs/zh_cn/2_RML_2.0_Plan.md#15-服务端托管-agent-与-tui-会话) for model configuration, SSH connections, artifact access and the distinction between live application and startup installation.
 
