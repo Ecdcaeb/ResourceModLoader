@@ -114,8 +114,9 @@ final class MatcherDecoders {
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         return (world, position, state) -> {
             if (!names.test(state.getBlock().getRegistryName())) return false;
+            net.minecraft.block.state.BlockStateContainer defaults = state.getBlock().getBlockState();
             for (int index = 0; index < propertyNames.length; index++) {
-                IProperty<?> property = state.getBlock().getBlockState().getProperty(propertyNames[index]);
+                IProperty<?> property = defaults.getProperty(propertyNames[index]);
                 if (property == null || !propertyValue(state, property).equals(propertyValues[index])) return false;
             }
             if (nbt == null) return true;

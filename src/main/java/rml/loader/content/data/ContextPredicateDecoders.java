@@ -211,13 +211,14 @@ final class ContextPredicateDecoders {
                     if (context.getWorld() == null || context.getOrigin() == null) return false;
                     BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
                     if (!context.getWorld().isBlockLoaded(position)) return false;
+                    net.minecraft.block.state.IBlockState state = context.getWorld().getBlockState(position);
                     if (x != null && !x.test(position.getX())) return false;
                     if (y != null && !y.test(position.getY())) return false;
                     if (z != null && !z.test(position.getZ())) return false;
-                    if (matcher != null && !matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position))) return false;
+                    if (matcher != null && !matcher.test(context.getWorld(), position, state)) return false;
                     if (light != null && !light.test(context.getWorld().getLight(position))) return false;
                     if (fluid != null) {
-                        net.minecraft.block.material.Material material = context.getWorld().getBlockState(position).getMaterial();
+                        net.minecraft.block.material.Material material = state.getMaterial();
                         if ("water".equals(fluid) ? material != net.minecraft.block.material.Material.WATER
                                 : material != net.minecraft.block.material.Material.LAVA) return false;
                     }

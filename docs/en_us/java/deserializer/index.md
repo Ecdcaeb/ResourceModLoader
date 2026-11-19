@@ -75,7 +75,7 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:enchantment_level` (number) returns the actual level on the context tool and composes with arithmetic, comparisons and other numeric nodes.
 - `rml:enchantments`: an `enchantments` map requires every listed level to fall inside its range; missing enchantments count as `0`.
 - `rml:entity_health`, `rml:entity_max_health`, `rml:entity_absorption`, `rml:dimension`, `rml:block_hardness`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability`, `rml:item_max_damage`, `rml:item_repair_cost` and `rml:item_max_stack_size`: read context entity health/max health/absorption, dimension, block hardness and light, tool count, metadata, durability, repair cost and max stack size; `fallback` covers a missing world or entity.
-- `rml:held_item`: checks the context entity's held stack with an item matcher, using `hand` (`mainhand` or `offhand`).
+- `rml:player_food`, `rml:player_saturation`, `rml:player_xp_level` and `rml:player_xp_progress`: read player food, saturation and experience; a non-player or missing entity uses `fallback`.
 
 These item modifiers fill missing 1.12 container and name operations:
 

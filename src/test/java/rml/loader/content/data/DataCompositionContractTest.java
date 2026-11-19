@@ -361,6 +361,13 @@ public final class DataCompositionContractTest {
         DataRules.NumberValue hardness = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:block_hardness\",\"fallback\":2.5}"));
         check(absorption.evaluate(context) == 1.5 && dimension.evaluate(context) == -1 && hardness.evaluate(context) == 2.5,
                 "Absorption, dimension and hardness readers must use their fallbacks without a world or entity");
+        DataRules.NumberValue food = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:player_food\",\"fallback\":12}"));
+        DataRules.NumberValue saturation = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:player_saturation\",\"fallback\":3.5}"));
+        DataRules.NumberValue experience = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:player_xp_level\",\"fallback\":9}"));
+        DataRules.NumberValue progress = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:player_xp_progress\",\"fallback\":0.25}"));
+        check(food.evaluate(context) == 12 && saturation.evaluate(context) == 3.5
+                        && experience.evaluate(context) == 9 && progress.evaluate(context) == 0.25,
+                "Player readers must use their fallbacks without a player entity");
 
         DataRules.Test fluid = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"water\"}"));
         check(!fluid.test(context), "Fluid checks require a server world");

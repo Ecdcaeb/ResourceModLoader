@@ -34,7 +34,8 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size"}) {
+                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
+                "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
         }
@@ -215,6 +216,30 @@ final class ContextNumberDecoders {
             case "item_max_stack_size":
                 fields(object);
                 return context -> context.getTool().isEmpty() ? 0 : context.getTool().getMaxStackSize();
+            case "player_food": {
+                fields(object, "fallback");
+                final double fallback = playerFallback(manager, object);
+                return context -> context.getEntity() instanceof net.minecraft.entity.player.EntityPlayer
+                        ? ((net.minecraft.entity.player.EntityPlayer) context.getEntity()).getFoodStats().getFoodLevel() : fallback;
+            }
+            case "player_saturation": {
+                fields(object, "fallback");
+                final double fallback = playerFallback(manager, object);
+                return context -> context.getEntity() instanceof net.minecraft.entity.player.EntityPlayer
+                        ? ((net.minecraft.entity.player.EntityPlayer) context.getEntity()).getFoodStats().getSaturationLevel() : fallback;
+            }
+            case "player_xp_level": {
+                fields(object, "fallback");
+                final double fallback = playerFallback(manager, object);
+                return context -> context.getEntity() instanceof net.minecraft.entity.player.EntityPlayer
+                        ? ((net.minecraft.entity.player.EntityPlayer) context.getEntity()).experienceLevel : fallback;
+            }
+            case "player_xp_progress": {
+                fields(object, "fallback");
+                final double fallback = playerFallback(manager, object);
+                return context -> context.getEntity() instanceof net.minecraft.entity.player.EntityPlayer
+                        ? ((net.minecraft.entity.player.EntityPlayer) context.getEntity()).experience : fallback;
+            }
             case "enchantment_level": {
                 fields(object, "enchantment");
                 ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));
@@ -234,6 +259,10 @@ final class ContextNumberDecoders {
     private static DataRules.NumberValue number(DeserializerManager manager, JsonObject object, String field) throws JsonDeserializeException {
         return manager.decode(DataRules.NumberValue.class, required(object, field));
     }
+    private static double playerFallback(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
+        return object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+    }
+
     private static double finite(double value) {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("Numeric expression produced a non-finite result");
         return value;
