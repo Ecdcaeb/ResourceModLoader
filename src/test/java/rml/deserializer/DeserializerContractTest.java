@@ -38,9 +38,24 @@ public final class DeserializerContractTest {
     }
 
     private static DeserializerManager manager() {
+        net.minecraft.init.Bootstrap.register();
         DeserializerManager manager = new DeserializerManager("rml");
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "resource_location"),
                 ResourceLocation.class, value -> new ResourceLocation(manager.decode(String.class, value))));
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "item"),
+                net.minecraft.item.Item.class, value -> {
+                    net.minecraft.item.Item item = net.minecraftforge.fml.common.registry.ForgeRegistries.ITEMS.getValue(
+                            manager.decode(ResourceLocation.class, value));
+                    if (item == null) throw new JsonDeserializeException(value, "Unknown item");
+                    return item;
+                }));
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "item"),
+                net.minecraft.item.ItemStack.class, value -> {
+                    com.google.gson.JsonObject object = value.getAsJsonObject();
+                    net.minecraft.item.Item item = manager.decode(net.minecraft.item.Item.class, object.get("item"));
+                    int count = object.has("count") ? object.get("count").getAsInt() : 1;
+                    return new net.minecraft.item.ItemStack(item, count);
+                }));
         NativeTypeDecoders.register(manager, new CompiledTagModule());
         manager.named(Term.class, new ResourceLocation("t", "literal")).record(Literal.class).build();
         manager.named(Term.class, new ResourceLocation("t", "sum")).record(Sum.class).build();
@@ -111,6 +126,27 @@ public final class DeserializerContractTest {
         check(size.getX() == 2 && size.getY() == 3 && size.getZ() == 4, "Integer vectors decode coordinates by name");
         check(manager.decode(Vec3i.class, json("[1,2,3]")).equals(new Vec3i(1, 2, 3)), "Integer vectors decode coordinate arrays");
         reject(() -> manager.decode(Vec3i.class, json("[1,2]")), "Integer vectors must not accept a partial coordinate list");
+        net.minecraft.util.EnumFacing direction = manager.decode(net.minecraft.util.EnumFacing.class,
+                json("{\"type\":\"rml:direction\",\"value\":\"north\"}"));
+        check(direction == net.minecraft.util.EnumFacing.NORTH, "Named directions decode case-insensitively");
+        check(manager.decode(net.minecraft.util.EnumFacing.class, json("{\"type\":\"rml:direction\",\"x\":0,\"y\":-1,\"z\":0}")) == net.minecraft.util.EnumFacing.DOWN,
+                "Direction vectors must name one axis step");
+        reject(() -> manager.decode(net.minecraft.util.EnumFacing.class, json("{\"type\":\"rml:direction\",\"x\":1,\"y\":1,\"z\":0}")),
+                "Directions must not combine axes");
+        check(manager.decode(net.minecraft.util.EnumFacing.Axis.class, json("{\"type\":\"rml:axis\",\"value\":\"y\"}")) == net.minecraft.util.EnumFacing.Axis.Y,
+                "Axes decode by name");
+        net.minecraft.item.ItemStack stack = manager.decode(net.minecraft.item.ItemStack.class,
+                json("{\"type\":\"rml:item_stack\",\"value\":\"minecraft:apple\"}"));
+        check(stack.getItem() == net.minecraft.init.Items.APPLE && stack.getCount() == 1, "Item shorthand decodes one item");
+        net.minecraft.item.ItemStack pair = manager.decode(net.minecraft.item.ItemStack.class,
+                json("{\"type\":\"rml:item_stack\",\"value\":[\"minecraft:apple\",3]}"));
+        check(pair.getItem() == net.minecraft.init.Items.APPLE && pair.getCount() == 3, "Item shorthand decodes an item and count");
+        reject(() -> manager.decode(net.minecraft.item.ItemStack.class, json("{\"type\":\"rml:item_stack\",\"value\":[\"minecraft:apple\",0]}")),
+                "Item shorthand must reject a nonpositive count");
+        net.minecraft.item.ItemStack defaultStack = manager.decode(net.minecraft.item.ItemStack.class,
+                json("{\"item\":\"minecraft:apple\",\"count\":2}"));
+        check(defaultStack.getItem() == net.minecraft.init.Items.APPLE && defaultStack.getCount() == 2,
+                "Named item shorthand must not replace the default item decoder");
         reject(() -> manager.decode(IntRange.class, json("{\"min\":7,\"max\":3}")), "Reversed bounds must fail");
     }
 

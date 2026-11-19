@@ -28,6 +28,7 @@ import net.minecraft.nbt.NBTTagString;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
@@ -87,6 +88,9 @@ public final class NativeTypeDecoders {
         });
         register(manager, UUID.class, "uuid", value -> UUID.fromString(manager.decode(String.class, payload(value))));
         register(manager, IBlockState.class, "block_state", value -> blockState(manager, value));
+        register(manager, EnumFacing.class, "direction", value -> direction(manager, value));
+        register(manager, EnumFacing.Axis.class, "axis", value -> axis(manager, value));
+        manager.addEntry(new AbstractDeserializer<>(id("item_stack"), ItemStack.class, value -> itemStack(manager, value)));
         manager.addGenericEntry(WeightedList.class, (registry, arguments, value) -> {
             if (arguments.length != 1) throw error(value, "WeightedList requires one element type");
             JsonElement entries = value.isJsonArray() ? value : required(object(value), "entries");
@@ -413,6 +417,60 @@ public final class NativeTypeDecoders {
             for (ResourceLocation tag : groups) if (tags.contains(registry, tag, key)) return true;
             return false;
         }
+    }
+
+    private static EnumFacing direction(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonObject() && value.getAsJsonObject().has("value")) {
+            return direction(manager, required(value.getAsJsonObject(), "value"));
+        }
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            EnumFacing facing = EnumFacing.byName(value.getAsString().toLowerCase(java.util.Locale.ROOT));
+            if (facing == null) throw error(value, "Unknown direction");
+            return facing;
+        }
+        JsonElement[] parts = elements(value, new String[]{"x", "y", "z"});
+        int x = integer(manager, parts[0]), y = integer(manager, parts[1]), z = integer(manager, parts[2]);
+        int axes = (x == 0 ? 0 : 1) + (y == 0 ? 0 : 1) + (z == 0 ? 0 : 1);
+        if (axes != 1 || Math.abs(x) > 1 || Math.abs(y) > 1 || Math.abs(z) > 1) {
+            throw error(value, "Direction must name one axis step");
+        }
+        return EnumFacing.getFacingFromVector(x, y, z);
+    }
+
+    private static EnumFacing.Axis axis(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonObject() && value.getAsJsonObject().has("value")) {
+            return axis(manager, required(value.getAsJsonObject(), "value"));
+        }
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            EnumFacing.Axis axis = EnumFacing.Axis.byName(value.getAsString().toLowerCase(java.util.Locale.ROOT));
+            if (axis == null) throw error(value, "Unknown axis");
+            return axis;
+        }
+        return direction(manager, value).getAxis();
+    }
+
+    private static ItemStack itemStack(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonObject() && value.getAsJsonObject().has("value")) {
+            return itemStack(manager, required(value.getAsJsonObject(), "value"));
+        }
+        if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            return new ItemStack(manager.decode(net.minecraft.item.Item.class, value));
+        }
+        if (value.isJsonArray()) {
+            JsonArray array = value.getAsJsonArray();
+            if (array.size() < 1 || array.size() > 2) throw error(value, "Item stack array must be [item] or [item, count]");
+            int count = array.size() == 2 ? integer(manager, array.get(1)) : 1;
+            if (count < 1) throw error(value, "Item stack count must be positive");
+            return new ItemStack(manager.decode(net.minecraft.item.Item.class, array.get(0)), count);
+        }
+        if (value.isJsonObject()) {
+            JsonObject payload = new JsonObject();
+            for (Map.Entry<String, JsonElement> field : value.getAsJsonObject().entrySet()) {
+                if (!"type".equals(field.getKey())) payload.add(field.getKey(), field.getValue());
+            }
+            return manager.decode(ItemStack.class, payload);
+        }
+        throw error(value, "Expected an item stack");
     }
 
     private static int integer(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {

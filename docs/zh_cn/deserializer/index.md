@@ -63,6 +63,8 @@
 | `Vec3d` / `Vec2f` | `rml:vec3` / `rml:vec2`；坐标数组或 `x/y/z` 字段 |
 | `BlockPos` | `rml:block_pos`；整数坐标数组或 `x/y/z` 字段 |
 | `Vec3i` | `rml:vec3i`；整数坐标数组或 `x/y/z` 字段，用于尺寸与偏移 |
+| `EnumFacing` / `EnumFacing.Axis` | `rml:direction` / `rml:axis`；方向名或单轴向量、轴名 |
+| `ItemStack` | `rml:item_stack`；物品 ID、`[物品, 数量]`，或 `item` / `count` / `data` / `nbt` 对象 |
 | `AxisAlignedBB` | `rml:box`；`min`、`max` 分别嵌套 Vec3d |
 | `UUID` | `rml:uuid`；UUID 字符串，或带 `value` 的显式构造器 |
 | `IBlockState` | `rml:block_state`；方块 ID，或原版 `Name` / `Properties` 对象，未知属性和值会报错 |

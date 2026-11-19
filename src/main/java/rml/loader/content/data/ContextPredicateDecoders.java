@@ -29,7 +29,7 @@ final class ContextPredicateDecoders {
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
                 "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
-                "enchantment_level"}) {
+                "enchantment_level", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -180,6 +180,85 @@ final class ContextPredicateDecoders {
                     return context.getRandom().nextFloat() < chance;
                 };
             }
+            case "block_state_property": {
+                fields(object, "block", "properties", "offset");
+                NativeTypeDecoders.BlockMatcher matcher = manager.decode(NativeTypeDecoders.BlockMatcher.class,
+                        blockMatcherPayload(required(object, "block"), object.get("properties")));
+                BlockPos offset = offset(manager, object);
+                return context -> {
+                    if (context.getWorld() == null || context.getOrigin() == null) return false;
+                    BlockPos position = context.getOrigin().add(offset);
+                    return context.getWorld().isBlockLoaded(position)
+                            && matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position));
+                };
+            }
+            case "location_check": {
+                fields(object, "offset", "block", "light", "biome");
+                NativeTypeDecoders.BlockMatcher matcher = object.has("block")
+                        ? manager.decode(NativeTypeDecoders.BlockMatcher.class, blockMatcherPayload(required(object, "block"), null)) : null;
+                DoubleRange light = object.has("light") ? manager.decode(DoubleRange.class, required(object, "light")) : null;
+                String biome = object.has("biome") ? manager.decode(String.class, required(object, "biome")) : null;
+                BlockPos offset = offset(manager, object);
+                return context -> {
+                    if (context.getWorld() == null || context.getOrigin() == null) return false;
+                    BlockPos position = context.getOrigin().add(offset);
+                    if (!context.getWorld().isBlockLoaded(position)) return false;
+                    if (matcher != null && !matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position))) return false;
+                    if (light != null && !light.test(context.getWorld().getLight(position))) return false;
+                    if (biome != null) {
+                        ResourceLocation found = context.getWorld().getBiome(position).getRegistryName();
+                        if (found == null || !biome.equals(found.toString())) return false;
+                    }
+                    return true;
+                };
+            }
+            case "entity_properties": {
+                fields(object, "entity", "predicate", "flags");
+                String target = object.has("entity") ? manager.decode(String.class, object.get("entity")) : "this";
+                if (!("this".equals(target) || "killer".equals(target) || "killer_player".equals(target) || "attacker".equals(target) || "direct_attacker".equals(target))) {
+                    throw error(object, "Unknown entity context target " + target);
+                }
+                NativeTypeDecoders.EntityMatcher matcher = manager.decode(NativeTypeDecoders.EntityMatcher.class, entityMatcherPayload(required(object, "predicate")));
+                JsonObject flags = object.has("flags") ? object(required(object, "flags")) : null;
+                Boolean fire = flags == null ? null : optional(manager, flags, "on_fire");
+                Boolean sneaking = flags == null ? null : optional(manager, flags, "sneaking");
+                Boolean sprinting = flags == null ? null : optional(manager, flags, "sprinting");
+                Boolean baby = flags == null ? null : optional(manager, flags, "baby");
+                if (flags != null) fields(flags, "on_fire", "sneaking", "sprinting", "baby");
+                return context -> {
+                    Entity entity = targetEntity(context, target);
+                    if (entity == null || !matcher.test(entity, context)) return false;
+                    if (fire == null && sneaking == null && sprinting == null && baby == null) return true;
+                    if (!(entity instanceof net.minecraft.entity.EntityLivingBase)) return false;
+                    net.minecraft.entity.EntityLivingBase living = (net.minecraft.entity.EntityLivingBase) entity;
+                    return (fire == null || living.isBurning() == fire)
+                            && (sneaking == null || living.isSneaking() == sneaking)
+                            && (sprinting == null || living.isSprinting() == sprinting)
+                            && (baby == null || living.isChild() == baby);
+                };
+            }
+            case "entity_scores": {
+                fields(object, "entity", "scores");
+                String holder = manager.decode(String.class, required(object, "entity"));
+                JsonObject scores = object(required(object, "scores"));
+                Map<String, DoubleRange> ranges = new java.util.LinkedHashMap<>();
+                for (Map.Entry<String, JsonElement> entry : scores.entrySet()) {
+                    ranges.put(entry.getKey(), manager.decode(DoubleRange.class, entry.getValue()));
+                }
+                if (ranges.isEmpty()) throw error(object, "Entity scores must not be empty");
+                return context -> {
+                    if (context.getWorld() == null) return false;
+                    String name = scoreHolder(context, holder);
+                    if (name == null) return false;
+                    Scoreboard board = context.getWorld().getScoreboard();
+                    for (Map.Entry<String, DoubleRange> entry : ranges.entrySet()) {
+                        ScoreObjective objective = board.getObjective(entry.getKey());
+                        if (objective == null || !board.entityHasObjective(name, objective)) return false;
+                        if (!entry.getValue().test(board.getOrCreateScore(name, objective).getScorePoints())) return false;
+                    }
+                    return true;
+                };
+            }
             case "enchantment_level": {
                 fields(object, "enchantment", "level");
                 ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));
@@ -194,6 +273,57 @@ final class ContextPredicateDecoders {
 
     private static BlockPos offset(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
         return object.has("offset") ? manager.decode(BlockPos.class, object.get("offset")) : BlockPos.ORIGIN;
+    }
+
+    private static JsonElement blockMatcherPayload(JsonElement block, JsonElement properties) {
+        if (block != null && block.isJsonObject() && block.getAsJsonObject().has("type")) return block;
+        JsonObject wrapped = new JsonObject();
+        wrapped.addProperty("type", "rml:block_match");
+        if (block != null && block.isJsonObject()) {
+            for (Map.Entry<String, JsonElement> field : block.getAsJsonObject().entrySet()) {
+                wrapped.add(field.getKey(), field.getValue());
+            }
+        } else {
+            wrapped.add("blocks", block);
+        }
+        if (properties != null) wrapped.add("properties", properties);
+        return wrapped;
+    }
+
+    private static JsonElement entityMatcherPayload(JsonElement value) {
+        if (value != null && value.isJsonObject() && !value.getAsJsonObject().has("type")) {
+            JsonObject wrapped = new JsonObject();
+            wrapped.addProperty("type", "rml:entity_match");
+            for (Map.Entry<String, JsonElement> field : value.getAsJsonObject().entrySet()) {
+                wrapped.add(field.getKey(), field.getValue());
+            }
+            return wrapped;
+        }
+        return value;
+    }
+
+    private static JsonObject object(JsonElement value) throws JsonDeserializeException {
+        if (value == null || !value.isJsonObject()) throw error(value, "Expected an object");
+        return value.getAsJsonObject();
+    }
+
+    private static String scoreHolder(DataContext context, String holder) {
+        if (!"this".equals(holder)) return holder;
+        Entity entity = context.getEntity();
+        if (entity == null) return null;
+        return entity instanceof EntityPlayer ? entity.getName() : entity.getCachedUniqueIdString();
+    }
+
+    private static Entity targetEntity(DataContext context, String target) {
+        if ("this".equals(target)) return context.getEntity();
+        if ("killer_player".equals(target)) {
+            Entity source = context.getLootContext() != null ? context.getLootContext().getKillerPlayer()
+                    : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
+            return source instanceof EntityPlayer ? source : null;
+        }
+        DamageSource damage = context.getDamageSource();
+        if (damage == null) return null;
+        return "direct_attacker".equals(target) ? damage.getImmediateSource() : damage.getTrueSource();
     }
     private static DoubleRange range(DeserializerManager manager, JsonObject object, String field) throws JsonDeserializeException {
         return object.has(field) ? manager.decode(DoubleRange.class, object.get(field)) : null;

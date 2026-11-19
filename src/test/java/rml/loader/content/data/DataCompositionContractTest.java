@@ -47,6 +47,15 @@ public final class DataCompositionContractTest {
                 value -> new ResourceLocation(manager.decode(String.class, value))));
         CompiledTagModule tags = new CompiledTagModule();
         NativeTypeDecoders.register(manager, tags);
+        manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "item"), ItemStack.class,
+                value -> {
+                    com.google.gson.JsonObject object = value.getAsJsonObject();
+                    net.minecraft.item.Item item = net.minecraftforge.fml.common.registry.ForgeRegistries.ITEMS.getValue(
+                            new ResourceLocation(object.get("item").getAsString()));
+                    if (item == null) throw new JsonDeserializeException(value, "Unknown item");
+                    int count = object.has("count") ? object.get("count").getAsInt() : 1;
+                    return new ItemStack(item, count);
+                }));
         DataRules rules = new DataRules(new ContentCatalog(null), tags, (id, context) -> { throw new AssertionError("Unexpected function " + id); });
         rules.registerDecoders(manager);
         CompiledLootModule.registerConditions();
@@ -61,6 +70,7 @@ public final class DataCompositionContractTest {
         contextSurvivesNativeRules(manager, context);
         modifierPreservesBookAndInputOwnership(manager, context);
         nativeLootTransformsCompose(manager, context);
+        parityPredicatesAndModifiers(manager, context);
         conditionalEffectsShortCircuit(manager, context);
         textChildrenUseSharedManager(manager);
         reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
@@ -154,6 +164,57 @@ public final class DataCompositionContractTest {
         check(fortune.test(context.withTool(pickaxe)) && !fortune.test(context), "Enchantment level predicates must read the actual tool");
         reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"minecraft:furnace_smelt\",\"count\":1}")));
         reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:absent\",\"level\":0}")));
+    }
+
+    private static void parityPredicatesAndModifiers(DeserializerManager manager, DataContext context) throws Exception {
+        DataRules.Test properties = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_properties\",\"entity\":\"this\",\"predicate\":{\"entity_types\":[\"minecraft:zombie\"]},\"flags\":{\"on_fire\":true}}"));
+        check(!properties.test(context), "Entity properties require an actual target entity");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_properties\",\"entity\":\"absent\",\"predicate\":{\"entity_types\":[\"minecraft:zombie\"]}}")));
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_properties\",\"predicate\":{\"entity_types\":[\"minecraft:zombie\"]},\"flags\":{\"swimming\":true}}")));
+        DataRules.Test scores = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_scores\",\"entity\":\"this\",\"scores\":{\"kills\":{\"min\":1}}}"));
+        check(!scores.test(context), "Entity scores require a server world");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_scores\",\"entity\":\"this\",\"scores\":{}}")));
+        DataRules.Test stateProperty = manager.decode(DataRules.Test.class,
+                json("{\"type\":\"rml:block_state_property\",\"block\":\"minecraft:stone\",\"properties\":{\"variant\":\"granite\"}}"));
+        check(!stateProperty.test(context), "Block state properties require a server world");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:block_state_property\",\"block\":\"minecraft:stone\",\"ignored\":true}")));
+        DataRules.Test location = manager.decode(DataRules.Test.class,
+                json("{\"type\":\"rml:location_check\",\"offset\":[0,1,0],\"block\":{\"blocks\":[\"minecraft:stone\"]},\"light\":{\"min\":0},\"biome\":\"minecraft:plains\"}"));
+        check(!location.test(context), "Location checks require a server world");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"ignored\":true}")));
+
+        DataRules.Modifier copyName = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:copy_name\",\"source\":\"block_entity\"}"));
+        ItemStack apple = new ItemStack(Items.APPLE);
+        check(copyName.apply(apple, context) == apple, "Copying a block entity name without a world must preserve the item");
+        reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:copy_name\",\"source\":\"absent\"}")));
+
+        DataRules.Modifier fillHead = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:fill_player_head\",\"entity\":\"killer\"}"));
+        ItemStack head = new ItemStack(Items.SKULL, 1, 3);
+        check(fillHead.apply(head, context) == head, "Filling a player head without a killer must preserve the item");
+        reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:fill_player_head\",\"entity\":\"absent\"}")));
+
+        DataRules.Modifier contents = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"rml:set_contents\",\"items\":[{\"item\":\"minecraft:apple\",\"count\":2}],\"block_entity\":\"minecraft:chest\"}"));
+        NBTTagCompound blockEntity = contents.apply(new ItemStack(Blocks.CHEST), context).getTagCompound().getCompoundTag("BlockEntityTag");
+        check("minecraft:chest".equals(blockEntity.getString("id")) && blockEntity.getTagList("Items", 10).tagCount() == 1,
+                "Container contents must be written as block entity items");
+        check(blockEntity.getTagList("Items", 10).getCompoundTagAt(0).getByte("Slot") == 0
+                        && "minecraft:apple".equals(blockEntity.getTagList("Items", 10).getCompoundTagAt(0).getString("id"))
+                        && blockEntity.getTagList("Items", 10).getCompoundTagAt(0).getByte("Count") == 2,
+                "Container slots must preserve their index and stack size");
+
+        DataRules.Modifier loot = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"rml:set_loot_table\",\"name\":\"minecraft:chests/simple_dungeon\",\"seed\":7}"));
+        NBTTagCompound lootTag = loot.apply(new ItemStack(Blocks.CHEST), context).getTagCompound().getCompoundTag("BlockEntityTag");
+        check("minecraft:chests/simple_dungeon".equals(lootTag.getString("LootTable")) && lootTag.getLong("LootTableSeed") == 7,
+                "Loot table references must be written with their seed");
+
+        ItemStack pickaxe = new ItemStack(Items.DIAMOND_PICKAXE);
+        pickaxe.addEnchantment(Enchantments.FORTUNE, 3);
+        DataRules.NumberValue level = manager.decode(DataRules.NumberValue.class,
+                json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:fortune\"}"));
+        check(level.evaluate(context.withTool(pickaxe)) == 3 && level.evaluate(context) == 0, "Tool enchantment levels must decode as numbers");
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:absent\"}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

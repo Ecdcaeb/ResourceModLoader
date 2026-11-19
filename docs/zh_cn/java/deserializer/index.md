@@ -102,6 +102,21 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `minecraft:enchant_with_levels` 用 `levels` 与可选 `treasure` 调用原生附魔表。
 - `minecraft:looting_enchant` 按真实击杀者的抢夺等级和 `count` 增加掉落数量，`limit` 可限制最终数量；缺少击杀者时保持原物品。
 
+补齐 1.12 缺失字段风格的组合条件：
+
+- `rml:entity_properties`：`entity` 选择 `this`、`killer`、`killer_player`、`attacker` 或 `direct_attacker`；`predicate` 接受裸实体匹配对象或带 `type` 的节点；`flags` 支持 `on_fire`、`sneaking`、`sprinting`、`baby`。
+- `rml:entity_scores`：`entity` 加 `scores` 映射，多个计分目标必须同时落在区间内。
+- `rml:block_state_property`：`block` 与 `properties` 匹配方块状态，可带 `offset`。
+- `rml:location_check`：按 `offset` 检查方块、光照区间与生物群系。
+- `rml:enchantment_level`（数值）返回工具上的实际附魔等级，可参与算术、比较和其他数值节点。
+
+以下物品修饰器补齐 1.12 缺失的容器与名称操作：
+
+- `rml:copy_name`：来源为 `this`、`killer`、`killer_player` 或 `block_entity`。
+- `rml:fill_player_head`：从 `this` 或 `killer` 写入玩家头颅的 `SkullOwner`。
+- `rml:set_contents`：`items` 数组写入方块实体的 `Items`，可选 `block_entity` 写入方块实体 id。
+- `rml:set_loot_table`：`name` 与可选 `seed` 写入 `BlockEntityTag`。
+
 ### 注册阶段与原生消费
 
 原生物品、方块和附魔先声明注册壳。依赖这些注册项的效果、匹配器、配方结果和展示条件在注册完成后解析；世界生成在生物群系注册事件中初始化，时间与测试定义在 FML 初始化阶段解析。不能在声明壳时提前把同包尚未注册的物品当成未知 ID。

@@ -3,9 +3,12 @@ package rml.loader.content.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTPrimitive;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.DeserializerManager;
 import rml.deserializer.JsonDeserializeException;
@@ -27,7 +30,8 @@ final class ContextNumberDecoders {
     static void register(DeserializerManager manager, DataRules rules) {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
-                "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input"}) {
+                "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
+                "enchantment_level"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
         }
@@ -140,6 +144,13 @@ final class ContextNumberDecoders {
                     if (!(value instanceof NBTPrimitive)) throw new IllegalArgumentException("Numeric data path is absent or is not numeric");
                     return finite(((NBTPrimitive) value).getDouble());
                 };
+            }
+            case "enchantment_level": {
+                fields(object, "enchantment");
+                ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));
+                Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
+                if (enchantment == null) throw error(object, "Unknown enchantment " + id);
+                return context -> EnchantmentHelper.getEnchantmentLevel(enchantment, context.getTool());
             }
             default: throw error(object, "Unknown context numeric operator " + type);
         }

@@ -35,7 +35,8 @@ final class ContextModifierDecoders {
     private ContextModifierDecoders() { }
 
     static void register(DeserializerManager manager) {
-        for (String name : new String[]{"conditional", "weighted", "limit_count", "set_enchantments", "apply_bonus", "set_name", "set_lore", "copy_nbt"}) {
+        for (String name : new String[]{"conditional", "weighted", "limit_count", "set_enchantments", "apply_bonus", "set_name", "set_lore", "copy_nbt",
+                "copy_name", "fill_player_head", "set_contents", "set_loot_table"}) {
             entry(manager, "rml", name);
         }
         for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant"}) {
@@ -278,6 +279,87 @@ final class ContextModifierDecoders {
                         }
                     }
                     copy.setTagCompound(tag); return copy;
+                };
+            }
+            case "copy_name": {
+                fields(object, "source");
+                String source = manager.decode(String.class, required(object, "source"));
+                if (!("this".equals(source) || "killer".equals(source) || "killer_player".equals(source) || "block_entity".equals(source))) {
+                    throw error(object, "Unknown name source " + source);
+                }
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ITextComponent name = null;
+                    if ("this".equals(source)) {
+                        if (context.getEntity() != null) name = context.getEntity().getDisplayName();
+                    } else if ("killer".equals(source) || "killer_player".equals(source)) {
+                        Entity killer = context.getLootContext() != null ? context.getLootContext().getKiller()
+                                : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
+                        if ("killer_player".equals(source) && !(killer instanceof net.minecraft.entity.player.EntityPlayer)) killer = null;
+                        if (killer != null) name = killer.getDisplayName();
+                    } else if (context.getWorld() != null && context.getOrigin() != null) {
+                        TileEntity tile = context.getWorld().getTileEntity(context.getOrigin());
+                        if (tile != null) name = tile.getDisplayName();
+                    }
+                    if (name == null) return stack;
+                    ItemStack copy = stack.copy();
+                    copy.setStackDisplayName(name.getFormattedText());
+                    return copy;
+                };
+            }
+            case "fill_player_head": {
+                fields(object, "entity");
+                String target = manager.decode(String.class, required(object, "entity"));
+                if (!("this".equals(target) || "killer".equals(target) || "killer_player".equals(target))) {
+                    throw error(object, "Unknown player head source " + target);
+                }
+                return (stack, context) -> {
+                    if (stack.isEmpty() || stack.getItem() != net.minecraft.init.Items.SKULL || stack.getMetadata() != 3) return stack;
+                    Entity entity;
+                    if ("this".equals(target)) entity = context.getEntity();
+                    else {
+                        entity = context.getLootContext() != null ? context.getLootContext().getKiller()
+                                : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
+                        if ("killer_player".equals(target) && !(entity instanceof net.minecraft.entity.player.EntityPlayer)) entity = null;
+                    }
+                    if (!(entity instanceof net.minecraft.entity.player.EntityPlayer)) return stack;
+                    ItemStack copy = stack.copy();
+                    copy.setTagInfo("SkullOwner", net.minecraft.nbt.NBTUtil.writeGameProfile(new NBTTagCompound(),
+                            ((net.minecraft.entity.player.EntityPlayer) entity).getGameProfile()));
+                    return copy;
+                };
+            }
+            case "set_contents": {
+                fields(object, "items", "block_entity");
+                ItemStack[] items = manager.decode(ItemStack[].class, required(object, "items"));
+                String blockEntityId = object.has("block_entity") ? manager.decode(String.class, object.get("block_entity")) : null;
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    NBTTagList list = new NBTTagList();
+                    for (int index = 0; index < items.length; index++) {
+                        if (items[index].isEmpty()) continue;
+                        NBTTagCompound entry = items[index].writeToNBT(new NBTTagCompound());
+                        entry.setByte("Slot", (byte) index);
+                        list.appendTag(entry);
+                    }
+                    ItemStack copy = stack.copy();
+                    NBTTagCompound blockEntity = copy.getOrCreateSubCompound("BlockEntityTag");
+                    blockEntity.setTag("Items", list);
+                    if (blockEntityId != null) blockEntity.setString("id", blockEntityId);
+                    return copy;
+                };
+            }
+            case "set_loot_table": {
+                fields(object, "name", "seed");
+                ResourceLocation table = manager.decode(ResourceLocation.class, required(object, "name"));
+                long seed = object.has("seed") ? manager.decode(Long.class, object.get("seed")) : 0L;
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ItemStack copy = stack.copy();
+                    NBTTagCompound blockEntity = copy.getOrCreateSubCompound("BlockEntityTag");
+                    blockEntity.setString("LootTable", table.toString());
+                    if (seed != 0L) blockEntity.setLong("LootTableSeed", seed);
+                    return copy;
                 };
             }
             default: throw error(object, "Unknown item transformation " + type);

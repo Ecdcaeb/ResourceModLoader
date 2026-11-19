@@ -62,6 +62,8 @@ These types are registered in the same `DeserializerManager`, so they work in fi
 | `DoubleRange` | `rml:double_range`; a finite number or a bounds object, an omitted side is unbounded |
 | `Vec3d` / `Vec2f` | `rml:vec3` / `rml:vec2`; a coordinate array or `x/y/z` fields |
 | `Vec3i` | `rml:vec3i`; an integer coordinate array or `x/y/z` fields, for sizes and offsets |
+| `EnumFacing` / `EnumFacing.Axis` | `rml:direction` / `rml:axis`; a direction name or single-axis vector, and an axis name |
+| `ItemStack` | `rml:item_stack`; an item id, `[item, count]`, or an `item` / `count` / `data` / `nbt` object |
 | `BlockPos` | `rml:block_pos`; an integer coordinate array or `x/y/z` fields |
 | `AxisAlignedBB` | `rml:box`; nested `Vec3d` values in `min` and `max` |
 | `UUID` | `rml:uuid`; a UUID string, or an explicit constructor with `value` |

@@ -66,6 +66,21 @@ The loot-facing predicate `rml:enchantment_level` matches the actual level on th
 - `minecraft:enchant_with_levels` reads `levels` and optional `treasure` through the native enchantment table.
 - `minecraft:looting_enchant` adds drops from the real killer's looting level and `count`; `limit` caps the final count, and without a killer the stack is unchanged.
 
+Additional composed conditions fill gaps in the 1.12 field surface:
+
+- `rml:entity_properties`: `entity` selects `this`, `killer`, `killer_player`, `attacker` or `direct_attacker`; `predicate` accepts a bare entity matcher or a typed node; `flags` supports `on_fire`, `sneaking`, `sprinting` and `baby`.
+- `rml:entity_scores`: `entity` plus a `scores` map; every objective must be present and inside its range.
+- `rml:block_state_property`: matches a block state from `block` plus `properties`, with an optional `offset`.
+- `rml:location_check`: checks the block, light range and biome at `offset`.
+- `rml:enchantment_level` (number) returns the actual level on the context tool and composes with arithmetic, comparisons and other numeric nodes.
+
+These item modifiers fill missing 1.12 container and name operations:
+
+- `rml:copy_name`: source `this`, `killer`, `killer_player` or `block_entity`.
+- `rml:fill_player_head`: writes `SkullOwner` on a player head from `this` or `killer`.
+- `rml:set_contents`: writes an `items` array into the block entity `Items`, with an optional `block_entity` id.
+- `rml:set_loot_table`: writes `name` and an optional `seed` into `BlockEntityTag`.
+
 ### Registration phases and native consumption
 
 Native items, blocks and enchantments declare registration shells first. Effects, matchers, recipe results and presentation conditions that depend on those entries resolve after registration; worldgen initializes on the biome registration event, and clock/test definitions resolve during FML initialization. Declaring a shell must not treat still-unregistered items from the same pack as unknown ids.
