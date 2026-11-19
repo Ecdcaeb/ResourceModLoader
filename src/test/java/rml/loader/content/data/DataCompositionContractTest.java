@@ -72,6 +72,7 @@ public final class DataCompositionContractTest {
         nativeLootTransformsCompose(manager, context);
         parityPredicatesAndModifiers(manager, context);
         legacyRuleDecodersStayComposable(tags, context);
+        typedModifierDecodersCompose(manager, context);
         conditionalEffectsShortCircuit(manager, context);
         textChildrenUseSharedManager(manager);
         reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
@@ -244,6 +245,20 @@ public final class DataCompositionContractTest {
         reject(() -> legacy.predicate(json("{\"condition\":\"rml:level\",\"ignored\":1}")));
         reject(() -> legacy.modifier(json("{\"function\":\"minecraft:set_count\",\"count\":1,\"ignored\":1}")));
         reject(() -> legacy.effect(json("{\"type\":\"rml:heal\",\"amount\":1,\"ignored\":1}")));
+    }
+
+    private static void typedModifierDecodersCompose(DeserializerManager manager, DataContext context) throws Exception {
+        DataRules.Modifier count = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"rml:set_count\",\"count\":{\"type\":\"minecraft:uniform\",\"min\":2,\"max\":2}}"));
+        check(count.apply(new ItemStack(Items.APPLE), context).getCount() == 2, "Typed count modifiers must decode nested numeric providers");
+        DataRules.Modifier nbt = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_nbt\",\"tag\":\"{demo:1}\"}"));
+        check(nbt.apply(new ItemStack(Items.APPLE), context).getTagCompound().getInteger("demo") == 1, "Typed NBT modifiers must merge their tag");
+        DataRules.Modifier components = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"minecraft:set_components\",\"components\":{\"minecraft:provides_trim_material\":\"minecraft:gold\"}}"));
+        check("minecraft:gold".equals(components.apply(new ItemStack(Items.APPLE), context).getTagCompound().getString("rml_trim_material")),
+                "Typed trim components must lower to item NBT");
+        DataRules.Modifier missing = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:reference\",\"id\":\"contract:absent\"}"));
+        check(missing != null, "Named modifier references must stay unresolved until evaluation");
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {
