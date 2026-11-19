@@ -39,15 +39,8 @@ public final class DataRules {
     private final CompiledTagModule tags;
     private DeserializerManager decoders;
     private final BiFunction<ResourceLocation, DataContext, Integer> invokeFunction;
-    private final Map<ResourceLocation, NumberValue> integers = new HashMap<>();
-    private final Map<ResourceLocation, NumberValue> floats = new HashMap<>();
-    private final OwnedRegistry<ResourceLocation, NumberValue> intRegistry = new OwnedRegistry<>(integers);
-    private final OwnedRegistry<ResourceLocation, NumberValue> floatRegistry = new OwnedRegistry<>(floats);
     private static final Set<String> TYPES = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList("context_int_provider", "context_float_provider")));
-    private final Map<ResourceLocation, Test> namedPredicates = new HashMap<>();
-    private final OwnedRegistry<ResourceLocation, Test> predicateRegistry = new OwnedRegistry<>(namedPredicates);
-    private final Map<ResourceLocation, Modifier> namedModifiers = new HashMap<>();
-    private final OwnedRegistry<ResourceLocation, Modifier> modifierRegistry = new OwnedRegistry<>(namedModifiers);
+    private final RuleCatalog catalog = new RuleCatalog();
 
     public interface NumberValue { double evaluate(DataContext context); }
     public interface Test { boolean test(DataContext context); }
@@ -214,25 +207,13 @@ public final class DataRules {
         return predicateDirect(definition);
     }
 
-    NumberValue activeNumber(boolean integer, ResourceLocation id) {
-        NumberValue value = (integer ? integers : floats).get(id);
-        if (value == null) throw new IllegalStateException("No active numeric provider '" + id + "'");
-        return value;
-    }
+    NumberValue activeNumber(boolean integer, ResourceLocation id) { return catalog.activeNumber(integer, id); }
 
     CompiledTagModule tags() { return tags; }
 
-    Test namedPredicate(ResourceLocation id) {
-        Test value = namedPredicates.get(id);
-        if (value == null) throw new IllegalStateException("No active compiled predicate '" + id + "'");
-        return value;
-    }
+    Test namedPredicate(ResourceLocation id) { return catalog.namedPredicate(id); }
 
-    Modifier namedModifier(ResourceLocation id) {
-        Modifier value = namedModifiers.get(id);
-        if (value == null) throw new IllegalStateException("No active compiled item modifier '" + id + "'");
-        return value;
-    }
+    Modifier namedModifier(ResourceLocation id) { return catalog.namedModifier(id); }
 
     public NumberValue number(JsonElement definition) {
         if (decoders != null && definition != null && definition.isJsonObject() && definition.getAsJsonObject().has("type")) {
@@ -286,46 +267,21 @@ public final class DataRules {
     public Set<String> getRuntimeTypes() { return TYPES; }
 
     public PreparedUnit prepare(CompiledResource resource) {
-        Objects.requireNonNull(resource, "resource");
-        final boolean integer = "context_int_provider".equals(resource.getType());
-        if (!integer && !"context_float_provider".equals(resource.getType())) throw new IllegalArgumentException("Unsupported data rule resource " + resource.getType() + " at " + resource.getSource());
-        final NumberValue value;
-        try { value = decoders == null ? number(resource.getValue(), integer) : number(decoders, resource.getValue(), integer); }
-        catch (Exception e) { throw new IllegalArgumentException("Invalid " + resource.getType() + " at " + resource.getSource() + " (" + resource.getId() + ")", e); }
-        return scope -> scope.own((integer ? intRegistry : floatRegistry).register(resource.getId(), value));
+        return catalog.prepare(resource, (value, integer) -> decoders == null ? number(value, integer) : number(decoders, value, integer));
     }
 
     /** Publishes a native loot condition for live enhanced predicate references. */
     public PreparedUnit prepareNativePredicate(ResourceLocation id, LootCondition condition) {
-        Objects.requireNonNull(id, "id");
-        Objects.requireNonNull(condition, "condition");
-        Test test = context -> {
-            LootContext loot = context.asLootContext();
-            return condition.testCondition(context.getRandom(), loot);
-        };
-        return scope -> scope.own(predicateRegistry.register(id, test));
+        return catalog.prepareNativePredicate(id, condition);
     }
     /** Creates a scope-owned live predicate target; references resolve its current active value. */
     public PreparedUnit preparePredicate(ResourceLocation id, JsonElement definition) {
-        Objects.requireNonNull(id, "id");
-        final Test compiled = predicate(definition);
-        return scope -> scope.own(predicateRegistry.register(id, compiled));
+        return catalog.preparePredicate(id, definition, this::predicate);
     }
 
     /** Registers active native modifier arrays as live targets for enhanced references. */
     public PreparedUnit prepareNativeModifier(ResourceLocation id, LootFunction[] functions) {
-        Objects.requireNonNull(id, "id");
-        final LootFunction[] copy = Objects.requireNonNull(functions, "functions").clone();
-        Modifier target = (stack, context) -> {
-            LootContext loot = context.asLootContext();
-            ItemStack result = stack.copy();
-            for (LootFunction function : copy) {
-                if (LootConditionManager.testAllConditions(function.getConditions(), context.getRandom(), loot))
-                    result = Objects.requireNonNull(function.apply(result, context.getRandom(), loot), "Native loot function returned null");
-            }
-            return result;
-        };
-        return scope -> scope.own(modifierRegistry.register(id, target));
+        return catalog.prepareNativeModifier(id, functions);
     }
 
     /** Native serializer hook; expressions are compiled during deserialization, before repeated evaluation. */
