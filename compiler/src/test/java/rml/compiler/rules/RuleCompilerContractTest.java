@@ -33,6 +33,7 @@ public final class RuleCompilerContractTest {
         advancementsAndOrder();
         referenceFailures();
         unsupportedAndInvalidSemantics();
+        rmlRuleSchemas();
         nativeFunctionSchemas();
         System.out.println("RuleCompilerContractTest passed");
     }
@@ -103,6 +104,21 @@ public final class RuleCompilerContractTest {
             equal("item", entry.get("type").getAsString());
             equal("minecraft:diamond_sword", entry.get("name").getAsString());
         }
+    }
+
+    private static void rmlRuleSchemas() throws Exception {
+        try (Pack pack = new Pack()) {
+            pack.json("item_modifier/repair", "{\"function\":\"rml:set_repair_cost\",\"cost\":2}");
+            pack.json("item_modifier/attributes", "{\"function\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"addition\",\"slot\":\"mainhand\"}]}");
+            pack.json("predicate/held", "{\"condition\":\"rml:held_item\",\"predicate\":{\"items\":[\"minecraft:diamond_sword\"]},\"hand\":\"offhand\"}");
+            pack.json("predicate/location", "{\"condition\":\"rml:location_check\",\"fluid\":\"water\",\"position\":{\"x\":{\"min\":0}}}");
+            pack.json("predicate/extension", "{\"condition\":\"rml:custom_extension\",\"payload\":42}");
+            pack.compile();
+        }
+        failure("item_modifier/a", "{\"function\":\"rml:set_repair_cost\"}", "invalid_rule");
+        failure("item_modifier/a", "{\"function\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":1,\"operation\":\"bad\"}]}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:held_item\",\"predicate\":{},\"hand\":\"bad\"}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:location_check\",\"fluid\":\"oil\"}", "invalid_rule");
     }
 
     private static void nativeFunctionSchemas() throws Exception {

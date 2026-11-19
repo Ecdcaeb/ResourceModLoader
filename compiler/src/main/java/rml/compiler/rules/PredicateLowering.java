@@ -125,6 +125,7 @@ final class PredicateLowering {
                 return result;
             default:
                 if (!type.startsWith("minecraft:")) {
+                    RmlRuleValidation.predicate(type, input, source);
                     JsonObject extension = (JsonObject) copy(input);
                     extension.remove("condition");
                     extension.addProperty("type", type);

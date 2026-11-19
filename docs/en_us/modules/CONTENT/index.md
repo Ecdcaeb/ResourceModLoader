@@ -53,7 +53,7 @@ The result is an installable RML pack containing:
 - `META-INF/rml/source-map.json`, mapping output paths back to sources for diagnostics.
 - `pack.mcmeta` and the original client assets.
 
-Output-path collisions, unknown types, invalid structure NBT and unreadable sources fail the build. No partially usable ZIP is written.
+Output-path collisions, unknown types, invalid structure NBT and unreadable sources fail the build. No partially usable ZIP is written. RML-native rule nodes (attribute modifiers, location checks and similar) validate their fields and enums at compile time, while unknown `rml:` types still pass through as extensions.
 
 ### Runtime
 

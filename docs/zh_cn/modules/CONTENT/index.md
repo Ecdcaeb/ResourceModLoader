@@ -53,7 +53,7 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 - `META-INF/rml/source-map.json`，把产物路径映射回源码，供诊断使用。
 - `pack.mcmeta` 与原始客户端资源。
 
-同一构建内路径冲突、未知类型、无效结构 NBT 和无法解析的源码都会让编译失败；不会产生部分可用的 ZIP。
+同一构建内路径冲突、未知类型、无效结构 NBT 和无法解析的源码都会让编译失败；不会产生部分可用的 ZIP。RML 原生规则节点（如属性修饰器、位置检查）在编译期校验字段与枚举；未知 `rml:` 类型仍可作为扩展直接通过。
 
 ### 运行期
 

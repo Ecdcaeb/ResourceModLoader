@@ -161,6 +161,7 @@ final class ModifierLowering {
                 return;
             default:
                 if (!type.startsWith("minecraft:")) {
+                    RmlRuleValidation.modifier(type, input, source);
                     JsonObject expression = (JsonObject) copy(input);
                     expression.remove("function");
                     expression.remove("conditions");
