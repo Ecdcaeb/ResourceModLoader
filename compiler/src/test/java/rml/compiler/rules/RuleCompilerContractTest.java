@@ -113,12 +113,19 @@ public final class RuleCompilerContractTest {
             pack.json("predicate/held", "{\"condition\":\"rml:held_item\",\"predicate\":{\"items\":[\"minecraft:diamond_sword\"]},\"hand\":\"offhand\"}");
             pack.json("predicate/location", "{\"condition\":\"rml:location_check\",\"fluid\":\"water\",\"position\":{\"x\":{\"min\":0}}}");
             pack.json("predicate/extension", "{\"condition\":\"rml:custom_extension\",\"payload\":42}");
+            pack.json("item_modifier/conditional", "{\"function\":\"rml:conditional\",\"condition\":{\"condition\":\"rml:level\",\"min\":0},\"on_true\":{\"function\":\"rml:set_repair_cost\",\"cost\":2}}");
+            pack.json("predicate/composed", "{\"condition\":\"rml:all_of\",\"terms\":[{\"condition\":\"rml:level\",\"min\":0},{\"condition\":\"rml:entity_on_fire\"}]}");
+            pack.json("predicate/tag", "{\"condition\":\"rml:tag\",\"registry\":\"block\",\"tag\":\"demo:base\",\"value\":\"minecraft:stone\"}");
             pack.compile();
         }
         failure("item_modifier/a", "{\"function\":\"rml:set_repair_cost\"}", "invalid_rule");
         failure("item_modifier/a", "{\"function\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":1,\"operation\":\"bad\"}]}", "invalid_rule");
         failure("predicate/a", "{\"condition\":\"rml:held_item\",\"predicate\":{},\"hand\":\"bad\"}", "invalid_rule");
         failure("predicate/a", "{\"condition\":\"rml:location_check\",\"fluid\":\"oil\"}", "invalid_rule");
+        failure("item_modifier/a", "{\"function\":\"rml:conditional\",\"condition\":{}}", "invalid_rule");
+        failure("item_modifier/a", "{\"function\":\"rml:copy_nbt\",\"source\":\"entity\",\"path\":\"a\",\"target\":\"b\",\"operation\":\"bad\"}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:all_of\",\"terms\":1}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:dimension\",\"value\":\"overworld\"}", "invalid_rule");
     }
 
     private static void nativeFunctionSchemas() throws Exception {

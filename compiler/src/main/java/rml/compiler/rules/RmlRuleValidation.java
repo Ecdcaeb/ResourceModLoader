@@ -71,6 +71,56 @@ final class RmlRuleValidation {
                 RuleJson.id(required(input, source, "name"), source, "name");
                 if (input.has("seed")) RuleJson.number(input.get("seed"), source, "seed");
                 return;
+            case "rml:conditional":
+                fields(input, source, merge(MODIFIER_BASE, "condition", "on_true", "on_false"));
+                RuleJson.object(required(input, source, "condition"), source, "condition");
+                RuleJson.object(required(input, source, "on_true"), source, "on_true");
+                if (input.has("on_false")) RuleJson.object(input.get("on_false"), source, "on_false");
+                return;
+            case "rml:weighted": {
+                fields(input, source, merge(MODIFIER_BASE, "distribution"));
+                JsonElement distribution = required(input, source, "distribution");
+                if (!distribution.isJsonArray()) RuleJson.object(distribution, source, "distribution");
+                return;
+            }
+            case "rml:limit_count":
+                fields(input, source, merge(MODIFIER_BASE, "limit"));
+                required(input, source, "limit");
+                return;
+            case "rml:set_enchantments":
+                fields(input, source, merge(MODIFIER_BASE, "enchantments", "add"));
+                RuleJson.object(required(input, source, "enchantments"), source, "enchantments");
+                if (input.has("add")) RuleJson.bool(input.get("add"), source, "add");
+                return;
+            case "rml:apply_bonus":
+                fields(input, source, merge(MODIFIER_BASE, "enchantment", "formula", "bonus", "probability"));
+                RuleJson.id(required(input, source, "enchantment"), source, "enchantment");
+                choice(RuleJson.string(required(input, source, "formula"), source, "formula"), source, "formula",
+                        "ore_drops", "uniform", "binomial");
+                if (input.has("bonus")) required(input, source, "bonus");
+                if (input.has("probability")) required(input, source, "probability");
+                return;
+            case "rml:set_name":
+                fields(input, source, merge(MODIFIER_BASE, "name"));
+                required(input, source, "name");
+                return;
+            case "rml:set_lore":
+                fields(input, source, merge(MODIFIER_BASE, "lore", "replace"));
+                RuleJson.array(required(input, source, "lore"), source, "lore");
+                if (input.has("replace")) RuleJson.bool(input.get("replace"), source, "replace");
+                return;
+            case "rml:copy_nbt":
+                fields(input, source, merge(MODIFIER_BASE, "source", "path", "target", "storage", "operation"));
+                choice(RuleJson.string(required(input, source, "source"), source, "source"), source, "source",
+                        "entity", "block_entity", "tool", "inputs", "storage");
+                RuleJson.string(required(input, source, "path"), source, "path");
+                RuleJson.string(required(input, source, "target"), source, "target");
+                if (input.has("storage")) RuleJson.id(input.get("storage"), source, "storage");
+                if (input.has("operation")) {
+                    choice(RuleJson.string(input.get("operation"), source, "operation"), source, "operation",
+                            "replace", "merge", "append");
+                }
+                return;
             case "rml:set_attributes":
                 fields(input, source, merge(MODIFIER_BASE, "modifiers"));
                 JsonArray modifiers = RuleJson.array(required(input, source, "modifiers"), source, "modifiers");
@@ -98,6 +148,53 @@ final class RmlRuleValidation {
 
     static void predicate(String type, JsonObject input, SourceResource source) {
         switch (type) {
+            case "rml:all_of": case "rml:any_of":
+                fields(input, source, merge(PREDICATE_BASE, "terms"));
+                RuleJson.array(required(input, source, "terms"), source, "terms");
+                return;
+            case "rml:inverted":
+                fields(input, source, merge(PREDICATE_BASE, "term"));
+                RuleJson.object(required(input, source, "term"), source, "term");
+                return;
+            case "rml:random_chance":
+                fields(input, source, merge(PREDICATE_BASE, "chance"));
+                required(input, source, "chance");
+                return;
+            case "rml:entity_type":
+                fields(input, source, merge(PREDICATE_BASE, "entity"));
+                RuleJson.id(required(input, source, "entity"), source, "entity");
+                return;
+            case "rml:entity_on_fire":
+                fields(input, source, merge(PREDICATE_BASE, "on_fire"));
+                if (input.has("on_fire")) RuleJson.bool(input.get("on_fire"), source, "on_fire");
+                return;
+            case "rml:health": case "rml:level":
+                fields(input, source, merge(PREDICATE_BASE, "min", "max"));
+                return;
+            case "rml:dimension":
+                fields(input, source, merge(PREDICATE_BASE, "value"));
+                RuleJson.integer(required(input, source, "value"), source, "value", Integer.MIN_VALUE, Integer.MAX_VALUE);
+                return;
+            case "rml:biome": case "rml:block":
+                fields(input, source, merge(PREDICATE_BASE, "value"));
+                RuleJson.id(required(input, source, "value"), source, "value");
+                return;
+            case "rml:function_result":
+                fields(input, source, merge(PREDICATE_BASE, "function", "value"));
+                RuleJson.id(required(input, source, "function"), source, "function");
+                RuleJson.integer(required(input, source, "value"), source, "value", Integer.MIN_VALUE, Integer.MAX_VALUE);
+                return;
+            case "rml:item":
+                fields(input, source, merge(PREDICATE_BASE, "value", "data"));
+                RuleJson.id(required(input, source, "value"), source, "value");
+                if (input.has("data")) RuleJson.integer(input.get("data"), source, "data", 0, 32767);
+                return;
+            case "rml:tag":
+                fields(input, source, merge(PREDICATE_BASE, "registry", "tag", "value"));
+                RuleJson.string(required(input, source, "registry"), source, "registry");
+                RuleJson.id(required(input, source, "tag"), source, "tag");
+                RuleJson.id(required(input, source, "value"), source, "value");
+                return;
             case "rml:held_item":
                 fields(input, source, merge(PREDICATE_BASE, "predicate", "hand"));
                 RuleJson.object(required(input, source, "predicate"), source, "predicate");
