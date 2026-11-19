@@ -58,8 +58,8 @@
 
 | 目标类型 | 默认命名解析器 / 输入 |
 | --- | --- |
-| `IntRange` | `rml:int_range`；整数或 `{ "min": 1, "max": 8 }`，边界包含端点 |
-| `DoubleRange` | `rml:double_range`；有限数值或上下界对象，省略一端表示该端无限制 |
+| `IntRange` | `rml:int_range`；整数、`{ "min": 1, "max": 8 }` 或 `[1, 8]`，边界包含端点 |
+| `DoubleRange` | `rml:double_range`；有限数值、上下界对象或 `[min, max]`，省略一端表示该端无限制 |
 | `Vec3d` / `Vec2f` | `rml:vec3` / `rml:vec2`；坐标数组或 `x/y/z` 字段 |
 | `BlockPos` | `rml:block_pos`；整数坐标数组或 `x/y/z` 字段 |
 | `Vec3i` | `rml:vec3i`；整数坐标数组或 `x/y/z` 字段，用于尺寸与偏移 |

@@ -121,6 +121,11 @@ public final class DeserializerContractTest {
         check(value.x == 1 && value.y == 64 && value.z == 2, "Custom vector constructors nest through the same manager");
         IntRange range = manager.decode(IntRange.class, json("{\"min\":2,\"max\":5}"));
         check(range.test(2) && range.test(5) && !range.test(1) && !range.test(6), "Range endpoints are inclusive");
+        IntRange arrayRange = manager.decode(IntRange.class, json("[2,5]"));
+        check(arrayRange.test(2) && arrayRange.test(5) && !arrayRange.test(1), "Range arrays decode as inclusive bounds");
+        rml.deserializer.value.DoubleRange doubleRange = manager.decode(rml.deserializer.value.DoubleRange.class, json("[0.5,1.5]"));
+        check(doubleRange.test(0.5) && doubleRange.test(1.5) && !doubleRange.test(2), "Double range arrays decode as inclusive bounds");
+        reject(() -> manager.decode(IntRange.class, json("[1]")), "Range arrays require both bounds");
         reject(() -> manager.decode(BlockPos.class, json("[0,64.5,0]")), "Block positions must not silently truncate fractions");
         Vec3i size = manager.decode(Vec3i.class, json("{\"type\":\"rml:vec3i\",\"x\":2,\"y\":3,\"z\":4}"));
         check(size.getX() == 2 && size.getY() == 3 && size.getZ() == 4, "Integer vectors decode coordinates by name");

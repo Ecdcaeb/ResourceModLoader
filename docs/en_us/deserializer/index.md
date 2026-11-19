@@ -58,8 +58,8 @@ These types are registered in the same `DeserializerManager`, so they work in fi
 
 | Target type | Default named decoder / input |
 | --- | --- |
-| `IntRange` | `rml:int_range`; an integer or `{ "min": 1, "max": 8 }`, endpoints inclusive |
-| `DoubleRange` | `rml:double_range`; a finite number or a bounds object, an omitted side is unbounded |
+| `IntRange` | `rml:int_range`; an integer, `{ "min": 1, "max": 8 }` or `[1, 8]`, endpoints inclusive |
+| `DoubleRange` | `rml:double_range`; a finite number, a bounds object or `[min, max]`, an omitted side is unbounded |
 | `Vec3d` / `Vec2f` | `rml:vec3` / `rml:vec2`; a coordinate array or `x/y/z` fields |
 | `Vec3i` | `rml:vec3i`; an integer coordinate array or `x/y/z` fields, for sizes and offsets |
 | `EnumFacing` / `EnumFacing.Axis` | `rml:direction` / `rml:axis`; a direction name or single-axis vector, and an axis name |

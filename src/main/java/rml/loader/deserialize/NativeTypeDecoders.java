@@ -116,6 +116,11 @@ public final class NativeTypeDecoders {
     private static ResourceLocation id(String name) { return new ResourceLocation("rml", name); }
 
     private static IntRange intRange(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonArray()) {
+            JsonArray array = value.getAsJsonArray();
+            if (array.size() != 2) throw error(value, "Integer range array must be [min, max]");
+            return new IntRange(integer(manager, array.get(0)), integer(manager, array.get(1)));
+        }
         if (!value.isJsonObject()) {
             int exact = integer(manager, value);
             return new IntRange(exact, exact);
@@ -126,6 +131,11 @@ public final class NativeTypeDecoders {
     }
 
     private static DoubleRange doubleRange(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        if (value.isJsonArray()) {
+            JsonArray array = value.getAsJsonArray();
+            if (array.size() != 2) throw error(value, "Double range array must be [min, max]");
+            return new DoubleRange(finite(manager, array.get(0)), finite(manager, array.get(1)));
+        }
         if (!value.isJsonObject()) {
             double exact = finite(manager, value);
             return new DoubleRange(exact, exact);

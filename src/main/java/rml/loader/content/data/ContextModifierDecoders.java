@@ -34,7 +34,7 @@ final class ContextModifierDecoders {
 
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"conditional", "weighted", "limit_count", "set_enchantments", "apply_bonus", "set_name", "set_lore", "copy_nbt",
-                "copy_name", "fill_player_head", "set_contents", "set_loot_table", "set_repair_cost", "set_unbreakable"}) {
+                "copy_name", "fill_player_head", "set_contents", "set_loot_table", "set_repair_cost", "set_unbreakable", "identity"}) {
             entry(manager, "rml", name);
         }
         for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant", "set_attributes", "set_data"}) {
@@ -63,6 +63,9 @@ final class ContextModifierDecoders {
         DataRules.Modifier nativeOperation = NativeItemDecoders.operation(manager, object, type);
         if (nativeOperation != null) return nativeOperation;
         switch (type) {
+            case "identity":
+                fieldsWithConditions(object);
+                return (stack, context) -> stack;
             case "conditional": {
                 fieldsWithConditions(object, "condition", "on_true", "on_false");
                 DataRules.Test test = manager.decode(DataRules.Test.class, required(object, "condition"));

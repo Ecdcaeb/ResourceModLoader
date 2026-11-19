@@ -18,6 +18,9 @@ final class RmlRuleValidation {
 
     static void modifier(String type, JsonObject input, SourceResource source) {
         switch (type) {
+            case "rml:identity":
+                fields(input, source, MODIFIER_BASE);
+                return;
             case "rml:furnace_smelt":
                 fields(input, source, MODIFIER_BASE);
                 return;
@@ -205,6 +208,17 @@ final class RmlRuleValidation {
             case "rml:enchantments":
                 fields(input, source, merge(PREDICATE_BASE, "enchantments"));
                 RuleJson.object(required(input, source, "enchantments"), source, "enchantments");
+                return;
+            case "rml:always": case "rml:never":
+                fields(input, source, PREDICATE_BASE);
+                return;
+            case "rml:entity_team":
+                fields(input, source, merge(PREDICATE_BASE, "team"));
+                RuleJson.string(required(input, source, "team"), source, "team");
+                return;
+            case "rml:entity_riding":
+                fields(input, source, merge(PREDICATE_BASE, "vehicle"));
+                if (input.has("vehicle")) RuleJson.id(input.get("vehicle"), source, "vehicle");
                 return;
             case "rml:entity_properties":
                 fields(input, source, merge(PREDICATE_BASE, "entity", "predicate", "flags"));

@@ -106,6 +106,7 @@ public final class DataRules {
         registerEffectDecoder(manager, "rml:sequence");
         registerEffectDecoder(manager, "rml:conditional");
         registerEffectDecoder(manager, "rml:weighted");
+        registerEffectDecoder(manager, "rml:noop");
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "test"), Test.class,
                 json -> predicate(json)));
         manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("rml", "modifier"), Modifier.class,

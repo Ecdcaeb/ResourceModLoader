@@ -110,6 +110,10 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:location_check`：按 `offset` 检查方块、光照区间、生物群系、`fluid`（`water` 或 `lava`）以及 `position` 的 `x`/`y`/`z` 区间。
 - `rml:enchantment_level`（数值）返回工具上的实际附魔等级，可参与算术、比较和其他数值节点。
 - `rml:enchantments`：`enchantments` 映射要求工具上每个附魔等级都落在对应区间，未附魔按 `0` 处理。
+- `rml:held_item`：按 `hand`（`mainhand` 或 `offhand`）用物品匹配器检查上下文实体手持物。
+- `rml:entity_team`：检查实体所属计分板队伍名称。
+- `rml:entity_riding`：检查实体是否骑乘；`vehicle` 可限定载具类型。
+- `rml:always` / `rml:never`：常量条件，分别恒真与恒假，便于生成内容或占位。
 - `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`、`rml:item_repair_cost`、`rml:item_max_stack_size`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、耐久、修复成本与最大堆叠；缺失世界或实体时可用 `fallback`。
 - `rml:player_food`、`rml:player_saturation`、`rml:player_xp_level`、`rml:player_xp_progress`：读取玩家饥饿、饱和度与经验；非玩家实体或缺失实体时用 `fallback`。
 
@@ -123,6 +127,8 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:set_data`：按数值提供者设置物品 meta（`data`），超出 `0..32767` 会报错。
 - `rml:set_repair_cost`：按数值提供者写入 `RepairCost`，影响铁砧消耗。
 - `rml:set_unbreakable`：写入或清除 `Unbreakable`；省略 `value` 时为 `true`。
+- `rml:identity`：原样返回物品，可带 `conditions`，用于占位或权重分支。
+- `rml:noop`：不执行任何效果，用于效果树占位。
 
 ### 注册阶段与原生消费
 

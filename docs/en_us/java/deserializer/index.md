@@ -74,6 +74,10 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:location_check`: checks the block, light range, biome, `fluid` (`water` or `lava`) and `position` `x`/`y`/`z` ranges at `offset`.
 - `rml:enchantment_level` (number) returns the actual level on the context tool and composes with arithmetic, comparisons and other numeric nodes.
 - `rml:enchantments`: an `enchantments` map requires every listed level to fall inside its range; missing enchantments count as `0`.
+- `rml:held_item`: checks the context entity's held stack with an item matcher, using `hand` (`mainhand` or `offhand`).
+- `rml:entity_team`: checks the entity's scoreboard team name.
+- `rml:entity_riding`: checks whether the entity is riding, optionally restricting the `vehicle` type.
+- `rml:always` / `rml:never`: constant predicates that always pass or fail, useful for generated content and placeholders.
 - `rml:entity_health`, `rml:entity_max_health`, `rml:entity_absorption`, `rml:dimension`, `rml:block_hardness`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability`, `rml:item_max_damage`, `rml:item_repair_cost` and `rml:item_max_stack_size`: read context entity health/max health/absorption, dimension, block hardness and light, tool count, metadata, durability, repair cost and max stack size; `fallback` covers a missing world or entity.
 - `rml:player_food`, `rml:player_saturation`, `rml:player_xp_level` and `rml:player_xp_progress`: read player food, saturation and experience; a non-player or missing entity uses `fallback`.
 
@@ -87,6 +91,8 @@ These item modifiers fill missing 1.12 container and name operations:
 - `rml:set_data`: sets the item metadata (`data`) from a numeric provider; values outside `0..32767` fail.
 - `rml:set_repair_cost`: writes `RepairCost` from a numeric provider, affecting anvil cost.
 - `rml:set_unbreakable`: writes or clears `Unbreakable`; omitting `value` means `true`.
+- `rml:identity`: returns the stack unchanged, optionally gated by `conditions`, for placeholders or weighted branches.
+- `rml:noop`: performs no effect, for effect-tree placeholders.
 
 ### Registration phases and native consumption
 

@@ -385,6 +385,19 @@ public final class DataCompositionContractTest {
                 json("{\"type\":\"rml:location_check\",\"position\":{\"x\":{\"min\":0},\"y\":{\"min\":0},\"z\":{\"min\":0}}}"));
         check(!position.test(context), "Position checks require a server world");
         reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"position\":{\"w\":1}}")));
+        DataRules.Test team = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_team\",\"team\":\"red\"}"));
+        check(!team.test(context), "Team checks require an actual entity");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_team\"}")));
+        DataRules.Test riding = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_riding\",\"vehicle\":\"minecraft:boat\"}"));
+        check(!riding.test(context), "Riding checks require an actual entity");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:entity_riding\",\"vehicle\":[]}")));
+        DataRules.Test always = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:always\"}"));
+        DataRules.Test never = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:never\"}"));
+        check(always.test(context) && !never.test(context), "Constant predicates must decode to fixed results");
+        ItemStack untouched = new ItemStack(Items.APPLE);
+        DataRules.Modifier identity = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:identity\"}"));
+        check(identity.apply(untouched, context) == untouched, "Identity modifiers must return the same stack");
+        manager.decode(DataRules.Effect.class, json("{\"type\":\"rml:noop\"}")).apply(context, null);
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

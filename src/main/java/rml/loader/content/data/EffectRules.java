@@ -20,6 +20,8 @@ final class EffectRules {
         String type = DataRules.string(object, "type", "");
         RuleFields.effect(type, object);
         switch (type) {
+            case "rml:noop":
+                return (context, target) -> { };
             case "rml:sequence": {
                 JsonArray definitions = DataRules.required(object, "effects").getAsJsonArray();
                 DataRules.Effect[] sequence = new DataRules.Effect[definitions.size()];

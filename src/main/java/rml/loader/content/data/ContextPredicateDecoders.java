@@ -33,7 +33,7 @@ final class ContextPredicateDecoders {
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
                 "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
-                "enchantment_level", "enchantments", "held_item", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
+                "enchantment_level", "enchantments", "held_item", "entity_team", "entity_riding", "always", "never", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -238,6 +238,31 @@ final class ContextPredicateDecoders {
                     if (!(context.getEntity() instanceof net.minecraft.entity.EntityLivingBase)) return false;
                     net.minecraft.entity.EntityLivingBase living = (net.minecraft.entity.EntityLivingBase) context.getEntity();
                     return matcher.test("offhand".equals(hand) ? living.getHeldItemOffhand() : living.getHeldItemMainhand(), context);
+                };
+            }
+            case "always":
+                fields(object);
+                return context -> true;
+            case "never":
+                fields(object);
+                return context -> false;
+            case "entity_team": {
+                fields(object, "team");
+                final String team = manager.decode(String.class, required(object, "team"));
+                return context -> {
+                    Entity entity = context.getEntity();
+                    return entity != null && entity.getTeam() != null && team.equals(entity.getTeam().getName());
+                };
+            }
+            case "entity_riding": {
+                fields(object, "vehicle");
+                final ResourceLocation vehicle = object.has("vehicle")
+                        ? manager.decode(ResourceLocation.class, required(object, "vehicle")) : null;
+                return context -> {
+                    Entity entity = context.getEntity();
+                    Entity riding = entity == null ? null : entity.getRidingEntity();
+                    if (riding == null) return false;
+                    return vehicle == null || vehicle.equals(net.minecraft.entity.EntityList.getKey(riding));
                 };
             }
             case "entity_properties": {

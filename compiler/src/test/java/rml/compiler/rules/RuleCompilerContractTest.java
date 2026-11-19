@@ -116,6 +116,10 @@ public final class RuleCompilerContractTest {
             pack.json("item_modifier/conditional", "{\"function\":\"rml:conditional\",\"condition\":{\"condition\":\"rml:level\",\"min\":0},\"on_true\":{\"function\":\"rml:set_repair_cost\",\"cost\":2}}");
             pack.json("predicate/composed", "{\"condition\":\"rml:all_of\",\"terms\":[{\"condition\":\"rml:level\",\"min\":0},{\"condition\":\"rml:entity_on_fire\"}]}");
             pack.json("predicate/tag", "{\"condition\":\"rml:tag\",\"registry\":\"block\",\"tag\":\"demo:base\",\"value\":\"minecraft:stone\"}");
+            pack.json("predicate/team", "{\"condition\":\"rml:entity_team\",\"team\":\"red\"}");
+            pack.json("predicate/riding", "{\"condition\":\"rml:entity_riding\",\"vehicle\":\"minecraft:boat\"}");
+            pack.json("item_modifier/identity", "{\"function\":\"rml:identity\"}");
+            pack.json("predicate/always", "{\"condition\":\"rml:always\"}");
             pack.compile();
         }
         failure("item_modifier/a", "{\"function\":\"rml:set_repair_cost\"}", "invalid_rule");
@@ -126,6 +130,10 @@ public final class RuleCompilerContractTest {
         failure("item_modifier/a", "{\"function\":\"rml:copy_nbt\",\"source\":\"entity\",\"path\":\"a\",\"target\":\"b\",\"operation\":\"bad\"}", "invalid_rule");
         failure("predicate/a", "{\"condition\":\"rml:all_of\",\"terms\":1}", "invalid_rule");
         failure("predicate/a", "{\"condition\":\"rml:dimension\",\"value\":\"overworld\"}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:entity_team\"}", "invalid_rule");
+        failure("predicate/a", "{\"condition\":\"rml:entity_riding\",\"vehicle\":\"bad id\"}", "invalid_identifier");
+        failure("item_modifier/a", "{\"function\":\"rml:identity\",\"extra\":1}", "unsupported_field");
+        failure("predicate/a", "{\"condition\":\"rml:always\",\"team\":\"red\"}", "unsupported_field");
     }
 
     private static void nativeFunctionSchemas() throws Exception {

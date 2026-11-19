@@ -75,6 +75,7 @@ final class RuleFields {
 
     static void effect(String type, JsonObject object) {
         switch (type) {
+            case "rml:noop": only(object, "type"); return;
             case "rml:run_function": only(object, "type", "function"); return;
             case "rml:damage": case "rml:heal": only(object, "type", "amount"); return;
             case "rml:sequence": only(object, "type", "effects"); return;
