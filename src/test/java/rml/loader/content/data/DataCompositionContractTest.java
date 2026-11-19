@@ -341,6 +341,10 @@ public final class DataCompositionContractTest {
         DataRules.Test fluid = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"water\"}"));
         check(!fluid.test(context), "Fluid checks require a server world");
         reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"oil\"}")));
+        DataRules.Test position = manager.decode(DataRules.Test.class,
+                json("{\"type\":\"rml:location_check\",\"position\":{\"x\":{\"min\":0},\"y\":{\"min\":0},\"z\":{\"min\":0}}}"));
+        check(!position.test(context), "Position checks require a server world");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"position\":{\"w\":1}}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

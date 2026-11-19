@@ -107,7 +107,7 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:entity_properties`：`entity` 选择 `this`、`killer`、`killer_player`、`attacker` 或 `direct_attacker`；`predicate` 接受裸实体匹配对象或带 `type` 的节点；`flags` 支持 `on_fire`、`sneaking`、`sprinting`、`baby`。
 - `rml:entity_scores`：`entity` 加 `scores` 映射，多个计分目标必须同时落在区间内。
 - `rml:block_state_property`：`block` 与 `properties` 匹配方块状态，可带 `offset`。
-- `rml:location_check`：按 `offset` 检查方块、光照区间、生物群系与 `fluid`（`water` 或 `lava`）。
+- `rml:location_check`：按 `offset` 检查方块、光照区间、生物群系、`fluid`（`water` 或 `lava`）以及 `position` 的 `x`/`y`/`z` 区间。
 - `rml:enchantment_level`（数值）返回工具上的实际附魔等级，可参与算术、比较和其他数值节点。
 - `rml:enchantments`：`enchantments` 映射要求工具上每个附魔等级都落在对应区间，未附魔按 `0` 处理。
 - `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、剩余耐久与最大耐久；缺失世界或实体时可用 `fallback`。

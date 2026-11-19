@@ -189,18 +189,31 @@ final class ContextPredicateDecoders {
                 };
             }
             case "location_check": {
-                fields(object, "offset", "block", "light", "biome", "fluid");
+                fields(object, "offset", "block", "light", "biome", "fluid", "position");
                 NativeTypeDecoders.BlockMatcher matcher = object.has("block")
                         ? manager.decode(NativeTypeDecoders.BlockMatcher.class, blockMatcherPayload(required(object, "block"), null)) : null;
                 DoubleRange light = object.has("light") ? manager.decode(DoubleRange.class, required(object, "light")) : null;
                 String biome = object.has("biome") ? manager.decode(String.class, required(object, "biome")) : null;
                 String fluid = object.has("fluid") ? manager.decode(String.class, required(object, "fluid")) : null;
                 if (fluid != null && !("water".equals(fluid) || "lava".equals(fluid))) throw error(object, "Unknown fluid " + fluid);
+                final DoubleRange x, y, z;
+                if (object.has("position")) {
+                    JsonObject position = object(required(object, "position"));
+                    fields(position, "x", "y", "z");
+                    x = position.has("x") ? manager.decode(DoubleRange.class, position.get("x")) : null;
+                    y = position.has("y") ? manager.decode(DoubleRange.class, position.get("y")) : null;
+                    z = position.has("z") ? manager.decode(DoubleRange.class, position.get("z")) : null;
+                } else {
+                    x = null; y = null; z = null;
+                }
                 BlockPos offset = offset(manager, object);
                 return context -> {
                     if (context.getWorld() == null || context.getOrigin() == null) return false;
                     BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
                     if (!context.getWorld().isBlockLoaded(position)) return false;
+                    if (x != null && !x.test(position.getX())) return false;
+                    if (y != null && !y.test(position.getY())) return false;
+                    if (z != null && !z.test(position.getZ())) return false;
                     if (matcher != null && !matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position))) return false;
                     if (light != null && !light.test(context.getWorld().getLight(position))) return false;
                     if (fluid != null) {
