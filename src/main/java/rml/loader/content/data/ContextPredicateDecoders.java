@@ -33,7 +33,7 @@ final class ContextPredicateDecoders {
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
                 "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
-                "enchantment_level", "enchantments", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
+                "enchantment_level", "enchantments", "held_item", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -205,6 +205,17 @@ final class ContextPredicateDecoders {
                     return true;
                 };
             }
+            case "held_item": {
+                fields(object, "predicate", "hand");
+                NativeTypeDecoders.ItemMatcher matcher = manager.decode(NativeTypeDecoders.ItemMatcher.class, itemMatcherPayload(required(object, "predicate")));
+                String hand = object.has("hand") ? manager.decode(String.class, object.get("hand")) : "mainhand";
+                if (!("mainhand".equals(hand) || "offhand".equals(hand))) throw error(object, "Unknown hand " + hand);
+                return context -> {
+                    if (!(context.getEntity() instanceof net.minecraft.entity.EntityLivingBase)) return false;
+                    net.minecraft.entity.EntityLivingBase living = (net.minecraft.entity.EntityLivingBase) context.getEntity();
+                    return matcher.test("offhand".equals(hand) ? living.getHeldItemOffhand() : living.getHeldItemMainhand(), context);
+                };
+            }
             case "entity_properties": {
                 fields(object, "entity", "predicate", "flags");
                 String target = object.has("entity") ? manager.decode(String.class, object.get("entity")) : "this";
@@ -264,10 +275,8 @@ final class ContextPredicateDecoders {
                 }
                 if (ranges.isEmpty()) throw error(object, "Enchantments predicate requires at least one entry");
                 return context -> {
-                    Map<Enchantment, Integer> actual = EnchantmentHelper.getEnchantments(context.getTool());
                     for (Map.Entry<Enchantment, DoubleRange> entry : ranges.entrySet()) {
-                        int level = actual.getOrDefault(entry.getKey(), 0);
-                        if (!entry.getValue().test(level)) return false;
+                        if (!entry.getValue().test(EnchantmentHelper.getEnchantmentLevel(entry.getKey(), context.getTool()))) return false;
                     }
                     return true;
                 };
@@ -286,6 +295,18 @@ final class ContextPredicateDecoders {
 
     private static BlockPos offset(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
         return object.has("offset") ? manager.decode(BlockPos.class, object.get("offset")) : BlockPos.ORIGIN;
+    }
+
+    private static JsonElement itemMatcherPayload(JsonElement value) {
+        if (value != null && value.isJsonObject() && !value.getAsJsonObject().has("type")) {
+            JsonObject wrapped = new JsonObject();
+            wrapped.addProperty("type", "rml:item_match");
+            for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                wrapped.add(entry.getKey(), entry.getValue());
+            }
+            return wrapped;
+        }
+        return value;
     }
 
     private static JsonElement blockMatcherPayload(JsonElement block, JsonElement properties) {

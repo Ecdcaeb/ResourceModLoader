@@ -302,6 +302,24 @@ public final class DataCompositionContractTest {
                 json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));
         check(equipped != null, "Equipment matchers must decode");
         reject(() -> manager.decode(NativeTypeDecoders.EntityMatcher.class, json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"absent\":{}}}")));
+
+        ItemStack enchantedSword = new ItemStack(Items.DIAMOND_SWORD);
+        enchantedSword.addEnchantment(Enchantments.SHARPNESS, 5);
+        NativeTypeDecoders.ItemMatcher enchantedItem = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:diamond_sword\"],\"enchantments\":{\"minecraft:sharpness\":{\"min\":5}}}"));
+        check(enchantedItem.test(enchantedSword, context) && !enchantedItem.test(new ItemStack(Items.DIAMOND_SWORD), context),
+                "Item matchers must read listed enchantment levels");
+        DataRules.Test held = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:held_item\",\"predicate\":{\"items\":[\"minecraft:diamond_sword\"]}}"));
+        check(!held.test(context), "Held item checks require a living entity");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:held_item\",\"predicate\":{},\"hand\":\"absent\"}")));
+
+        ItemStack durable = new ItemStack(Items.DIAMOND_PICKAXE);
+        durable.setItemDamage(10);
+        DataContext durableContext = context.withTool(durable);
+        DataRules.NumberValue durability = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_durability\"}"));
+        DataRules.NumberValue maxDamage = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_damage\"}"));
+        check(maxDamage.evaluate(durableContext) == durable.getMaxDamage() && durability.evaluate(durableContext) == durable.getMaxDamage() - 10,
+                "Durability readers must match the actual tool");
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

@@ -8,6 +8,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
@@ -61,9 +63,27 @@ final class MatcherDecoders {
         IntRange count = object != null && object.has("count") ? manager.decode(IntRange.class, object.get("count")) : null;
         IntRange damage = object != null && object.has("damage") ? manager.decode(IntRange.class, object.get("damage")) : null;
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        final Map<Enchantment, DoubleRange> enchantments = new java.util.LinkedHashMap<>();
+        if (object != null && object.has("enchantments")) {
+            JsonObject entries = NativeTypeDecoders.object(object.get("enchantments"));
+            for (Map.Entry<String, JsonElement> entry : entries.entrySet()) {
+                ResourceLocation id = manager.decode(ResourceLocation.class, new com.google.gson.JsonPrimitive(entry.getKey()));
+                Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
+                if (enchantment == null) throw NativeTypeDecoders.error(value, "Unknown enchantment " + id);
+                enchantments.put(enchantment, manager.decode(DoubleRange.class, entry.getValue()));
+            }
+        }
         return (stack, context) -> !stack.isEmpty() && names.test(stack.getItem().getRegistryName())
                 && (count == null || count.test(stack.getCount())) && (damage == null || damage.test(stack.getItemDamage()))
-                && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true));
+                && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true))
+                && enchantmentsMatch(enchantments, stack);
+    }
+
+    private static boolean enchantmentsMatch(Map<Enchantment, DoubleRange> expected, ItemStack stack) {
+        for (Map.Entry<Enchantment, DoubleRange> entry : expected.entrySet()) {
+            if (!entry.getValue().test(EnchantmentHelper.getEnchantmentLevel(entry.getKey(), stack))) return false;
+        }
+        return true;
     }
 
     private static NativeTypeDecoders.BlockMatcher blockMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
