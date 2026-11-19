@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "enchantment_level"}) {
+                "enchantment_level", "entity_health", "block_light", "item_count", "item_damage"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
         }
@@ -148,6 +148,26 @@ final class ContextNumberDecoders {
                     return finite(((NBTPrimitive) value).getDouble());
                 };
             }
+            case "entity_health": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                return context -> context.getEntity() instanceof net.minecraft.entity.EntityLivingBase
+                        ? ((net.minecraft.entity.EntityLivingBase) context.getEntity()).getHealth() : fallback;
+            }
+            case "block_light": {
+                fields(object, "fallback", "offset");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                final net.minecraft.util.math.BlockPos offset = object.has("offset")
+                        ? manager.decode(net.minecraft.util.math.BlockPos.class, object.get("offset")) : net.minecraft.util.math.BlockPos.ORIGIN;
+                return context -> context.getWorld() != null && context.getOrigin() != null
+                        ? context.getWorld().getLight(context.getOrigin().add(offset)) : fallback;
+            }
+            case "item_count":
+                fields(object);
+                return context -> context.getTool().getCount();
+            case "item_damage":
+                fields(object);
+                return context -> context.getTool().getItemDamage();
             case "enchantment_level": {
                 fields(object, "enchantment");
                 ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));

@@ -74,6 +74,7 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:location_check`: checks the block, light range and biome at `offset`.
 - `rml:enchantment_level` (number) returns the actual level on the context tool and composes with arithmetic, comparisons and other numeric nodes.
 - `rml:enchantments`: an `enchantments` map requires every listed level to fall inside its range; missing enchantments count as `0`.
+- `rml:entity_health`, `rml:block_light`, `rml:item_count` and `rml:item_damage`: read the context entity health, block light, tool count and tool metadata; `fallback` covers a missing world or entity.
 
 These item modifiers fill missing 1.12 container and name operations:
 
@@ -82,6 +83,7 @@ These item modifiers fill missing 1.12 container and name operations:
 - `rml:set_contents`: writes an `items` array into the block entity `Items`, with an optional `block_entity` id.
 - `rml:set_loot_table`: writes `name` and an optional `seed` into `BlockEntityTag`.
 - `rml:set_attributes`: writes a `modifiers` array into `AttributeModifiers`; each entry has `attribute`, `name`, `amount`, `operation` (`addition`, `multiply_base`, `multiply_total`), optional `slot` and `uuid`; a missing UUID is derived from attribute, name and slot.
+- `rml:set_data`: sets the item metadata (`data`) from a numeric provider; values outside `0..32767` fail.
 
 ### Registration phases and native consumption
 

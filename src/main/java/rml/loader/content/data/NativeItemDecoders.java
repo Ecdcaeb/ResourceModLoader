@@ -240,6 +240,20 @@ final class NativeItemDecoders {
                     return copy;
                 };
             }
+            case "set_data": {
+                fieldsWithConditions(object, "data");
+                final DataRules.NumberValue data = manager.decode(DataRules.NumberValue.class, required(object, "data"));
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    double value = data.evaluate(context);
+                    if (!Double.isFinite(value) || value < 0 || value > Short.MAX_VALUE) {
+                        throw new IllegalArgumentException("Item metadata must be within 0.." + Short.MAX_VALUE);
+                    }
+                    ItemStack copy = stack.copy();
+                    copy.setItemDamage((int) Math.floor(value));
+                    return copy;
+                };
+            }
             default:
                 return null;
         }

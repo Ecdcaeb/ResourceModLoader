@@ -37,7 +37,7 @@ final class ContextModifierDecoders {
                 "copy_name", "fill_player_head", "set_contents", "set_loot_table"}) {
             entry(manager, "rml", name);
         }
-        for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant", "set_attributes"}) {
+        for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant", "set_attributes", "set_data"}) {
             entry(manager, "minecraft", name);
             entry(manager, "rml", name);
         }

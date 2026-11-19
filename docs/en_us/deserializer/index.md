@@ -72,7 +72,7 @@ These types are registered in the same `DeserializerManager`, so they work in fi
 | `NBTBase` | `rml:nbt`; nested compounds, homogeneous lists and explicit byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array constructors |
 | `ItemMatcher` | `rml:item_match`; item ids plus `items` / `count` / `damage` / `nbt` |
 | `BlockMatcher` | `rml:block_match`; block ids plus `blocks` / `properties` / block entity `nbt` |
-| `EntityMatcher` | `rml:entity_match`; entity ids plus `entity_types` / `health` / `alive` / `on_fire` / `nbt` |
+| `EntityMatcher` | `rml:entity_match`; entity ids plus `entity_types` / `health` / `alive` / `on_fire` / `nbt` / `equipment` (`mainhand`, `offhand`, `head`, `chest`, `legs`, `feet`) |
 
 Ranges and weighted values live in `rml.deserializer.value`; matcher interfaces live in `NativeTypeDecoders`. All three matchers compose recursively through `rml:all_of`, `rml:any_of` and `rml:not`; `#namespace:tag` entries in id lists query the active tags of the matching registry.
 

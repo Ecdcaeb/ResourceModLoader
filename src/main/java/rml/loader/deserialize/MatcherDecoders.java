@@ -94,6 +94,9 @@ final class MatcherDecoders {
         return property.getName(state.getValue(property));
     }
 
+    private static final java.util.Set<String> EQUIPMENT_SLOTS = new java.util.HashSet<>(java.util.Arrays.asList(
+            "mainhand", "offhand", "head", "chest", "legs", "feet"));
+
     private static NativeTypeDecoders.EntityMatcher entityMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
         JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
         Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
@@ -101,15 +104,54 @@ final class MatcherDecoders {
         DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
         Boolean alive = object != null && object.has("alive") ? manager.decode(Boolean.class, object.get("alive")) : null;
         Boolean onFire = object != null && object.has("on_fire") ? manager.decode(Boolean.class, object.get("on_fire")) : null;
+        final Map<String, NativeTypeDecoders.ItemMatcher> equipment = new java.util.LinkedHashMap<>();
+        if (object != null && object.has("equipment")) {
+            JsonObject slots = NativeTypeDecoders.object(object.get("equipment"));
+            for (Map.Entry<String, JsonElement> entry : slots.entrySet()) {
+                if (!EQUIPMENT_SLOTS.contains(entry.getKey())) throw NativeTypeDecoders.error(value, "Unknown equipment slot " + entry.getKey());
+                equipment.put(entry.getKey(), manager.decode(NativeTypeDecoders.ItemMatcher.class, itemMatcherPayload(entry.getValue())));
+            }
+        }
         return (entity, context) -> {
             ResourceLocation key = entity instanceof EntityPlayer ? PLAYER : EntityList.getKey(entity);
             if (!names.test(key) || alive != null && entity.isEntityAlive() != alive || onFire != null && entity.isBurning() != onFire) return false;
             if (health != null && (!(entity instanceof EntityLivingBase) || !health.test(((EntityLivingBase) entity).getHealth()))) return false;
+            if (!equipment.isEmpty()) {
+                if (!(entity instanceof EntityLivingBase)) return false;
+                EntityLivingBase living = (EntityLivingBase) entity;
+                for (Map.Entry<String, NativeTypeDecoders.ItemMatcher> entry : equipment.entrySet()) {
+                    if (!entry.getValue().test(equipmentStack(living, entry.getKey()), context)) return false;
+                }
+            }
             if (nbt == null) return true;
             NBTTagCompound actual = new NBTTagCompound();
             entity.writeToNBT(actual);
             return NBTUtil.areNBTEquals(nbt, actual, true);
         };
+    }
+
+    private static ItemStack equipmentStack(EntityLivingBase entity, String slot) {
+        switch (slot) {
+            case "mainhand": return entity.getHeldItemMainhand();
+            case "offhand": return entity.getHeldItemOffhand();
+            case "head": return entity.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.HEAD);
+            case "chest": return entity.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.CHEST);
+            case "legs": return entity.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.LEGS);
+            case "feet": return entity.getItemStackFromSlot(net.minecraft.inventory.EntityEquipmentSlot.FEET);
+            default: throw new IllegalArgumentException("Unknown equipment slot " + slot);
+        }
+    }
+
+    private static JsonElement itemMatcherPayload(JsonElement value) {
+        if (value != null && value.isJsonObject() && !value.getAsJsonObject().has("type")) {
+            JsonObject wrapped = new JsonObject();
+            wrapped.addProperty("type", "rml:item_match");
+            for (Map.Entry<String, JsonElement> entry : value.getAsJsonObject().entrySet()) {
+                wrapped.add(entry.getKey(), entry.getValue());
+            }
+            return wrapped;
+        }
+        return value;
     }
 
     private static NBTTagCompound compoundMatcher(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {

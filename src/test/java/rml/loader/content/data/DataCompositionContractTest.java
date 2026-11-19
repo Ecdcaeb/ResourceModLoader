@@ -285,6 +285,23 @@ public final class DataCompositionContractTest {
                 "Attribute modifiers must keep their name, amount, operation, slot and UUID");
         reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"absent\"}]}")));
         reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"addition\",\"slot\":\"absent\"}]}")));
+
+        ItemStack counted = new ItemStack(Items.DIAMOND_PICKAXE, 2, 5);
+        DataContext countedContext = context.withTool(counted);
+        DataRules.NumberValue itemCount = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_count\"}"));
+        DataRules.NumberValue itemDamage = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_damage\"}"));
+        check(itemCount.evaluate(countedContext) == 2 && itemDamage.evaluate(countedContext) == 5, "Tool count and damage must decode as numbers");
+        DataRules.NumberValue health = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:entity_health\",\"fallback\":7}"));
+        DataRules.NumberValue light = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:block_light\",\"fallback\":4,\"offset\":[0,1,0]}"));
+        check(health.evaluate(context) == 7 && light.evaluate(context) == 4, "Missing entity or world must use the declared fallback");
+
+        DataRules.Modifier metadata = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_data\",\"data\":3}"));
+        check(metadata.apply(new ItemStack(Items.APPLE), context).getItemDamage() == 3, "Metadata modifiers must set the item damage value");
+
+        NativeTypeDecoders.EntityMatcher equipped = manager.decode(NativeTypeDecoders.EntityMatcher.class,
+                json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));
+        check(equipped != null, "Equipment matchers must decode");
+        reject(() -> manager.decode(NativeTypeDecoders.EntityMatcher.class, json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"absent\":{}}}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

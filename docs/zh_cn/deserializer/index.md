@@ -72,7 +72,7 @@
 | `NBTBase` | `rml:nbt`；支持嵌套复合值、同类型列表及显式 byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array 构造器 |
 | `ItemMatcher` | `rml:item_match`；物品 ID、`items` / `count` / `damage` / `nbt` |
 | `BlockMatcher` | `rml:block_match`；方块 ID、`blocks` / `properties` / 方块实体 `nbt` |
-| `EntityMatcher` | `rml:entity_match`；实体 ID、`entity_types` / `health` / `alive` / `on_fire` / `nbt` |
+| `EntityMatcher` | `rml:entity_match`；实体 ID、`entity_types` / `health` / `alive` / `on_fire` / `nbt` / `equipment`（`mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`） |
 
 范围、权重类型位于 `rml.deserializer.value`；匹配器接口位于 `NativeTypeDecoders`。三种匹配器均可递归使用 `rml:all_of`、`rml:any_of` 和 `rml:not`；ID 列表中的 `#namespace:tag` 查询相应注册表的活动标签。
 
