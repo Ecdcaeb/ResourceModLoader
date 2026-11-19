@@ -136,70 +136,12 @@ public final class DataRules {
 
     private void registerModifierDecoder(DeserializerManager manager, String type) {
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation(type), Modifier.class,
-                json -> decodeModifier(manager, json)));
+                json -> ModifierRules.typed(this, manager, json)));
     }
 
     private void registerEffectDecoder(DeserializerManager manager, String type) {
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation(type), Effect.class,
-                json -> effectDirect(json)));
-    }
-
-    private Modifier decodeModifier(DeserializerManager manager, JsonElement definition) throws JsonDeserializeException {
-        JsonObject object = requireObject(definition, "item modifier");
-        String type = string(object, "type", "");
-        if ("rml:reference".equals(type)) return modifierFunction(definition);
-        RuleFields.modifier(type, object);
-        if ("rml:sequence".equals(type)) {
-            JsonArray array = required(object, "functions").getAsJsonArray();
-            final Modifier[] sequence = new Modifier[array.size()];
-            for (int i = 0; i < sequence.length; i++) sequence[i] = manager.decode(Modifier.class, array.get(i));
-            return (stack, context) -> { ItemStack result = stack; for (Modifier entry : sequence) result = entry.apply(result, context); return result; };
-        }
-        final Test[] conditions = object.has("conditions") ? tests(manager, object.get("conditions")) : new Test[0];
-        if ("minecraft:set_count".equals(type) || "rml:set_count".equals(type)) {
-            final NumberValue count = number(manager, required(object, "count"));
-            return (stack, context) -> {
-                if (!matches(conditions, context) || stack.isEmpty()) return stack;
-                ItemStack copy = stack.copy();
-                copy.setCount(stackCount(count.evaluate(context)));
-                return copy;
-            };
-        }
-        if ("minecraft:set_damage".equals(type) || "rml:set_damage".equals(type)) {
-            final NumberValue damage = number(manager, required(object, "damage"));
-            return (stack, context) -> {
-                if (!matches(conditions, context) || stack.isEmpty() || !stack.isItemStackDamageable()) return stack;
-                ItemStack copy = stack.copy();
-                copy.setItemDamage((int) Math.floor((1.0D - Math.max(0.0D, Math.min(1.0D, damage.evaluate(context)))) * copy.getMaxDamage()));
-                return copy;
-            };
-        }
-        if ("minecraft:set_components".equals(type)) return setComponentsModifier(
-                requireObject(required(object, "components"), "components"), conditions);
-        if ("minecraft:set_nbt".equals(type) || "rml:set_nbt".equals(type)) {
-            final NBTTagCompound tag;
-            try { tag = JsonToNBT.getTagFromJson(required(object, "tag").getAsString()); }
-            catch (Exception e) { throw new IllegalArgumentException("Invalid item modifier SNBT", e); }
-            return (stack, context) -> {
-                if (!matches(conditions, context) || stack.isEmpty()) return stack;
-                ItemStack copy = stack.copy();
-                NBTTagCompound merged = copy.hasTagCompound() ? copy.getTagCompound().copy() : new NBTTagCompound();
-                merged.merge(tag);
-                copy.setTagCompound(merged);
-                return copy;
-            };
-        }
-        return modifierFunction(definition);
-    }
-
-    private Test[] tests(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        if (value.isJsonArray()) {
-            JsonArray array = value.getAsJsonArray();
-            Test[] result = new Test[array.size()];
-            for (int i = 0; i < result.length; i++) result[i] = predicate(manager, array.get(i));
-            return result;
-        }
-        return new Test[] { predicate(manager, value) };
+                json -> EffectRules.decode(this, decoders, json)));
     }
 
     public Modifier modifier(DeserializerManager manager, JsonElement definition) throws JsonDeserializeException {
@@ -286,6 +228,12 @@ public final class DataRules {
         return value;
     }
 
+    Modifier namedModifier(ResourceLocation id) {
+        Modifier value = namedModifiers.get(id);
+        if (value == null) throw new IllegalStateException("No active compiled item modifier '" + id + "'");
+        return value;
+    }
+
     public NumberValue number(JsonElement definition) {
         if (decoders != null && definition != null && definition.isJsonObject() && definition.getAsJsonObject().has("type")) {
             try { return number(decoders, definition, false); }
@@ -313,7 +261,7 @@ public final class DataRules {
 
     public Modifier modifier(JsonElement definition) {
         if (definition != null && definition.isJsonObject() && definition.getAsJsonObject().has("type")) {
-            if (decoders == null) return modifierFunction(definition);
+            if (decoders == null) return ModifierRules.direct(this, definition);
             try { return modifier(decoders, definition); }
             catch (JsonDeserializeException e) { throw new IllegalArgumentException("Cannot decode modifier expression", e); }
         }
@@ -322,7 +270,7 @@ public final class DataRules {
         for (int i = 0; i < functions.length; i++) {
             JsonElement function = sequence.get(i);
             functions[i] = decoders != null && function.isJsonObject() && function.getAsJsonObject().has("type")
-                    ? modifier(function) : modifierFunction(function);
+                    ? modifier(function) : ModifierRules.direct(this, function);
         }
         return (stack, context) -> { ItemStack result = stack; for (Modifier function : functions) result = function.apply(result, context); return result; };
     }
@@ -332,49 +280,7 @@ public final class DataRules {
             try { return effect(decoders, definition); }
             catch (JsonDeserializeException e) { throw new IllegalArgumentException("Cannot decode effect expression", e); }
         }
-        return effectDirect(definition);
-    }
-
-    private Effect effectDirect(JsonElement definition) {
-        JsonObject object = requireObject(definition, "effect");
-        String type = string(object, "type", "");
-        RuleFields.effect(type, object);
-        if ("rml:sequence".equals(type)) {
-            JsonArray definitions = required(object, "effects").getAsJsonArray();
-            Effect[] sequence = new Effect[definitions.size()];
-            for (int i = 0; i < sequence.length; i++) sequence[i] = effect(definitions.get(i));
-            return (context, target) -> { for (Effect effect : sequence) effect.apply(context, target); };
-        }
-        if ("rml:conditional".equals(type)) {
-            Test condition = predicate(required(object, "condition"));
-            Effect whenTrue = effect(required(object, "on_true"));
-            Effect whenFalse = object.has("on_false") ? effect(object.get("on_false")) : null;
-            return (context, target) -> {
-                Effect selected = condition.test(context) ? whenTrue : whenFalse;
-                if (selected != null) selected.apply(context, target);
-            };
-        }
-        if ("rml:weighted".equals(type)) {
-            if (decoders == null) throw invalid("Weighted effects require the shared decoder registry");
-            final rml.deserializer.value.WeightedList<Effect> effects;
-            try {
-                effects = decoders.decode(new com.google.gson.reflect.TypeToken<rml.deserializer.value.WeightedList<Effect>>() { }.getType(), required(object, "distribution"));
-            } catch (JsonDeserializeException error) { throw new IllegalArgumentException("Cannot decode weighted effects", error); }
-            return (context, target) -> effects.sample(context.getRandom()).apply(context, target);
-        }
-        if ("rml:run_function".equals(type)) {
-            final ResourceLocation id = resource(object, "function");
-            return (context, target) -> invokeFunction.apply(id, target == null ? context : context.withEntity(target));
-        }
-        if ("rml:damage".equals(type)) {
-            final NumberValue amount = number(required(object, "amount"));
-            return (context, target) -> { if (target != null) target.attackEntityFrom(net.minecraft.util.DamageSource.GENERIC, (float) Math.max(0, amount.evaluate(context))); };
-        }
-        if ("rml:heal".equals(type)) {
-            final NumberValue amount = number(required(object, "amount"));
-            return (context, target) -> { if (target instanceof EntityLivingBase) ((EntityLivingBase) target).heal((float) Math.max(0, amount.evaluate(context))); };
-        }
-        throw invalid("Unsupported effect type '" + type + "'");
+        return EffectRules.decode(this, decoders, definition);
     }
 
     public Set<String> getRuntimeTypes() { return TYPES; }
@@ -427,80 +333,7 @@ public final class DataRules {
 
     public int invoke(ResourceLocation id, DataContext context) { return invokeFunction.apply(id, context); }
 
-    private Modifier modifierFunction(JsonElement value) {
-        JsonObject object = requireObject(value, "item modifier");
-        String type = string(object, "function", string(object, "type", ""));
-        RuleFields.modifier(type, object);
-        final Test[] conditions = object.has("conditions") ? tests(object.get("conditions")) : new Test[0];
-        switch (type) {
-            case "rml:reference": case "reference": {
-                final ResourceLocation id = resource(object, object.has("name") ? "name" : "id");
-                return (stack, context) -> {
-                    if (!matches(conditions, context)) return stack;
-                    Modifier referenced = namedModifiers.get(id);
-                    if (referenced == null) throw new IllegalStateException("No active compiled item modifier '" + id + "'");
-                    return referenced.apply(stack, context);
-                };
-            }
-            case "minecraft:set_count": case "set_count": {
-                final NumberValue count = number(required(object, "count"));
-                return (stack, context) -> { if (!matches(conditions, context) || stack.isEmpty()) return stack; ItemStack copy = stack.copy(); copy.setCount(stackCount(count.evaluate(context))); return copy; };
-            }
-            case "minecraft:set_damage": case "set_damage": {
-                final NumberValue damage = number(required(object, "damage"));
-                return (stack, context) -> { if (!matches(conditions, context) || stack.isEmpty() || !stack.isItemStackDamageable()) return stack; ItemStack copy = stack.copy(); copy.setItemDamage((int) Math.floor((1.0D - Math.max(0.0D, Math.min(1.0D, damage.evaluate(context)))) * copy.getMaxDamage())); return copy; };
-            }
-            case "minecraft:set_nbt": case "set_nbt": {
-                final NBTTagCompound tag;
-                try { tag = JsonToNBT.getTagFromJson(required(object, "tag").getAsString()); }
-                catch (Exception e) { throw new IllegalArgumentException("Invalid item modifier SNBT", e); }
-                return (stack, context) -> {
-                    if (!matches(conditions, context) || stack.isEmpty()) return stack;
-                    ItemStack copy = stack.copy();
-                    NBTTagCompound merged = copy.hasTagCompound() ? copy.getTagCompound().copy() : new NBTTagCompound();
-                    merged.merge(tag);
-                    copy.setTagCompound(merged);
-                    return copy;
-                };
-            }
-            case "minecraft:set_components": {
-                JsonObject componentObject = requireObject(required(object, "components"), "components");
-                return setComponentsModifier(componentObject, conditions);
-            }
-            case "minecraft:set_name": case "minecraft:set_lore": case "minecraft:enchant_randomly": case "minecraft:enchant_with_levels": case "minecraft:furnace_smelt":
-                throw invalid("Modifier '" + type + "' must be lowered to a native function or implemented by its owning loot bridge");
-            default: throw invalid("Unsupported item modifier function '" + type + "'");
-        }
-    }
-
-    private Modifier setComponentsModifier(JsonObject components, Test[] conditions) {
-        if (components.entrySet().isEmpty()) throw invalid("set_components requires at least one component");
-        NBTTagCompound tag = new NBTTagCompound();
-        for (Map.Entry<String, JsonElement> entry : components.entrySet()) {
-            final ResourceLocation component;
-            try { component = new ResourceLocation(entry.getKey()); }
-            catch (RuntimeException e) { throw new IllegalArgumentException("Invalid item component id '" + entry.getKey() + "'", e); }
-            if (!new ResourceLocation("minecraft", "provides_trim_material").equals(component))
-                throw invalid("Unsupported runtime set_components entry '" + component + "'");
-            JsonElement value = entry.getValue();
-            if (value == null || !value.isJsonPrimitive() || !value.getAsJsonPrimitive().isString())
-                throw invalid("provides_trim_material must be a resource location string");
-            final ResourceLocation material;
-            try { material = new ResourceLocation(value.getAsString()); }
-            catch (RuntimeException e) { throw new IllegalArgumentException("Invalid provides_trim_material resource location", e); }
-            tag.setString("rml_trim_material", material.toString());
-        }
-        return (stack, context) -> {
-            if (!matches(conditions, context) || stack.isEmpty()) return stack;
-            ItemStack copy = stack.copy();
-            NBTTagCompound merged = copy.hasTagCompound() ? copy.getTagCompound().copy() : new NBTTagCompound();
-            merged.merge(tag);
-            copy.setTagCompound(merged);
-            return copy;
-        };
-    }
-
-    private Test[] tests(JsonElement value) { if (value.isJsonArray()) { JsonArray a = value.getAsJsonArray(); Test[] r = new Test[a.size()]; for (int i=0;i<r.length;i++) r[i]=predicate(a.get(i)); return r; } return new Test[]{predicate(value)}; }
+    private static void only(JsonObject object, String... allowed) { RuleFields.only(object, allowed); }
     static double checkedNumber(double value, boolean integer) {
         if (Double.isNaN(value) || Double.isInfinite(value)) throw invalid("Non-finite numeric provider value");
         if (integer && (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE || value != Math.rint(value)))
@@ -522,16 +355,6 @@ public final class DataRules {
         return min + value;
     }
 
-    private static int stackCount(double value) {
-        if (Double.isNaN(value) || value <= 0) return 0;
-        if (value >= Integer.MAX_VALUE) return Integer.MAX_VALUE;
-        return (int) Math.floor(value);
-    }
-
-    private static void only(JsonObject object, String... allowed) { RuleFields.only(object, allowed); }
-
-    private static boolean matches(Test[] tests, DataContext context) { for (Test test : tests) if (!test.test(context)) return false; return true; }
-    private static boolean inRange(double value, double min, double max) { return value >= min && value <= max; }
     private static JsonArray singleton(JsonElement value) { JsonArray a = new JsonArray(); a.add(value); return a; }
     static JsonObject requireObject(JsonElement value, String field) { if (value == null || !value.isJsonObject()) throw invalid("Expected object for " + field); return value.getAsJsonObject(); }
     static JsonElement required(JsonObject o, String key) { JsonElement e=o.get(key); if(e==null || e.isJsonNull()) throw invalid("Missing required field '"+key+"'"); return e; }
@@ -549,8 +372,4 @@ public final class DataRules {
     static boolean bool(JsonObject o, String key, boolean fallback) { return o.has(key) ? o.get(key).getAsBoolean() : fallback; }
     static ResourceLocation resource(JsonObject o, String key) { try { return new ResourceLocation(required(o,key).getAsString()); } catch(RuntimeException e) { throw new IllegalArgumentException("Invalid resource location in '"+key+"'", e); } }
     static IllegalArgumentException invalid(String message) { return new IllegalArgumentException(message); }
-
-    private static final class EntityListCompat {
-        static ResourceLocation id(Entity entity) { return EntityList.getKey(entity); }
-    }
 }
