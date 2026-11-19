@@ -272,6 +272,12 @@ public final class DataRules {
         return predicateDirect(definition);
     }
 
+    NumberValue activeNumber(boolean integer, ResourceLocation id) {
+        NumberValue value = (integer ? integers : floats).get(id);
+        if (value == null) throw new IllegalStateException("No active numeric provider '" + id + "'");
+        return value;
+    }
+
     public NumberValue number(JsonElement definition) {
         if (decoders != null && definition != null && definition.isJsonObject() && definition.getAsJsonObject().has("type")) {
             try { return number(decoders, definition, false); }
@@ -281,70 +287,7 @@ public final class DataRules {
     }
 
     private NumberValue number(JsonElement definition, boolean integer) {
-        if (definition == null || definition.isJsonNull()) throw invalid("Missing numeric definition");
-        if (definition.isJsonPrimitive() && definition.getAsJsonPrimitive().isNumber()) {
-            final double constant = checkedNumber(definition.getAsDouble(), integer);
-            return context -> constant;
-        }
-        JsonObject object = requireObject(definition, "numeric definition");
-        String type = string(object, "type", "constant");
-        switch (type) {
-            case "constant": case "minecraft:constant": {
-                only(object, "type", "value");
-                final double value = checkedNumber(requiredNumber(object, "value"), integer);
-                return context -> value;
-            }
-            case "uniform": case "minecraft:uniform": {
-                only(object, "type", "value", "min", "max");
-                JsonObject bounds = object.has("value") ? requireObject(object.get("value"), "uniform value") : object;
-                if (object.has("value")) only(bounds, "min", "max");
-                final NumberValue min = number(required(bounds, "min"), integer);
-                final NumberValue max = number(required(bounds, "max"), integer);
-                return integer
-                        ? context -> uniformInt(min.evaluate(context), max.evaluate(context), context)
-                        : context -> { double low = min.evaluate(context), high = max.evaluate(context); return low >= high ? low : low + context.getRandom().nextDouble() * (high - low); };
-            }
-            case "binomial": case "minecraft:binomial": {
-                only(object, "type", "n", "p");
-                final int n = integer(object, "n", 0, 1000000);
-                final double p = requiredNumber(object, "p");
-                if (p < 0 || p > 1) throw invalid("binomial p must be within 0..1");
-                return context -> { int result = 0; for (int i = 0; i < n; i++) if (context.getRandom().nextDouble() < p) result++; return result; };
-            }
-            case "level": case "minecraft:level": case "rml:context_level":
-                only(object, "type");
-                return DataContext::getLevel;
-            case "context_int_provider": case "minecraft:context_int_provider":
-            case "context_float_provider": case "minecraft:context_float_provider": case "rml:reference": {
-                only(object, "type", "id");
-                final ResourceLocation id = resource(object, "id");
-                final boolean isInt = "context_int_provider".equals(type) || "minecraft:context_int_provider".equals(type);
-                return context -> {
-                    NumberValue value = (isInt ? integers : floats).get(id);
-                    if (value == null) throw new IllegalStateException("No active numeric provider '" + id + "'");
-                    return value.evaluate(context);
-                };
-            }
-            case "score": case "minecraft:score": {
-                only(object, "type", "score", "target");
-                final String objectiveName = string(object, "score", "");
-                final String targetName = string(object, "target", "this");
-                if (objectiveName.isEmpty()) throw invalid("Score provider requires a score objective name");
-                final LootContext.EntityTarget target;
-                try { target = LootContext.EntityTarget.fromString(targetName); }
-                catch (RuntimeException e) { throw new IllegalArgumentException("Unsupported score target '" + targetName + "'", e); }
-                return context -> {
-                    Entity entity = context.getLootContext() == null ? context.getEntity() : context.getLootContext().getEntity(target);
-                    WorldServer world = context.getWorld() != null ? context.getWorld() : context.getLootContext() == null ? null : context.getLootContext().getWorld();
-                    if (entity == null || world == null) return 0;
-                    net.minecraft.scoreboard.Scoreboard scoreboard = world.getScoreboard();
-                    net.minecraft.scoreboard.ScoreObjective objective = scoreboard.getObjective(objectiveName);
-                    if (objective == null || !scoreboard.entityHasObjective(entity.getName(), objective)) return 0;
-                    return scoreboard.getOrCreateScore(entity.getName(), objective).getScorePoints();
-                };
-            }
-            default: throw invalid("Unsupported numeric provider type '" + type + "'");
-        }
+        return LegacyNumbers.decode(this, definition, integer);
     }
 
 
@@ -655,14 +598,14 @@ public final class DataRules {
     }
 
     private Test[] tests(JsonElement value) { if (value.isJsonArray()) { JsonArray a = value.getAsJsonArray(); Test[] r = new Test[a.size()]; for (int i=0;i<r.length;i++) r[i]=predicate(a.get(i)); return r; } return new Test[]{predicate(value)}; }
-    private static double checkedNumber(double value, boolean integer) {
+    static double checkedNumber(double value, boolean integer) {
         if (Double.isNaN(value) || Double.isInfinite(value)) throw invalid("Non-finite numeric provider value");
         if (integer && (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE || value != Math.rint(value)))
             throw invalid("Integer provider values must be integral 32-bit values");
         return value;
     }
 
-    private static double uniformInt(double minValue, double maxValue, DataContext context) {
+    static double uniformInt(double minValue, double maxValue, DataContext context) {
         int min = (int) checkedNumber(minValue, true);
         int max = (int) checkedNumber(maxValue, true);
         if (min >= max) return min;
@@ -687,12 +630,12 @@ public final class DataRules {
     private static boolean matches(Test[] tests, DataContext context) { for (Test test : tests) if (!test.test(context)) return false; return true; }
     private static boolean inRange(double value, double min, double max) { return value >= min && value <= max; }
     private static JsonArray singleton(JsonElement value) { JsonArray a = new JsonArray(); a.add(value); return a; }
-    private static JsonObject requireObject(JsonElement value, String field) { if (value == null || !value.isJsonObject()) throw invalid("Expected object for " + field); return value.getAsJsonObject(); }
-    private static JsonElement required(JsonObject o, String key) { JsonElement e=o.get(key); if(e==null || e.isJsonNull()) throw invalid("Missing required field '"+key+"'"); return e; }
+    static JsonObject requireObject(JsonElement value, String field) { if (value == null || !value.isJsonObject()) throw invalid("Expected object for " + field); return value.getAsJsonObject(); }
+    static JsonElement required(JsonObject o, String key) { JsonElement e=o.get(key); if(e==null || e.isJsonNull()) throw invalid("Missing required field '"+key+"'"); return e; }
     private static JsonElement optional(JsonObject o, String key, double fallback) { return o.has(key) ? o.get(key) : new com.google.gson.JsonPrimitive(fallback); }
-    private static String string(JsonObject o, String key, String fallback) { JsonElement e=o.get(key); return e==null ? fallback : e.getAsString(); }
-    private static double requiredNumber(JsonObject o, String key) { double d=required(o,key).getAsDouble(); if(Double.isNaN(d)||Double.isInfinite(d)) throw invalid("Non-finite number in '"+key+"'"); return d; }
-    private static int integer(JsonObject o, String key, int min, int max) {
+    static String string(JsonObject o, String key, String fallback) { JsonElement e=o.get(key); return e==null ? fallback : e.getAsString(); }
+    static double requiredNumber(JsonObject o, String key) { double d=required(o,key).getAsDouble(); if(Double.isNaN(d)||Double.isInfinite(d)) throw invalid("Non-finite number in '"+key+"'"); return d; }
+    static int integer(JsonObject o, String key, int min, int max) {
         JsonElement value = required(o, key);
         if (!value.isJsonPrimitive() || !value.getAsJsonPrimitive().isNumber()) throw invalid("Field '" + key + "' must be an integer");
         double numeric = value.getAsDouble();
@@ -701,8 +644,8 @@ public final class DataRules {
         return (int) numeric;
     }
     private static boolean bool(JsonObject o, String key, boolean fallback) { return o.has(key) ? o.get(key).getAsBoolean() : fallback; }
-    private static ResourceLocation resource(JsonObject o, String key) { try { return new ResourceLocation(required(o,key).getAsString()); } catch(RuntimeException e) { throw new IllegalArgumentException("Invalid resource location in '"+key+"'", e); } }
-    private static IllegalArgumentException invalid(String message) { return new IllegalArgumentException(message); }
+    static ResourceLocation resource(JsonObject o, String key) { try { return new ResourceLocation(required(o,key).getAsString()); } catch(RuntimeException e) { throw new IllegalArgumentException("Invalid resource location in '"+key+"'", e); } }
+    static IllegalArgumentException invalid(String message) { return new IllegalArgumentException(message); }
 
     private static final class EntityListCompat {
         static ResourceLocation id(Entity entity) { return EntityList.getKey(entity); }
