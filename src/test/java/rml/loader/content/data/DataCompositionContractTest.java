@@ -332,6 +332,11 @@ public final class DataCompositionContractTest {
         check(vitals != null, "Entity matchers must decode health and absorption ranges");
         DataRules.NumberValue maxHealth = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:entity_max_health\",\"fallback\":20}"));
         check(maxHealth.evaluate(context) == 20, "Missing entities must use the max-health fallback");
+        DataRules.NumberValue absorption = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:entity_absorption\",\"fallback\":1.5}"));
+        DataRules.NumberValue dimension = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:dimension\",\"fallback\":-1}"));
+        DataRules.NumberValue hardness = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:block_hardness\",\"fallback\":2.5}"));
+        check(absorption.evaluate(context) == 1.5 && dimension.evaluate(context) == -1 && hardness.evaluate(context) == 2.5,
+                "Absorption, dimension and hardness readers must use their fallbacks without a world or entity");
 
         DataRules.Test fluid = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"water\"}"));
         check(!fluid.test(context), "Fluid checks require a server world");
