@@ -33,7 +33,7 @@ final class ContextPredicateDecoders {
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
                 "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
-                "enchantment_level", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
+                "enchantment_level", "enchantments", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -248,6 +248,26 @@ final class ContextPredicateDecoders {
                         ScoreObjective objective = board.getObjective(entry.getKey());
                         if (objective == null || !board.entityHasObjective(name, objective)) return false;
                         if (!entry.getValue().test(board.getOrCreateScore(name, objective).getScorePoints())) return false;
+                    }
+                    return true;
+                };
+            }
+            case "enchantments": {
+                fields(object, "enchantments");
+                JsonObject definitions = object(required(object, "enchantments"));
+                Map<Enchantment, DoubleRange> ranges = new java.util.LinkedHashMap<>();
+                for (Map.Entry<String, JsonElement> entry : definitions.entrySet()) {
+                    ResourceLocation id = manager.decode(ResourceLocation.class, new com.google.gson.JsonPrimitive(entry.getKey()));
+                    Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
+                    if (enchantment == null) throw error(object, "Unknown enchantment " + id);
+                    ranges.put(enchantment, manager.decode(DoubleRange.class, entry.getValue()));
+                }
+                if (ranges.isEmpty()) throw error(object, "Enchantments predicate requires at least one entry");
+                return context -> {
+                    Map<Enchantment, Integer> actual = EnchantmentHelper.getEnchantments(context.getTool());
+                    for (Map.Entry<Enchantment, DoubleRange> entry : ranges.entrySet()) {
+                        int level = actual.getOrDefault(entry.getKey(), 0);
+                        if (!entry.getValue().test(level)) return false;
                     }
                     return true;
                 };

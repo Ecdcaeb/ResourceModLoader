@@ -109,6 +109,7 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:block_state_property`：`block` 与 `properties` 匹配方块状态，可带 `offset`。
 - `rml:location_check`：按 `offset` 检查方块、光照区间与生物群系。
 - `rml:enchantment_level`（数值）返回工具上的实际附魔等级，可参与算术、比较和其他数值节点。
+- `rml:enchantments`：`enchantments` 映射要求工具上每个附魔等级都落在对应区间，未附魔按 `0` 处理。
 
 以下物品修饰器补齐 1.12 缺失的容器与名称操作：
 
@@ -116,6 +117,7 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:fill_player_head`：从 `this` 或 `killer` 写入玩家头颅的 `SkullOwner`。
 - `rml:set_contents`：`items` 数组写入方块实体的 `Items`，可选 `block_entity` 写入方块实体 id。
 - `rml:set_loot_table`：`name` 与可选 `seed` 写入 `BlockEntityTag`。
+- `rml:set_attributes`：`modifiers` 数组写入 `AttributeModifiers`；每项含 `attribute`、`name`、`amount`、`operation`（`addition`、`multiply_base`、`multiply_total`）、可选 `slot` 与 `uuid`，缺省 UUID 由属性、名称与槽位确定。
 
 ### 注册阶段与原生消费
 

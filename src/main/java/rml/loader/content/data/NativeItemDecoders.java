@@ -1,5 +1,6 @@
 package rml.loader.content.data;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentData;
@@ -17,11 +18,15 @@ import net.minecraftforge.fml.common.registry.ForgeRegistries;
 import rml.deserializer.DeserializerManager;
 import rml.deserializer.JsonDeserializeException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static rml.loader.content.data.DecodeSupport.error;
+import static rml.loader.content.data.DecodeSupport.fields;
 import static rml.loader.content.data.DecodeSupport.fieldsWithConditions;
+import static rml.loader.content.data.DecodeSupport.object;
 import static rml.loader.content.data.DecodeSupport.required;
 
 /** Native item operations that 1.12 does not expose through its loot serializers. */
@@ -177,6 +182,61 @@ final class NativeItemDecoders {
                     NBTTagCompound blockEntity = copy.getOrCreateSubCompound("BlockEntityTag");
                     blockEntity.setString("LootTable", table.toString());
                     if (seed != 0L) blockEntity.setLong("LootTableSeed", seed);
+                    return copy;
+                };
+            }
+            case "set_attributes": {
+                fieldsWithConditions(object, "modifiers");
+                JsonElement definitions = required(object, "modifiers");
+                if (!definitions.isJsonArray()) throw error(object, "Attribute modifiers must be an array");
+                List<NBTTagCompound> attributeTags = new ArrayList<>();
+                for (JsonElement element : definitions.getAsJsonArray()) {
+                    JsonObject modifier = object(element);
+                    fields(modifier, "attribute", "name", "amount", "operation", "slot", "uuid");
+                    String attribute = manager.decode(String.class, required(modifier, "attribute"));
+                    if (attribute.isEmpty()) throw error(modifier, "Attribute name must not be empty");
+                    String name = manager.decode(String.class, required(modifier, "name"));
+                    double amount = manager.decode(Double.class, required(modifier, "amount"));
+                    if (!Double.isFinite(amount)) throw error(modifier, "Attribute amount must be finite");
+                    String operation = manager.decode(String.class, required(modifier, "operation"));
+                    final int operationId;
+                    switch (operation) {
+                        case "addition": operationId = 0; break;
+                        case "multiply_base": operationId = 1; break;
+                        case "multiply_total": operationId = 2; break;
+                        default: throw error(modifier, "Unknown attribute operation " + operation);
+                    }
+                    String slot = modifier.has("slot") ? manager.decode(String.class, modifier.get("slot")) : null;
+                    if (slot != null && !("mainhand".equals(slot) || "offhand".equals(slot) || "head".equals(slot)
+                            || "chest".equals(slot) || "legs".equals(slot) || "feet".equals(slot))) {
+                        throw error(modifier, "Unknown attribute slot " + slot);
+                    }
+                    final UUID uuid;
+                    if (modifier.has("uuid")) {
+                        try { uuid = UUID.fromString(manager.decode(String.class, modifier.get("uuid"))); }
+                        catch (IllegalArgumentException failure) { throw error(modifier, "Invalid attribute UUID"); }
+                    } else {
+                        uuid = UUID.nameUUIDFromBytes((attribute + "|" + name + "|" + (slot == null ? "" : slot)).getBytes(StandardCharsets.UTF_8));
+                    }
+                    NBTTagCompound attributeTag = new NBTTagCompound();
+                    attributeTag.setString("AttributeName", attribute);
+                    attributeTag.setString("Name", name);
+                    attributeTag.setDouble("Amount", amount);
+                    attributeTag.setInteger("Operation", operationId);
+                    attributeTag.setLong("UUIDMost", uuid.getMostSignificantBits());
+                    attributeTag.setLong("UUIDLeast", uuid.getLeastSignificantBits());
+                    if (slot != null) attributeTag.setString("Slot", slot);
+                    attributeTags.add(attributeTag);
+                }
+                if (attributeTags.isEmpty()) throw error(object, "set_attributes requires at least one modifier");
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ItemStack copy = stack.copy();
+                    NBTTagCompound tag = copy.hasTagCompound() ? copy.getTagCompound().copy() : new NBTTagCompound();
+                    NBTTagList list = new NBTTagList();
+                    for (NBTTagCompound attribute : attributeTags) list.appendTag(attribute.copy());
+                    tag.setTag("AttributeModifiers", list);
+                    copy.setTagCompound(tag);
                     return copy;
                 };
             }

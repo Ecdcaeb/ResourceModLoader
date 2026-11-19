@@ -13,6 +13,7 @@ import net.minecraft.init.Items;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
@@ -73,6 +74,7 @@ public final class DataCompositionContractTest {
         parityPredicatesAndModifiers(manager, context);
         legacyRuleDecodersStayComposable(tags, context);
         typedModifierDecodersCompose(manager, context);
+        enchantmentAndAttributeCapabilities(manager, context);
         conditionalEffectsShortCircuit(manager, context);
         textChildrenUseSharedManager(manager);
         reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
@@ -259,6 +261,30 @@ public final class DataCompositionContractTest {
                 "Typed trim components must lower to item NBT");
         DataRules.Modifier missing = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:reference\",\"id\":\"contract:absent\"}"));
         check(missing != null, "Named modifier references must stay unresolved until evaluation");
+    }
+
+    private static void enchantmentAndAttributeCapabilities(DeserializerManager manager, DataContext context) throws Exception {
+        ItemStack pickaxe = new ItemStack(Items.DIAMOND_PICKAXE);
+        pickaxe.addEnchantment(Enchantments.FORTUNE, 3);
+        pickaxe.addEnchantment(Enchantments.UNBREAKING, 1);
+        DataContext tool = context.withTool(pickaxe);
+        DataRules.Test enchanted = manager.decode(DataRules.Test.class,
+                json("{\"type\":\"rml:enchantments\",\"enchantments\":{\"minecraft:fortune\":{\"min\":3},\"minecraft:unbreaking\":{\"min\":1}}}"));
+        check(enchanted.test(tool) && !enchanted.test(context), "Enchantment predicates must read every listed level");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:enchantments\",\"enchantments\":{}}")));
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:enchantments\",\"enchantments\":{\"minecraft:absent\":{\"min\":1}}}")));
+
+        DataRules.Modifier attributes = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"addition\",\"slot\":\"mainhand\"}]}"));
+        NBTTagList list = attributes.apply(new ItemStack(Items.APPLE), context).getTagCompound().getTagList("AttributeModifiers", 10);
+        check(list.tagCount() == 1, "Attribute modifiers must be written as a typed list");
+        NBTTagCompound entry = list.getCompoundTagAt(0);
+        check("generic.attackDamage".equals(entry.getString("AttributeName")) && "demo:bonus".equals(entry.getString("Name"))
+                        && entry.getDouble("Amount") == 2 && entry.getInteger("Operation") == 0 && "mainhand".equals(entry.getString("Slot"))
+                        && (entry.getLong("UUIDMost") != 0 || entry.getLong("UUIDLeast") != 0),
+                "Attribute modifiers must keep their name, amount, operation, slot and UUID");
+        reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"absent\"}]}")));
+        reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_attributes\",\"modifiers\":[{\"attribute\":\"generic.attackDamage\",\"name\":\"demo:bonus\",\"amount\":2,\"operation\":\"addition\",\"slot\":\"absent\"}]}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {
