@@ -110,7 +110,7 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:location_check`：按 `offset` 检查方块、光照区间、生物群系、`fluid`（`water` 或 `lava`）以及 `position` 的 `x`/`y`/`z` 区间。
 - `rml:enchantment_level`（数值）返回工具上的实际附魔等级，可参与算术、比较和其他数值节点。
 - `rml:enchantments`：`enchantments` 映射要求工具上每个附魔等级都落在对应区间，未附魔按 `0` 处理。
-- `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、剩余耐久与最大耐久；缺失世界或实体时可用 `fallback`。
+- `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`、`rml:item_repair_cost`、`rml:item_max_stack_size`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、耐久、修复成本与最大堆叠；缺失世界或实体时可用 `fallback`。
 - `rml:held_item`：按 `hand`（`mainhand` 或 `offhand`）用物品匹配器检查上下文实体手持物。
 
 以下物品修饰器补齐 1.12 缺失的容器与名称操作：

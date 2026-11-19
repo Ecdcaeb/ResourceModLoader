@@ -305,6 +305,22 @@ public final class DataCompositionContractTest {
         DataRules.Modifier breakable = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_unbreakable\",\"value\":false}"));
         check(!breakable.apply(new ItemStack(Items.DIAMOND_PICKAXE), context).getTagCompound().getBoolean("Unbreakable"),
                 "Unbreakable modifiers must be able to clear the flag");
+        ItemStack flagged = unbreakable.apply(new ItemStack(Items.DIAMOND_PICKAXE), context);
+        NativeTypeDecoders.ItemMatcher flag = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:diamond_pickaxe\"],\"unbreakable\":true}"));
+        check(flag.test(flagged, context) && !flag.test(new ItemStack(Items.DIAMOND_PICKAXE), context),
+                "Item matchers must read the unbreakable flag");
+        ItemStack costly = repair.apply(new ItemStack(Items.APPLE), context);
+        NativeTypeDecoders.ItemMatcher cost = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"repair_cost\":{\"min\":7}}"));
+        check(cost.test(costly, context), "Item matchers must read the repair cost");
+        NativeTypeDecoders.ItemMatcher stackSize = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"max_stack_size\":{\"min\":64}}"));
+        check(stackSize.test(new ItemStack(Items.APPLE), context), "Item matchers must read the maximum stack size");
+        DataRules.NumberValue repairCost = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_repair_cost\"}"));
+        DataRules.NumberValue maxStack = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_stack_size\"}"));
+        check(repairCost.evaluate(context.withTool(costly)) == 7 && maxStack.evaluate(context.withTool(new ItemStack(Items.APPLE))) == 64,
+                "Item state readers must match the actual stack");
 
         NativeTypeDecoders.EntityMatcher equipped = manager.decode(NativeTypeDecoders.EntityMatcher.class,
                 json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));

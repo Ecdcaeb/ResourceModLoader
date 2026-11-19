@@ -64,6 +64,9 @@ final class MatcherDecoders {
         IntRange damage = object != null && object.has("damage") ? manager.decode(IntRange.class, object.get("damage")) : null;
         IntRange durability = object != null && object.has("durability") ? manager.decode(IntRange.class, object.get("durability")) : null;
         IntRange maxDamage = object != null && object.has("max_damage") ? manager.decode(IntRange.class, object.get("max_damage")) : null;
+        IntRange repairCost = object != null && object.has("repair_cost") ? manager.decode(IntRange.class, object.get("repair_cost")) : null;
+        IntRange maxStackSize = object != null && object.has("max_stack_size") ? manager.decode(IntRange.class, object.get("max_stack_size")) : null;
+        Boolean unbreakable = object != null && object.has("unbreakable") ? manager.decode(Boolean.class, object.get("unbreakable")) : null;
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         final Map<Enchantment, DoubleRange> enchantments = new java.util.LinkedHashMap<>();
         if (object != null && object.has("enchantments")) {
@@ -79,8 +82,15 @@ final class MatcherDecoders {
                 && (count == null || count.test(stack.getCount())) && (damage == null || damage.test(stack.getItemDamage()))
                 && (durability == null || durability.test(stack.getMaxDamage() - stack.getItemDamage()))
                 && (maxDamage == null || maxDamage.test(stack.getMaxDamage()))
+                && (repairCost == null || repairCost.test(stack.getRepairCost()))
+                && (maxStackSize == null || maxStackSize.test(stack.getMaxStackSize()))
+                && (unbreakable == null || isUnbreakable(stack) == unbreakable)
                 && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true))
                 && enchantmentsMatch(enchantments, stack);
+    }
+
+    private static boolean isUnbreakable(ItemStack stack) {
+        return stack.hasTagCompound() && stack.getTagCompound().getBoolean("Unbreakable");
     }
 
     private static boolean enchantmentsMatch(Map<Enchantment, DoubleRange> expected, ItemStack stack) {

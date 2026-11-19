@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage"}) {
+                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
         }
@@ -209,6 +209,12 @@ final class ContextNumberDecoders {
                     net.minecraft.item.ItemStack tool = context.getTool();
                     return tool.isEmpty() ? 0 : tool.getMaxDamage();
                 };
+            case "item_repair_cost":
+                fields(object);
+                return context -> context.getTool().getRepairCost();
+            case "item_max_stack_size":
+                fields(object);
+                return context -> context.getTool().isEmpty() ? 0 : context.getTool().getMaxStackSize();
             case "enchantment_level": {
                 fields(object, "enchantment");
                 ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));

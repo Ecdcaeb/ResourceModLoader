@@ -70,7 +70,7 @@
 | `IBlockState` | `rml:block_state`；方块 ID，或原版 `Name` / `Properties` 对象，未知属性和值会报错 |
 | `WeightedList<T>` | `entries` 数组，每项包含 `data: T` 和正整数 `weight`；元素保留泛型类型 |
 | `NBTBase` | `rml:nbt`；支持嵌套复合值、同类型列表及显式 byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array 构造器 |
-| `ItemMatcher` | `rml:item_match`；物品 ID、`items` / `count` / `damage` / `durability` / `max_damage` / `nbt` / `enchantments` |
+| `ItemMatcher` | `rml:item_match`；物品 ID、`items` / `count` / `damage` / `durability` / `max_damage` / `repair_cost` / `max_stack_size` / `unbreakable` / `nbt` / `enchantments` |
 | `BlockMatcher` | `rml:block_match`；方块 ID、`blocks` / `properties` / 方块实体 `nbt` |
 | `EntityMatcher` | `rml:entity_match`；实体 ID、`entity_types` / `health` / `max_health` / `absorption` / `alive` / `on_fire` / `nbt` / `equipment`（`mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`） |
 
