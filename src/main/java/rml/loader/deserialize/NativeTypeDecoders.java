@@ -55,7 +55,7 @@ public final class NativeTypeDecoders {
     @FunctionalInterface public interface EntityMatcher { boolean test(Entity entity, DataContext context); }
 
     public static void register(DeserializerManager manager, CompiledTagModule tags) {
-        registerText(manager);
+        TextDecoders.register(manager);
         register(manager, IntRange.class, "int_range", value -> intRange(manager, value));
         register(manager, DoubleRange.class, "double_range", value -> doubleRange(manager, value));
         register(manager, Vec3d.class, "vec3", value -> vector(manager, value));
@@ -98,23 +98,7 @@ public final class NativeTypeDecoders {
             }
             return new WeightedList<>(values, weights);
         });
-        register(manager, NBTBase.class, "nbt", value -> nbt(manager, value));
-        nbtType(manager, "byte", value -> new NBTTagByte((byte) boundedInteger(manager, value, Byte.MIN_VALUE, Byte.MAX_VALUE)));
-        nbtType(manager, "short", value -> new NBTTagShort((short) boundedInteger(manager, value, Short.MIN_VALUE, Short.MAX_VALUE)));
-        nbtType(manager, "int", value -> new NBTTagInt(integer(manager, value)));
-        nbtType(manager, "long", value -> new NBTTagLong(exactLong(manager, value)));
-        nbtType(manager, "float", value -> {
-            float number = manager.decode(Float.class, value);
-            if (!Float.isFinite(number)) throw error(value, "Expected a finite float");
-            return new NBTTagFloat(number);
-        });
-        nbtType(manager, "double", value -> new NBTTagDouble(finite(manager, value)));
-        nbtType(manager, "string", value -> new NBTTagString(manager.decode(String.class, value)));
-        nbtType(manager, "byte_array", value -> new NBTTagByteArray(manager.decode(byte[].class, value)));
-        nbtType(manager, "int_array", value -> new NBTTagIntArray(manager.decode(int[].class, value)));
-        nbtType(manager, "long_array", value -> new NBTTagLongArray(manager.decode(long[].class, value)));
-        nbtType(manager, "list", value -> nbtList(manager, value));
-        nbtType(manager, "compound", value -> nbtCompound(manager, object(value)));
+        NbtDecoders.register(manager);
         MatcherDecoders.register(manager, tags);
         NumericValueDecoders.register(manager);
         register(manager, rml.loader.runtime.function.FunctionDataPath.Compiled.class, "nbt_path",
@@ -126,48 +110,7 @@ public final class NativeTypeDecoders {
     }
 
     public static AbstractDeserializer<net.minecraft.util.text.ITextComponent> registerText(DeserializerManager manager) {
-        return manager.addDefaultEntry(new AbstractDeserializer<>(new ResourceLocation("minecraft", "textcomponent"),
-                net.minecraft.util.text.ITextComponent.class, value -> text(manager, value)));
-    }
-
-    private static net.minecraft.util.text.ITextComponent text(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        if (value.isJsonArray()) {
-            net.minecraft.util.text.ITextComponent result = null;
-            for (JsonElement child : value.getAsJsonArray()) {
-                net.minecraft.util.text.ITextComponent component = manager.decode(net.minecraft.util.text.ITextComponent.class, child);
-                if (result == null) result = component; else result.appendSibling(component);
-            }
-            if (result == null) throw error(value, "Text component array must not be empty");
-            return result;
-        }
-        JsonElement normalized = value;
-        if (value.isJsonObject()) {
-            JsonObject object = value.getAsJsonObject(), result = new JsonObject();
-            for (Map.Entry<String, JsonElement> field : object.entrySet()) {
-                JsonElement child = field.getValue();
-                if ("extra".equals(field.getKey()) || "with".equals(field.getKey())) {
-                    if (!child.isJsonArray()) throw error(value, "Text children must be an array");
-                    JsonArray children = new JsonArray();
-                    for (JsonElement entry : child.getAsJsonArray()) children.add(textJson(manager, entry));
-                    child = children;
-                } else if ("hoverEvent".equals(field.getKey()) && child.isJsonObject()) {
-                    JsonObject hover = new JsonObject();
-                    for (Map.Entry<String, JsonElement> entry : child.getAsJsonObject().entrySet())
-                        hover.add(entry.getKey(), "value".equals(entry.getKey()) ? textJson(manager, entry.getValue()) : entry.getValue());
-                    child = hover;
-                }
-                result.add(field.getKey(), child);
-            }
-            normalized = result;
-        }
-        net.minecraft.util.text.ITextComponent result = net.minecraft.util.text.ITextComponent.Serializer.jsonToComponent(normalized.toString());
-        if (result == null) throw error(value, "Text component must not be null");
-        return result;
-    }
-
-    private static JsonElement textJson(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        return new com.google.gson.JsonParser().parse(net.minecraft.util.text.ITextComponent.Serializer.componentToJson(
-                manager.decode(net.minecraft.util.text.ITextComponent.class, value)));
+        return TextDecoders.register(manager);
     }
 
     private static ResourceLocation id(String name) { return new ResourceLocation("rml", name); }
@@ -245,41 +188,6 @@ public final class NativeTypeDecoders {
         return state.withProperty(property, value.get());
     }
 
-    private static void nbtType(DeserializerManager manager, String name, AbstractDeserializer.IDeserializer<NBTBase> decoder) {
-        manager.addEntry(new AbstractDeserializer<>(id(name), NBTBase.class, value -> decoder.apply(required(object(value), "value"))));
-    }
-
-    private static NBTBase nbt(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        if (value.isJsonObject()) return nbtCompound(manager, value.getAsJsonObject());
-        if (value.isJsonArray()) return nbtList(manager, value);
-        if (!value.isJsonPrimitive()) throw error(value, "NBT has no null value");
-        if (value.getAsJsonPrimitive().isBoolean()) return new NBTTagByte((byte) (value.getAsBoolean() ? 1 : 0));
-        if (value.getAsJsonPrimitive().isString()) return new NBTTagString(value.getAsString());
-        BigDecimal number = value.getAsBigDecimal();
-        if (number.scale() <= 0) {
-            long integer = number.longValueExact();
-            return integer >= Integer.MIN_VALUE && integer <= Integer.MAX_VALUE ? new NBTTagInt((int) integer) : new NBTTagLong(integer);
-        }
-        return new NBTTagDouble(finite(manager, value));
-    }
-
-    private static NBTTagCompound nbtCompound(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
-        NBTTagCompound result = new NBTTagCompound();
-        for (Map.Entry<String, JsonElement> entry : object.entrySet()) result.setTag(entry.getKey(), manager.decode(NBTBase.class, entry.getValue()));
-        return result;
-    }
-
-    private static NBTTagList nbtList(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        if (!value.isJsonArray()) throw error(value, "NBT list requires an array");
-        NBTTagList result = new NBTTagList();
-        for (JsonElement element : value.getAsJsonArray()) {
-            NBTBase child = manager.decode(NBTBase.class, element);
-            if (result.tagCount() != 0 && result.getTagType() != child.getId()) throw error(value, "NBT list elements must share one native tag type");
-            result.appendTag(child);
-        }
-        return result;
-    }
-
     private static EnumFacing direction(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         if (value.isJsonObject() && value.getAsJsonObject().has("value")) {
             return direction(manager, required(value.getAsJsonObject(), "value"));
@@ -334,23 +242,23 @@ public final class NativeTypeDecoders {
         throw error(value, "Expected an item stack");
     }
 
-    private static int integer(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+    static int integer(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) return value.getAsBigDecimal().intValueExact();
         return manager.decode(Integer.class, value);
     }
 
-    private static int boundedInteger(DeserializerManager manager, JsonElement value, int min, int max) throws JsonDeserializeException {
+    static int boundedInteger(DeserializerManager manager, JsonElement value, int min, int max) throws JsonDeserializeException {
         int result = integer(manager, value);
         if (result < min || result > max) throw error(value, "Integer is outside [" + min + "," + max + "]");
         return result;
     }
 
-    private static long exactLong(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+    static long exactLong(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isNumber()) return value.getAsBigDecimal().longValueExact();
         return manager.decode(Long.class, value);
     }
 
-    private static double finite(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+    static double finite(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         double result = manager.decode(Double.class, value);
         if (!Double.isFinite(result)) throw error(value, "Expected a finite number");
         return result;
