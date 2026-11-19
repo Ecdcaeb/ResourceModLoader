@@ -67,6 +67,7 @@ final class MatcherDecoders {
         IntRange repairCost = object != null && object.has("repair_cost") ? manager.decode(IntRange.class, object.get("repair_cost")) : null;
         IntRange maxStackSize = object != null && object.has("max_stack_size") ? manager.decode(IntRange.class, object.get("max_stack_size")) : null;
         Boolean unbreakable = object != null && object.has("unbreakable") ? manager.decode(Boolean.class, object.get("unbreakable")) : null;
+        Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         final Map<Enchantment, DoubleRange> enchantments = new java.util.LinkedHashMap<>();
         if (object != null && object.has("enchantments")) {
@@ -85,8 +86,14 @@ final class MatcherDecoders {
                 && (repairCost == null || repairCost.test(stack.getRepairCost()))
                 && (maxStackSize == null || maxStackSize.test(stack.getMaxStackSize()))
                 && (unbreakable == null || isUnbreakable(stack) == unbreakable)
-                && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true))
+                && (nbt == null || nbtMatches(nbt, stack.getTagCompound(), nbtExact))
                 && enchantmentsMatch(enchantments, stack);
+    }
+
+    private static boolean nbtMatches(NBTTagCompound expected, NBTTagCompound actual, Boolean exact) {
+        NBTTagCompound value = actual == null ? new NBTTagCompound() : actual;
+        if (!NBTUtil.areNBTEquals(expected, value, true)) return false;
+        return exact == null || !exact || NBTUtil.areNBTEquals(value, expected, true);
     }
 
     private static boolean isUnbreakable(ItemStack stack) {
@@ -112,6 +119,7 @@ final class MatcherDecoders {
             propertyValues[propertyIndex++] = manager.decode(String.class, entry.getValue());
         }
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
         return (world, position, state) -> {
             if (!names.test(state.getBlock().getRegistryName())) return false;
             net.minecraft.block.state.BlockStateContainer defaults = state.getBlock().getBlockState();
@@ -121,7 +129,9 @@ final class MatcherDecoders {
             }
             if (nbt == null) return true;
             TileEntity tile = world.getTileEntity(position);
-            return tile != null && NBTUtil.areNBTEquals(nbt, tile.writeToNBT(new NBTTagCompound()), true);
+            if (tile == null) return false;
+            NBTTagCompound actual = tile.writeToNBT(new NBTTagCompound());
+            return nbtMatches(nbt, actual, nbtExact);
         };
     }
 
@@ -136,6 +146,7 @@ final class MatcherDecoders {
         JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
         Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
         DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
         DoubleRange maxHealth = object != null && object.has("max_health") ? manager.decode(DoubleRange.class, object.get("max_health")) : null;
         DoubleRange absorption = object != null && object.has("absorption") ? manager.decode(DoubleRange.class, object.get("absorption")) : null;
@@ -165,7 +176,7 @@ final class MatcherDecoders {
             if (nbt == null) return true;
             NBTTagCompound actual = new NBTTagCompound();
             entity.writeToNBT(actual);
-            return NBTUtil.areNBTEquals(nbt, actual, true);
+            return nbtMatches(nbt, actual, nbtExact);
         };
     }
 

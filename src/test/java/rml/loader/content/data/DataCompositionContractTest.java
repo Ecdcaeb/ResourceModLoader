@@ -317,6 +317,15 @@ public final class DataCompositionContractTest {
         NativeTypeDecoders.ItemMatcher stackSize = manager.decode(NativeTypeDecoders.ItemMatcher.class,
                 json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"max_stack_size\":{\"min\":64}}"));
         check(stackSize.test(new ItemStack(Items.APPLE), context), "Item matchers must read the maximum stack size");
+        ItemStack tagged = new ItemStack(Items.APPLE);
+        tagged.setTagCompound(new NBTTagCompound());
+        tagged.getTagCompound().setInteger("demo", 1);
+        tagged.getTagCompound().setInteger("extra", 2);
+        NativeTypeDecoders.ItemMatcher subset = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"nbt\":{\"demo\":1}}"));
+        NativeTypeDecoders.ItemMatcher exact = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"nbt\":{\"demo\":1},\"nbt_exact\":true}"));
+        check(subset.test(tagged, context) && !exact.test(tagged, context), "nbt_exact must reject additional tags");
         DataRules.NumberValue repairCost = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_repair_cost\"}"));
         DataRules.NumberValue maxStack = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_stack_size\"}"));
         check(repairCost.evaluate(context.withTool(costly)) == 7 && maxStack.evaluate(context.withTool(new ItemStack(Items.APPLE))) == 64,
