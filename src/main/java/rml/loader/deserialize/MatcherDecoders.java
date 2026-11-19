@@ -62,6 +62,8 @@ final class MatcherDecoders {
         Names names = names(manager, tags, "item", object == null ? value : object.get("items"));
         IntRange count = object != null && object.has("count") ? manager.decode(IntRange.class, object.get("count")) : null;
         IntRange damage = object != null && object.has("damage") ? manager.decode(IntRange.class, object.get("damage")) : null;
+        IntRange durability = object != null && object.has("durability") ? manager.decode(IntRange.class, object.get("durability")) : null;
+        IntRange maxDamage = object != null && object.has("max_damage") ? manager.decode(IntRange.class, object.get("max_damage")) : null;
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         final Map<Enchantment, DoubleRange> enchantments = new java.util.LinkedHashMap<>();
         if (object != null && object.has("enchantments")) {
@@ -75,6 +77,8 @@ final class MatcherDecoders {
         }
         return (stack, context) -> !stack.isEmpty() && names.test(stack.getItem().getRegistryName())
                 && (count == null || count.test(stack.getCount())) && (damage == null || damage.test(stack.getItemDamage()))
+                && (durability == null || durability.test(stack.getMaxDamage() - stack.getItemDamage()))
+                && (maxDamage == null || maxDamage.test(stack.getMaxDamage()))
                 && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true))
                 && enchantmentsMatch(enchantments, stack);
     }
@@ -122,6 +126,8 @@ final class MatcherDecoders {
         Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
+        DoubleRange maxHealth = object != null && object.has("max_health") ? manager.decode(DoubleRange.class, object.get("max_health")) : null;
+        DoubleRange absorption = object != null && object.has("absorption") ? manager.decode(DoubleRange.class, object.get("absorption")) : null;
         Boolean alive = object != null && object.has("alive") ? manager.decode(Boolean.class, object.get("alive")) : null;
         Boolean onFire = object != null && object.has("on_fire") ? manager.decode(Boolean.class, object.get("on_fire")) : null;
         final Map<String, NativeTypeDecoders.ItemMatcher> equipment = new java.util.LinkedHashMap<>();
@@ -136,6 +142,8 @@ final class MatcherDecoders {
             ResourceLocation key = entity instanceof EntityPlayer ? PLAYER : EntityList.getKey(entity);
             if (!names.test(key) || alive != null && entity.isEntityAlive() != alive || onFire != null && entity.isBurning() != onFire) return false;
             if (health != null && (!(entity instanceof EntityLivingBase) || !health.test(((EntityLivingBase) entity).getHealth()))) return false;
+            if (maxHealth != null && (!(entity instanceof EntityLivingBase) || !maxHealth.test(((EntityLivingBase) entity).getMaxHealth()))) return false;
+            if (absorption != null && (!(entity instanceof EntityLivingBase) || !absorption.test(((EntityLivingBase) entity).getAbsorptionAmount()))) return false;
             if (!equipment.isEmpty()) {
                 if (!(entity instanceof EntityLivingBase)) return false;
                 EntityLivingBase living = (EntityLivingBase) entity;

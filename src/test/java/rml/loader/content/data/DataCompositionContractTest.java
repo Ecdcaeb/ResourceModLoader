@@ -320,6 +320,22 @@ public final class DataCompositionContractTest {
         DataRules.NumberValue maxDamage = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_damage\"}"));
         check(maxDamage.evaluate(durableContext) == durable.getMaxDamage() && durability.evaluate(durableContext) == durable.getMaxDamage() - 10,
                 "Durability readers must match the actual tool");
+        NativeTypeDecoders.ItemMatcher durableMatch = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:diamond_pickaxe\"],\"durability\":{\"min\":" + (durable.getMaxDamage() - 10) + "},\"max_damage\":{\"min\":" + durable.getMaxDamage() + "}}"));
+        check(durableMatch.test(durable, context), "Item matchers must read remaining and maximum durability");
+        NativeTypeDecoders.ItemMatcher worn = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:diamond_pickaxe\"],\"durability\":{\"max\":1}}"));
+        check(!worn.test(durable, context), "Durability ranges must reject mismatched tools");
+
+        NativeTypeDecoders.EntityMatcher vitals = manager.decode(NativeTypeDecoders.EntityMatcher.class,
+                json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"max_health\":{\"min\":20},\"absorption\":{\"min\":0}}"));
+        check(vitals != null, "Entity matchers must decode health and absorption ranges");
+        DataRules.NumberValue maxHealth = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:entity_max_health\",\"fallback\":20}"));
+        check(maxHealth.evaluate(context) == 20, "Missing entities must use the max-health fallback");
+
+        DataRules.Test fluid = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"water\"}"));
+        check(!fluid.test(context), "Fluid checks require a server world");
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:location_check\",\"fluid\":\"oil\"}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

@@ -71,10 +71,10 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:entity_properties`: `entity` selects `this`, `killer`, `killer_player`, `attacker` or `direct_attacker`; `predicate` accepts a bare entity matcher or a typed node; `flags` supports `on_fire`, `sneaking`, `sprinting` and `baby`.
 - `rml:entity_scores`: `entity` plus a `scores` map; every objective must be present and inside its range.
 - `rml:block_state_property`: matches a block state from `block` plus `properties`, with an optional `offset`.
-- `rml:location_check`: checks the block, light range and biome at `offset`.
+- `rml:location_check`: checks the block, light range, biome and `fluid` (`water` or `lava`) at `offset`.
 - `rml:enchantment_level` (number) returns the actual level on the context tool and composes with arithmetic, comparisons and other numeric nodes.
 - `rml:enchantments`: an `enchantments` map requires every listed level to fall inside its range; missing enchantments count as `0`.
-- `rml:entity_health`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability` and `rml:item_max_damage`: read context entity health, block light, tool count, metadata, remaining durability and maximum durability; `fallback` covers a missing world or entity.
+- `rml:entity_health`, `rml:entity_max_health`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability` and `rml:item_max_damage`: read context entity health/max health, block light, tool count, metadata, remaining durability and maximum durability; `fallback` covers a missing world or entity.
 - `rml:held_item`: checks the context entity's held stack with an item matcher, using `hand` (`mainhand` or `offhand`).
 
 These item modifiers fill missing 1.12 container and name operations:

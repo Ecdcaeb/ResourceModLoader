@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "enchantment_level", "entity_health", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage"}) {
+                "enchantment_level", "entity_health", "entity_max_health", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
         }
@@ -153,6 +153,12 @@ final class ContextNumberDecoders {
                 final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
                 return context -> context.getEntity() instanceof net.minecraft.entity.EntityLivingBase
                         ? ((net.minecraft.entity.EntityLivingBase) context.getEntity()).getHealth() : fallback;
+            }
+            case "entity_max_health": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                return context -> context.getEntity() instanceof net.minecraft.entity.EntityLivingBase
+                        ? ((net.minecraft.entity.EntityLivingBase) context.getEntity()).getMaxHealth() : fallback;
             }
             case "block_light": {
                 fields(object, "fallback", "offset");

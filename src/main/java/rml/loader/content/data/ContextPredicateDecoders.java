@@ -84,8 +84,11 @@ final class ContextPredicateDecoders {
                 fields(object, "light", "offset");
                 DoubleRange range = manager.decode(DoubleRange.class, required(object, "light"));
                 BlockPos offset = offset(manager, object);
-                return context -> context.getWorld() != null && context.getOrigin() != null
-                        && range.test(context.getWorld().getLight(context.getOrigin().add(offset)));
+                return context -> {
+                    if (context.getWorld() == null || context.getOrigin() == null) return false;
+                    BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
+                    return range.test(context.getWorld().getLight(position));
+                };
             }
             case "match_tool": {
                 fields(object, "predicate");
@@ -108,7 +111,7 @@ final class ContextPredicateDecoders {
                 BlockPos offset = offset(manager, object);
                 return context -> {
                     if (context.getWorld() == null || context.getOrigin() == null) return false;
-                    BlockPos position = context.getOrigin().add(offset);
+                    BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
                     return context.getWorld().isBlockLoaded(position) && matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position));
                 };
             }
@@ -180,24 +183,31 @@ final class ContextPredicateDecoders {
                 BlockPos offset = offset(manager, object);
                 return context -> {
                     if (context.getWorld() == null || context.getOrigin() == null) return false;
-                    BlockPos position = context.getOrigin().add(offset);
+                    BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
                     return context.getWorld().isBlockLoaded(position)
                             && matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position));
                 };
             }
             case "location_check": {
-                fields(object, "offset", "block", "light", "biome");
+                fields(object, "offset", "block", "light", "biome", "fluid");
                 NativeTypeDecoders.BlockMatcher matcher = object.has("block")
                         ? manager.decode(NativeTypeDecoders.BlockMatcher.class, blockMatcherPayload(required(object, "block"), null)) : null;
                 DoubleRange light = object.has("light") ? manager.decode(DoubleRange.class, required(object, "light")) : null;
                 String biome = object.has("biome") ? manager.decode(String.class, required(object, "biome")) : null;
+                String fluid = object.has("fluid") ? manager.decode(String.class, required(object, "fluid")) : null;
+                if (fluid != null && !("water".equals(fluid) || "lava".equals(fluid))) throw error(object, "Unknown fluid " + fluid);
                 BlockPos offset = offset(manager, object);
                 return context -> {
                     if (context.getWorld() == null || context.getOrigin() == null) return false;
-                    BlockPos position = context.getOrigin().add(offset);
+                    BlockPos position = BlockPos.ORIGIN.equals(offset) ? context.getOrigin() : context.getOrigin().add(offset);
                     if (!context.getWorld().isBlockLoaded(position)) return false;
                     if (matcher != null && !matcher.test(context.getWorld(), position, context.getWorld().getBlockState(position))) return false;
                     if (light != null && !light.test(context.getWorld().getLight(position))) return false;
+                    if (fluid != null) {
+                        net.minecraft.block.material.Material material = context.getWorld().getBlockState(position).getMaterial();
+                        if ("water".equals(fluid) ? material != net.minecraft.block.material.Material.WATER
+                                : material != net.minecraft.block.material.Material.LAVA) return false;
+                    }
                     if (biome != null) {
                         ResourceLocation found = context.getWorld().getBiome(position).getRegistryName();
                         if (found == null || !biome.equals(found.toString())) return false;
