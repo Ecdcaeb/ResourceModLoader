@@ -1,4 +1,4 @@
-## [ModuleType](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/)
+## [ModuleType](../)
 
 ### `rml:new_type`
 
@@ -6,7 +6,7 @@
 
 #### 字段
 
-`name` [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation) — 模块注册名。
+`name` [ResourceLocation](../ResourceLocation) — 模块注册名。
 
 `isFile` boolean — 是否为单个文件。
 

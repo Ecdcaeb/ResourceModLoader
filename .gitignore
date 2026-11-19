@@ -33,4 +33,5 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
+.venv-docs/
 .pytest_cache/

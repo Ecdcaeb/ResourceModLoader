@@ -95,6 +95,13 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 
 `rml:damage_source.absolute` 对应 1.12 的原生标志；虚空伤害需要另按 `names:["outOfWorld"]` 识别。物品修饰器 `rml:set_enchantments` 接受 `enchantments` 映射，等级为零会移除指定附魔；`add:true` 在现有等级上相加。`rml:copy_nbt` 的来源为 `entity`、`block_entity`、`tool`、`inputs` 或 `storage`，`target` 相对物品的 tag，`operation` 为 `replace`、`merge` 或 `append`。
 
+`rml:enchantment_level` 按工具上的实际附魔等级匹配 `level` 区间。以下物品修饰器直接复用原生表，并同时接受 `rml:` 前缀的等价名称：
+
+- `minecraft:furnace_smelt` 读取熔炉产物并保留原堆叠数量；没有配方时返回原物品。
+- `minecraft:enchant_randomly` 从可选 `enchantments` 列表或全部可应用附魔中随机选择一个，并在其等级区间内附魔。
+- `minecraft:enchant_with_levels` 用 `levels` 与可选 `treasure` 调用原生附魔表。
+- `minecraft:looting_enchant` 按真实击杀者的抢夺等级和 `count` 增加掉落数量，`limit` 可限制最终数量；缺少击杀者时保持原物品。
+
 ### 注册阶段与原生消费
 
 原生物品、方块和附魔先声明注册壳。依赖这些注册项的效果、匹配器、配方结果和展示条件在注册完成后解析；世界生成在生物群系注册事件中初始化，时间与测试定义在 FML 初始化阶段解析。不能在声明壳时提前把同包尚未注册的物品当成未知 ID。

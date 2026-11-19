@@ -24,3 +24,17 @@
 | `requires` | 否 | 内容依赖包的 modid 数组，默认为空。当前函数运行时据此校验依赖、拒绝循环及阻止卸载仍被依赖的包。 |
 
 如果没有 `modules` 字段，则启用全部默认模块。
+
+### 模块列表
+
+| 模块 | 用途 |
+| --- | --- |
+| [`rml:content`](CONTENT/index.md) | 编译器生成的增强数据包定义 |
+| [`rml:functions`](FUNCTIONS/index.md) | 函数、执行器、候选代次与工具入口 |
+| [`rml:loot_tables`](LOOT_TABLES/index.md) | 原生战利品表 |
+| [`rml:ore_dic`](ORE_DIC/index.md) | 矿辞条目 |
+| [`rml:custom_villagers`](village/index.md) | 村民职业与交易 |
+| [`rml:registry_remap`](registry/REGISTRY_REMAP/index.md) | 缺失注册名重映射 |
+| [`rml:splash_text`](text/SPLASH_TEXT/index.md) | 主界面闪烁标语 |
+| [`rml:config_define`](config/CONFIG_DEFINE/index.md)、[`rml:config_override`](config/CONFIG_OVERRIDE/index.md)、[`rml:config_redefault`](config/CONFIG_REDEFAULT/index.md) | 配置定义、覆盖与默认值 |
+| [`rml:mod_kubejs`](MOD_KUBEJS/index.md)、[`rml:mod_crt`](MOD_CRT/index.md)、[`rml:mod_groovy_script`](MOD_GROOVYSCRIPT/index.md) | 外部脚本集成 |

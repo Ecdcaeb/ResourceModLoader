@@ -62,6 +62,7 @@
 | `DoubleRange` | `rml:double_range`；有限数值或上下界对象，省略一端表示该端无限制 |
 | `Vec3d` / `Vec2f` | `rml:vec3` / `rml:vec2`；坐标数组或 `x/y/z` 字段 |
 | `BlockPos` | `rml:block_pos`；整数坐标数组或 `x/y/z` 字段 |
+| `Vec3i` | `rml:vec3i`；整数坐标数组或 `x/y/z` 字段，用于尺寸与偏移 |
 | `AxisAlignedBB` | `rml:box`；`min`、`max` 分别嵌套 Vec3d |
 | `UUID` | `rml:uuid`；UUID 字符串，或带 `value` 的显式构造器 |
 | `IBlockState` | `rml:block_state`；方块 ID，或原版 `Name` / `Properties` 对象，未知属性和值会报错 |
@@ -91,16 +92,16 @@
 {"type":"rml:compound","value":{"type":"ritual","charges":{"type":"rml:short","value":4},"enabled":true}}
 ```
 
-数值表达式、谓词、物品修饰器、效果以及世界生成、玩法、展示、时钟和测试的类型由相应原生模块的 `registerDecoders(manager)` 注册；嵌套子值继续使用该 manager。Java 泛型及扩展注册方式见[开发接口](../java/deserializer/README.md)。
+数值表达式、谓词、物品修饰器、效果以及世界生成、玩法、展示、时钟和测试的类型由相应原生模块的 `registerDecoders(manager)` 注册；嵌套子值继续使用该 manager。Java 泛型及扩展注册方式见[开发接口](../java/deserializer/index.md)。
 
 ### 有文档的类型
 
-- [Integer](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/Integer)
-- [RandomIntSupplier](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/RandomIntSupplier)
-- [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ResourceLocation)
-- [IVillager](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/IVillager)
-- [ITradeList](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ITradeList)
-- [ItemStack](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ItemStack)
-- [EnchantmentData](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/EnchantmentData)
-- [TagOre](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/TagOre)
-- [ModuleType](https://ecdcaeb.github.io/ResourceModLoader/zh_cn/deserializer/ModuleType)
+- [Integer](Integer)
+- [RandomIntSupplier](RandomIntSupplier)
+- [ResourceLocation](ResourceLocation)
+- [IVillager](IVillager)
+- [ITradeList](ITradeList)
+- [ItemStack](ItemStack)
+- [EnchantmentData](EnchantmentData)
+- [TagOre](TagOre)
+- [ModuleType](ModuleType)

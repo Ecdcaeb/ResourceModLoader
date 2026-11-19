@@ -4,10 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Bootstrap;
 import net.minecraft.init.Enchantments;
 import net.minecraft.init.Items;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.DamageSource;
@@ -57,6 +60,7 @@ public final class DataCompositionContractTest {
         context.getInputs().setInteger("amount", -2);
         contextSurvivesNativeRules(manager, context);
         modifierPreservesBookAndInputOwnership(manager, context);
+        nativeLootTransformsCompose(manager, context);
         conditionalEffectsShortCircuit(manager, context);
         textChildrenUseSharedManager(manager);
         reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
@@ -121,6 +125,35 @@ public final class DataCompositionContractTest {
         check(root.getTagList("numbers", 3).getIntAt(0) == 2, "A rejected heterogeneous list write must preserve its native value");
         DataRules.Modifier skipped = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:reference\",\"id\":\"contract:absent\",\"conditions\":[{\"type\":\"rml:any_of\",\"terms\":[]}]}"));
         check(skipped.apply(book, context) == book, "A false modifier condition must skip named lookup and preserve the original stack");
+    }
+
+    private static void nativeLootTransformsCompose(DeserializerManager manager, DataContext context) throws Exception {
+        DataRules.Modifier smelt = manager.decode(DataRules.Modifier.class, json("{\"type\":\"minecraft:furnace_smelt\"}"));
+        ItemStack ore = new ItemStack(Blocks.IRON_ORE, 3);
+        ItemStack ingot = smelt.apply(ore, context);
+        check(ingot.getItem() == Items.IRON_INGOT && ingot.getCount() == 3 && ore.getItem() == Item.getItemFromBlock(Blocks.IRON_ORE),
+                "Smelting must read the native furnace table, keep the stack count, and leave the input untouched");
+        DataRules.Modifier randomize = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"minecraft:enchant_randomly\",\"enchantments\":[\"minecraft:sharpness\",\"minecraft:unbreaking\"]}"));
+        ItemStack sword = new ItemStack(Items.DIAMOND_SWORD);
+        Map<Enchantment, Integer> rolled = EnchantmentHelper.getEnchantments(randomize.apply(sword, context));
+        check(rolled.size() == 1 && (rolled.containsKey(Enchantments.SHARPNESS) || rolled.containsKey(Enchantments.UNBREAKING))
+                && EnchantmentHelper.getEnchantments(sword).isEmpty(),
+                "Random enchanting must pick exactly one applicable allowed enchantment without mutating the input");
+        DataRules.Modifier invalidLevels = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"minecraft:enchant_with_levels\",\"levels\":0}"));
+        reject(() -> invalidLevels.apply(new ItemStack(Items.DIAMOND_SWORD), context));
+        DataRules.Modifier looting = manager.decode(DataRules.Modifier.class,
+                json("{\"type\":\"minecraft:looting_enchant\",\"count\":{\"type\":\"minecraft:constant\",\"value\":2}}"));
+        ItemStack drop = new ItemStack(Items.APPLE, 4);
+        check(looting.apply(drop, context) == drop, "Looting must require an actual killer in the loot context");
+        ItemStack pickaxe = new ItemStack(Items.DIAMOND_PICKAXE);
+        pickaxe.addEnchantment(Enchantments.FORTUNE, 3);
+        DataRules.Test fortune = manager.decode(DataRules.Test.class,
+                json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:fortune\",\"level\":{\"min\":3,\"max\":3}}"));
+        check(fortune.test(context.withTool(pickaxe)) && !fortune.test(context), "Enchantment level predicates must read the actual tool");
+        reject(() -> manager.decode(DataRules.Modifier.class, json("{\"type\":\"minecraft:furnace_smelt\",\"count\":1}")));
+        reject(() -> manager.decode(DataRules.Test.class, json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:absent\",\"level\":0}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {

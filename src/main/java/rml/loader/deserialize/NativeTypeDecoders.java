@@ -32,6 +32,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 import rml.deserializer.AbstractDeserializer;
 import rml.deserializer.DeserializerManager;
@@ -72,6 +73,10 @@ public final class NativeTypeDecoders {
         register(manager, BlockPos.class, "block_pos", value -> {
             JsonElement[] parts = elements(value, new String[]{"x", "y", "z"});
             return new BlockPos(integer(manager, parts[0]), integer(manager, parts[1]), integer(manager, parts[2]));
+        });
+        register(manager, Vec3i.class, "vec3i", value -> {
+            JsonElement[] parts = elements(value, new String[]{"x", "y", "z"});
+            return new Vec3i(integer(manager, parts[0]), integer(manager, parts[1]), integer(manager, parts[2]));
         });
         register(manager, AxisAlignedBB.class, "box", value -> {
             JsonObject object = object(value);

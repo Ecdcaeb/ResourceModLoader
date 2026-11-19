@@ -4,8 +4,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentData;
 import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -21,7 +25,9 @@ import rml.deserializer.value.WeightedList;
 import rml.loader.runtime.function.FunctionDataPath;
 import rml.loader.runtime.function.FunctionStorage;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /** Composed item transformations; every nested value uses the caller's decoder registry. */
@@ -30,9 +36,17 @@ final class ContextModifierDecoders {
 
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"conditional", "weighted", "limit_count", "set_enchantments", "apply_bonus", "set_name", "set_lore", "copy_nbt"}) {
-            manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Modifier.class,
-                    json -> decode(manager, json.getAsJsonObject())));
+            entry(manager, "rml", name);
         }
+        for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant"}) {
+            entry(manager, "minecraft", name);
+            entry(manager, "rml", name);
+        }
+    }
+
+    private static void entry(DeserializerManager manager, String domain, String name) {
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation(domain, name), DataRules.Modifier.class,
+                json -> decode(manager, json.getAsJsonObject())));
     }
 
     private static DataRules.Modifier decode(DeserializerManager manager, JsonObject object) throws JsonDeserializeException {
@@ -93,6 +107,76 @@ final class ContextModifierDecoders {
                     // Native enchanted-book writes merge levels; clear the stored list before replacing it.
                     if (copy.getItem() == net.minecraft.init.Items.ENCHANTED_BOOK && copy.hasTagCompound()) copy.getTagCompound().removeTag("StoredEnchantments");
                     EnchantmentHelper.setEnchantments(enchantments, copy);
+                    return copy;
+                };
+            }
+            case "furnace_smelt": {
+                fields(object);
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ItemStack smelted = FurnaceRecipes.instance().getSmeltingResult(stack);
+                    if (smelted.isEmpty()) return stack;
+                    ItemStack copy = smelted.copy();
+                    copy.setCount(stack.getCount());
+                    return copy;
+                };
+            }
+            case "enchant_randomly": {
+                fields(object, "enchantments");
+                List<ResourceLocation> allowed = object.has("enchantments")
+                        ? java.util.Arrays.asList(manager.decode(ResourceLocation[].class, object.get("enchantments"))) : null;
+                final List<ResourceLocation> selected = allowed;
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ItemStack copy = stack.copy();
+                    List<Enchantment> candidates = new ArrayList<>();
+                    for (Enchantment enchantment : ForgeRegistries.ENCHANTMENTS) {
+                        if (enchantment.getRegistryName() == null || !enchantment.canApply(copy)) continue;
+                        if (selected != null && !selected.contains(enchantment.getRegistryName())) continue;
+                        candidates.add(enchantment);
+                    }
+                    if (candidates.isEmpty()) return stack;
+                    Enchantment chosen = candidates.get(context.getRandom().nextInt(candidates.size()));
+                    int minimum = Math.max(1, chosen.getMinLevel());
+                    int maximum = Math.max(minimum, chosen.getMaxLevel());
+                    copy.addEnchantment(chosen, minimum + context.getRandom().nextInt(maximum - minimum + 1));
+                    return copy;
+                };
+            }
+            case "enchant_with_levels": {
+                fields(object, "levels", "treasure");
+                DataRules.NumberValue levels = manager.decode(DataRules.NumberValue.class, required(object, "levels"));
+                boolean treasure = object.has("treasure") && manager.decode(Boolean.class, object.get("treasure"));
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    double level = levels.evaluate(context);
+                    if (!Double.isFinite(level) || level < 1 || level > Integer.MAX_VALUE) throw new IllegalArgumentException("Enchantment levels must be within 1.." + Integer.MAX_VALUE);
+                    ItemStack copy = stack.copy();
+                    List<EnchantmentData> selected = EnchantmentHelper.buildEnchantmentList(context.getRandom(), copy, (int) level, treasure);
+                    if (selected == null) return stack;
+                    for (EnchantmentData entry : selected) copy.addEnchantment(entry.enchantment, entry.enchantmentLevel);
+                    return copy;
+                };
+            }
+            case "looting_enchant": {
+                fields(object, "count", "limit");
+                DataRules.NumberValue count = manager.decode(DataRules.NumberValue.class, required(object, "count"));
+                int limit = object.has("limit") ? manager.decode(Integer.class, object.get("limit")) : 0;
+                if (limit < 0) throw error(object, "Looting limit must not be negative");
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    Entity killer = context.getLootContext() == null ? null : context.getLootContext().getKiller();
+                    int looting = killer instanceof EntityLivingBase ? EnchantmentHelper.getLootingModifier((EntityLivingBase) killer) : 0;
+                    if (looting <= 0) return stack;
+                    double bonusValue = count.evaluate(context) * looting;
+                    if (!Double.isFinite(bonusValue) || bonusValue < 0 || bonusValue > Integer.MAX_VALUE) throw new IllegalArgumentException("Looting bonus must be a nonnegative integer-sized value");
+                    int bonus = (int) Math.floor(bonusValue);
+                    if (context.getRandom().nextFloat() < bonusValue - bonus) bonus++;
+                    if (bonus == 0) return stack;
+                    int total = stack.getCount() + bonus;
+                    if (limit > 0) total = Math.min(limit, total);
+                    ItemStack copy = stack.copy();
+                    copy.setCount(Math.min(copy.getMaxStackSize(), total));
                     return copy;
                 };
             }

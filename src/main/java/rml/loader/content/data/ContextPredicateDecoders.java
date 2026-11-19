@@ -28,7 +28,8 @@ final class ContextPredicateDecoders {
     @FunctionalInterface private interface Comparison { boolean test(double left, double right); }
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
-                "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus"}) {
+                "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
+                "enchantment_level"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -178,6 +179,14 @@ final class ContextPredicateDecoders {
                     if (!Double.isFinite(chance) || chance < 0 || chance > 1) throw new IllegalArgumentException("Enchantment chance must be within 0..1");
                     return context.getRandom().nextFloat() < chance;
                 };
+            }
+            case "enchantment_level": {
+                fields(object, "enchantment", "level");
+                ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));
+                Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
+                if (enchantment == null) throw error(object, "Unknown enchantment " + id);
+                DoubleRange range = manager.decode(DoubleRange.class, required(object, "level"));
+                return context -> range.test(EnchantmentHelper.getEnchantmentLevel(enchantment, context.getTool()));
             }
             default: throw error(object, "Unknown context predicate " + type);
         }

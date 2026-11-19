@@ -1,4 +1,4 @@
-## [ResourceLocation](https://ecdcaeb.github.io/ResourceModLoader/en_us/deserializer/)
+## [ResourceLocation](../)
 
 ### `minecraft:resource_location`
 

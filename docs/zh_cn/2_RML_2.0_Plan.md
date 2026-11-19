@@ -6,7 +6,7 @@ sort: 3
 
 状态：本文包含 2.0 目标设计与当前工程入口。现已拆出无外部依赖的 `runtime/`、独立 `compiler/` 和文件来源层，并接入函数、数据规则、玩法、世界生成、展示、时钟及世界测试模块。可重载定义与启动期原生注册的边界见第 14 节；后续生命周期、多人同步及 Agent 完整体验仍按阶段门槛验收。
 
-启动期模块已拆入 `rml.loader.module`，通过构造参数接收 `ModuleLoader`；`LoaderRuntime` 负责装配，Forge 事件与 ASM 钩子只负责路由。当前仍保留资源包的启动期 Forge 容器，以承接现有资源加载；配置、原生注册和外部脚本集成保持启动期语义。函数模块的命令与 Java API 迁移见[函数文档](modules/FUNCTIONS/README.md)和[开发接口](java/ResourceModLoader/README.md)。
+启动期模块已拆入 `rml.loader.module`，通过构造参数接收 `ModuleLoader`；`LoaderRuntime` 负责装配，Forge 事件与 ASM 钩子只负责路由。当前仍保留资源包的启动期 Forge 容器，以承接现有资源加载；配置、原生注册和外部脚本集成保持启动期语义。函数模块的命令与 Java API 迁移见[函数文档](modules/FUNCTIONS/index.md)和[开发接口](java/ResourceModLoader/index.md)。
 
 ## 1. 目标与当前判断
 
@@ -265,7 +265,7 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 
 `LoaderRuntime` 装配 `DataRules`、`GameplayModule`、`WorldgenModule`、`PresentationModule` 和 `TimeTestModule`；模块在 `registerDecoders(manager)` 注册组合类型。物品、方块、附魔及展示载体先声明原生注册壳，依赖注册项的子节点在注册完成后解析；世界生成在生物群系注册事件中初始化。`FunctionModule` 管理可重新加载的函数、标签、数值提供者、战利品、谓词、修饰器和结构模板。配方、附魔、维度、生物群系、原生载体及其他启动期定义需要重新启动游戏；函数命令不等同于完整 Forge 模组热重载。
 
-通用解析支持 `Type`、嵌套 List/Map/Set/Optional/泛型数组、泛型 `@Record` 构造器，以及范围、权重表、空间值、方块状态、NBT 和匹配器。原生模块在相同注册表中提供自己的数值、条件、效果、世界生成、展示、时间和测试类型。实现方式与示例见[解码开发接口](java/deserializer/README.md)。
+通用解析支持 `Type`、嵌套 List/Map/Set/Optional/泛型数组、泛型 `@Record` 构造器，以及范围、权重表、空间值、方块状态、NBT 和匹配器。原生模块在相同注册表中提供自己的数值、条件、效果、世界生成、展示、时间和测试类型。实现方式与示例见[解码开发接口](java/deserializer/index.md)。
 
 内置物品修饰器的 `count` 和 `damage` 字段可嵌套带 `type` 的数值提供者，并保留外层 `conditions`。例如 `{"function":"minecraft:set_count","count":{"type":"minecraft:uniform","min":2,"max":2}}` 会在原生执行时计算数量；具名谓词与修饰器也在执行时解析，保持它们与活动内容代次一致。
 
@@ -295,13 +295,13 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 
 此前的 1.12.2 客户端场景验证了函数返回值 `42` 与宏参数、storage/实体/谓词条件、虚拟计分比较及结果写入、具名修饰器数量与名称、数值节点耐久效果、原生伤害缩放、熔炉产物、平坦维度层、三倍时钟、世界测试后的方块恢复，以及服务端对话通过网络显示。原生世界存档另以真实磁盘往返契约验证；这些场景不代表对新版本每个字段和每种内容组合的穷尽测试。
 
-当前 P1 工具入口为 `/rml tools inspect|check|apply|deactivate`，以及同一实现的 `ResourceModLoader.runtime().getTools()`。响应统一为 JSON，包含会话、运行时版本、活动代次和结构化诊断。`check` 保留已解析候选，`apply` 使用候选标识与预期版本提交；`deactivate` 同时核对会话与版本。已编译启动期定义变化报告 `requires_restart`。命令、候选有效期及依赖要求见[函数工具协议](modules/FUNCTIONS/README.md#agent-运行工具)。
+当前 P1 工具入口为 `/rml tools inspect|check|apply|deactivate`，以及同一实现的 `ResourceModLoader.runtime().getTools()`。响应统一为 JSON，包含会话、运行时版本、活动代次和结构化诊断。`check` 保留已解析候选，`apply` 使用候选标识与预期版本提交；`deactivate` 同时核对会话与版本。已编译启动期定义变化报告 `requires_restart`。命令、候选有效期及依赖要求见[函数工具协议](modules/FUNCTIONS/index.md#agent-运行工具)。
 
 运行工具已在独立客户端通过真实命令管理器验收：校验后改写源文件仍提交原候选；旧版本、被替换候选和错误会话均被拒绝；解析失败保留旧函数行为；启动期定义修改及删除报告重启要求。连续 100 次停用与重新提交后，验证包的归属资源数保持为 3，运行时版本递增到 204。验收加载完整模组 JAR，不依赖额外的 `runtime.jar`。
 
 ### 可组合能力与实际执行入口
 
-数值分布、等级公式、上下文条件、物品修饰器、效果树、NBT 路径和文本组件现在共享递归解码入口；自定义命名子节点可以进入已有组合。具体类型、字段和例子见[原生组合值](java/deserializer/README.md#原生组合值)。
+数值分布、等级公式、上下文条件、物品修饰器、效果树、NBT 路径和文本组件现在共享递归解码入口；自定义命名子节点可以进入已有组合。具体类型、字段和例子见[原生组合值](java/deserializer/index.md#原生组合值)。
 
 附魔通过原生攻击、受伤、装备变化、物品耐久、经验球和弓的发射/耗弹路径执行。属性效果随装备与条件变化清理；多重射击保留断弓前的效果数据，额外或免费箭不能变成可回收弹药。试炼定义分别描述普通与凶兆状态，使用条件决定升级，按参与者计算规模，并保存波次、奖励、冷却及跨维度目标记录。
 

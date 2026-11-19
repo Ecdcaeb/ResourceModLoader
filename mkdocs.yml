@@ -1,0 +1,139 @@
+site_name: ResourceModLoader
+site_description: Official documentation for ResourceModLoader
+site_url: https://ecdcaeb.github.io/ResourceModLoader/
+repo_url: https://github.com/Ecdcaeb/ResourceModLoader
+repo_name: Ecdcaeb/ResourceModLoader
+
+docs_dir: docs
+site_dir: build/docs-site
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: 切换到浅色模式
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+validation:
+  nav:
+    omitted_files: ignore
+    not_found: warn
+  links:
+    not_found: warn
+    absolute_links: info
+    unrecognized_links: info
+
+strict: true
+
+nav:
+  - 首页: index.md
+  - 中文:
+      - 资源模载器: zh_cn/index.md
+      - 主元: zh_cn/0_主元.md
+      - 开始: zh_cn/1_开始.md
+      - 模块:
+          - 概览: zh_cn/modules/index.md
+          - 增强数据包（rml:content）: zh_cn/modules/CONTENT/index.md
+          - 函数（rml:functions）: zh_cn/modules/FUNCTIONS/index.md
+          - 战利品表（rml:loot_tables）: zh_cn/modules/LOOT_TABLES/index.md
+          - 矿辞（rml:ore_dic）: zh_cn/modules/ORE_DIC/index.md
+          - 村庄（rml:custom_villagers）: zh_cn/modules/village/index.md
+          - 注册表:
+              - 概览: zh_cn/modules/registry/index.md
+              - 注册名重定义（rml:registry_remap）: zh_cn/modules/registry/REGISTRY_REMAP/index.md
+          - 闪烁标语（rml:splash_text）: zh_cn/modules/text/SPLASH_TEXT/index.md
+          - 配置:
+              - 概览: zh_cn/modules/config/index.md
+              - rml:config_define: zh_cn/modules/config/CONFIG_DEFINE/index.md
+              - rml:config_override: zh_cn/modules/config/CONFIG_OVERRIDE/index.md
+              - rml:config_redefault: zh_cn/modules/config/CONFIG_REDEFAULT/index.md
+          - rml:mod_kubejs: zh_cn/modules/MOD_KUBEJS/index.md
+          - rml:mod_crt: zh_cn/modules/MOD_CRT/index.md
+          - rml:mod_groovy_script: zh_cn/modules/MOD_GROOVYSCRIPT/index.md
+      - 解析器:
+          - 概览: zh_cn/deserializer/index.md
+          - Integer: zh_cn/deserializer/Integer/index.md
+          - RandomIntSupplier: zh_cn/deserializer/RandomIntSupplier/index.md
+          - ResourceLocation: zh_cn/deserializer/ResourceLocation/index.md
+          - IVillager: zh_cn/deserializer/IVillager/index.md
+          - ITradeList: zh_cn/deserializer/ITradeList/index.md
+          - ItemStack: zh_cn/deserializer/ItemStack/index.md
+          - EnchantmentData: zh_cn/deserializer/EnchantmentData/index.md
+          - TagOre: zh_cn/deserializer/TagOre/index.md
+          - ModuleType: zh_cn/deserializer/ModuleType/index.md
+      - Java 接口:
+          - 概览: zh_cn/java/index.md
+          - 模块: zh_cn/java/Modules/index.md
+          - ResourceModLoader: zh_cn/java/ResourceModLoader/index.md
+          - Deserializer: zh_cn/java/deserializer/index.md
+      - 开发计划: zh_cn/2_RML_2.0_Plan.md
+  - English:
+      - ResourceModLoader: en_us/index.md
+      - Main: en_us/0_Main.md
+      - Getting started: en_us/1_GetStart.md
+      - Modules:
+          - Overview: en_us/modules/index.md
+          - Enhanced data packs (rml:content): en_us/modules/CONTENT/index.md
+          - Functions (rml:functions): en_us/modules/FUNCTIONS/index.md
+          - Loot tables (rml:loot_tables): en_us/modules/LOOT_TABLES/index.md
+          - Ore dictionary (rml:ore_dic): en_us/modules/ORE_DIC/index.md
+          - Villagers (rml:custom_villagers): en_us/modules/village/index.md
+          - Registry:
+              - Overview: en_us/modules/registry/index.md
+              - Registry remap (rml:registry_remap): en_us/modules/registry/REGISTRY_REMAP/index.md
+          - Splash text (rml:splash_text): en_us/modules/text/SPLASH_TEXT/index.md
+          - Config:
+              - Overview: en_us/modules/config/index.md
+              - rml:config_define: en_us/modules/config/CONFIG_DEFINE/index.md
+              - rml:config_override: en_us/modules/config/CONFIG_OVERRIDE/index.md
+              - rml:config_redefault: en_us/modules/config/CONFIG_REDEFAULT/index.md
+          - rml:mod_kubejs: en_us/modules/MOD_KUBEJS/index.md
+          - rml:mod_crt: en_us/modules/MOD_CRT/index.md
+          - rml:mod_groovy_script: en_us/modules/MOD_GROOVYSCRIPT/index.md
+      - Deserializer:
+          - Overview: en_us/deserializer/index.md
+          - Integer: en_us/deserializer/Integer/index.md
+          - RandomIntSupplier: en_us/deserializer/RandomIntSupplier/index.md
+          - ResourceLocation: en_us/deserializer/ResourceLocation/index.md
+          - IVillager: en_us/deserializer/IVillager/index.md
+          - ITradeList: en_us/deserializer/ITradeList/index.md
+          - ItemStack: en_us/deserializer/ItemStack/index.md
+          - EnchantmentData: en_us/deserializer/EnchantmentData/index.md
+          - TagOre: en_us/deserializer/TagOre/index.md
+          - ModuleType: en_us/deserializer/ModuleType/index.md
+      - Java API:
+          - Overview: en_us/java/index.md
+          - Modules: en_us/java/Modules/index.md
+          - ResourceModLoader: en_us/java/ResourceModLoader/index.md
+          - Deserializer: en_us/java/deserializer/index.md

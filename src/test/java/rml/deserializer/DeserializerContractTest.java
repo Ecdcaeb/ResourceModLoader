@@ -9,6 +9,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 import rml.deserializer.value.IntRange;
 import rml.deserializer.value.WeightedList;
 import rml.loader.content.CompiledTagModule;
@@ -106,6 +107,10 @@ public final class DeserializerContractTest {
         IntRange range = manager.decode(IntRange.class, json("{\"min\":2,\"max\":5}"));
         check(range.test(2) && range.test(5) && !range.test(1) && !range.test(6), "Range endpoints are inclusive");
         reject(() -> manager.decode(BlockPos.class, json("[0,64.5,0]")), "Block positions must not silently truncate fractions");
+        Vec3i size = manager.decode(Vec3i.class, json("{\"type\":\"rml:vec3i\",\"x\":2,\"y\":3,\"z\":4}"));
+        check(size.getX() == 2 && size.getY() == 3 && size.getZ() == 4, "Integer vectors decode coordinates by name");
+        check(manager.decode(Vec3i.class, json("[1,2,3]")).equals(new Vec3i(1, 2, 3)), "Integer vectors decode coordinate arrays");
+        reject(() -> manager.decode(Vec3i.class, json("[1,2]")), "Integer vectors must not accept a partial coordinate list");
         reject(() -> manager.decode(IntRange.class, json("{\"min\":7,\"max\":3}")), "Reversed bounds must fail");
     }
 

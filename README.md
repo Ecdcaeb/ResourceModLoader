@@ -63,9 +63,9 @@ java -jar compiler/build/libs/rml-compiler.jar compile dev/datapack-example buil
 
 The source catalog follows Minecraft's data-driven registries. The target game remains Forge 1.12.2; native definitions and version differences are validated by their providers. Functions, data rules, world generation, gameplay, presentation, clocks and world tests share the extensible decoder registry. Generic containers preserve their element types, including nested weighted values and typed constructor arguments.
 
-See the [source example](dev/datapack-example), [decoder API](docs/zh_cn/java/deserializer/README.md), and [source and runtime guide](docs/zh_cn/2_RML_2.0_Plan.md#14-增强数据包的当前工程入口). The example clock drives the overworld from time zero; use a preview world. `/rml capabilities` lists actual runtime providers, and `/rml capabilities decoders` lists registered decoder names.
+See the [source example](dev/datapack-example), [decoder API](docs/zh_cn/java/deserializer/index.md), and [source and runtime guide](docs/zh_cn/2_RML_2.0_Plan.md#14-增强数据包的当前工程入口). The example clock drives the overworld from time zero; use a preview world. `/rml capabilities` lists actual runtime providers, and `/rml capabilities decoders` lists registered decoder names.
 
-Agent integrations can use `/rml tools inspect`, `check [pack]`, `apply <candidate> <revision>`, and `deactivate <session> <revision> <pack> [pack...]`. Every response is JSON with diagnostics and the current state. Check prepares a detached candidate; apply commits that exact candidate with revision protection. See the [runtime tool contract](docs/zh_cn/modules/FUNCTIONS/README.md#agent-运行工具).
+Agent integrations can use `/rml tools inspect`, `check [pack]`, `apply <candidate> <revision>`, and `deactivate <session> <revision> <pack> [pack...]`. Every response is JSON with diagnostics and the current state. Check prepares a detached candidate; apply commits that exact candidate with revision protection. See the [runtime tool contract](docs/zh_cn/modules/FUNCTIONS/index.md#agent-运行工具).
 
 ### Server-hosted Agent and terminal
 
@@ -80,4 +80,17 @@ Each operator has an isolated, persistent workspace and conversation. Compiled b
 `create_preview(build_id, seed)` starts an owned build in a separate game JVM with a fresh save. Client hosts open an independent preview window; dedicated hosts expose a loopback preview server. `inspect_preview`, `preview_command` and `run_preview_scenario` operate on that instance. `close_preview` reaps its process and removes its disposable save while retaining the compiled build. The same build can later be checked and applied or installed in the host world through the existing explicit tools. See [isolated previews](docs/zh_cn/2_RML_2.0_Plan.md#16-隔离预览实例) for lifecycle and environment boundaries.
 
 See [Agent setup, sessions and verification](docs/zh_cn/2_RML_2.0_Plan.md#15-服务端托管-agent-与-tui-会话) for model configuration, SSH connections, artifact access and the distinction between live application and startup installation.
+
+### Documentation
+
+The site is built with MkDocs Material; the configuration is `mkdocs.yml` and the sources are `docs/`.
+
+```text
+python -m venv .venv-docs
+.venv-docs/Scripts/python -m pip install -r requirements-docs.txt
+.venv-docs/Scripts/python -m mkdocs serve
+.venv-docs/Scripts/python -m mkdocs build --strict
+```
+
+`mkdocs build --strict` fails on broken internal links; the output is written to `build/docs-site`. CI builds and deploys it through `.github/workflows/docs.yml`, which requires the repository's Pages source to be set to GitHub Actions.
 
