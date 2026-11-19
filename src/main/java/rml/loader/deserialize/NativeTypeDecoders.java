@@ -8,9 +8,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityList;
-import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagByte;
@@ -25,8 +22,6 @@ import net.minecraft.nbt.NBTTagLong;
 import net.minecraft.nbt.NBTTagLongArray;
 import net.minecraft.nbt.NBTTagShort;
 import net.minecraft.nbt.NBTTagString;
-import net.minecraft.nbt.NBTUtil;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -46,7 +41,6 @@ import rml.loader.content.data.DataContext;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +48,6 @@ import java.util.UUID;
 
 /** Native values shared by every registry codec. Nested values use the caller's registry. */
 public final class NativeTypeDecoders {
-    private static final ResourceLocation PLAYER = new ResourceLocation("minecraft", "player");
     private NativeTypeDecoders() { }
 
     @FunctionalInterface public interface ItemMatcher { boolean test(ItemStack stack, DataContext context); }
@@ -122,17 +115,7 @@ public final class NativeTypeDecoders {
         nbtType(manager, "long_array", value -> new NBTTagLongArray(manager.decode(long[].class, value)));
         nbtType(manager, "list", value -> nbtList(manager, value));
         nbtType(manager, "compound", value -> nbtCompound(manager, object(value)));
-        register(manager, ItemMatcher.class, "item_match", value -> itemMatcher(manager, tags, value));
-        register(manager, BlockMatcher.class, "block_match", value -> blockMatcher(manager, tags, value));
-        register(manager, EntityMatcher.class, "entity_match", value -> entityMatcher(manager, tags, value));
-        for (String operation : new String[]{"all_of", "any_of", "not"}) {
-            manager.addEntry(new AbstractDeserializer<>(id(operation), ItemMatcher.class,
-                    value -> itemLogic(manager, object(value), operation)));
-            manager.addEntry(new AbstractDeserializer<>(id(operation), BlockMatcher.class,
-                    value -> blockLogic(manager, object(value), operation)));
-            manager.addEntry(new AbstractDeserializer<>(id(operation), EntityMatcher.class,
-                    value -> entityLogic(manager, object(value), operation)));
-        }
+        MatcherDecoders.register(manager, tags);
         NumericValueDecoders.register(manager);
         register(manager, rml.loader.runtime.function.FunctionDataPath.Compiled.class, "nbt_path",
                 value -> rml.loader.runtime.function.FunctionDataPath.compile(manager.decode(String.class, payload(value))));
@@ -297,128 +280,6 @@ public final class NativeTypeDecoders {
         return result;
     }
 
-    private static ItemMatcher itemMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
-        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
-        Names names = names(manager, tags, "item", object == null ? value : object.get("items"));
-        IntRange count = object != null && object.has("count") ? manager.decode(IntRange.class, object.get("count")) : null;
-        IntRange damage = object != null && object.has("damage") ? manager.decode(IntRange.class, object.get("damage")) : null;
-        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
-        return (stack, context) -> !stack.isEmpty() && names.test(stack.getItem().getRegistryName())
-                && (count == null || count.test(stack.getCount())) && (damage == null || damage.test(stack.getItemDamage()))
-                && (nbt == null || NBTUtil.areNBTEquals(nbt, stack.getTagCompound(), true));
-    }
-
-    private static BlockMatcher blockMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
-        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
-        Names names = names(manager, tags, "block", object == null ? value : object.get("blocks"));
-        JsonObject properties = object != null && object.has("properties") ? object(object.get("properties")) : new JsonObject();
-        String[] propertyNames = new String[properties.size()];
-        String[] propertyValues = new String[properties.size()];
-        int propertyIndex = 0;
-        for (Map.Entry<String, JsonElement> entry : properties.entrySet()) {
-            propertyNames[propertyIndex] = entry.getKey();
-            propertyValues[propertyIndex++] = manager.decode(String.class, entry.getValue());
-        }
-        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
-        return (world, position, state) -> {
-            if (!names.test(state.getBlock().getRegistryName())) return false;
-            for (int index = 0; index < propertyNames.length; index++) {
-                IProperty<?> property = state.getBlock().getBlockState().getProperty(propertyNames[index]);
-                if (property == null || !propertyValue(state, property).equals(propertyValues[index])) return false;
-            }
-            if (nbt == null) return true;
-            TileEntity tile = world.getTileEntity(position);
-            return tile != null && NBTUtil.areNBTEquals(nbt, tile.writeToNBT(new NBTTagCompound()), true);
-        };
-    }
-
-    private static <T extends Comparable<T>> String propertyValue(IBlockState state, IProperty<T> property) {
-        return property.getName(state.getValue(property));
-    }
-
-    private static EntityMatcher entityMatcher(DeserializerManager manager, CompiledTagModule tags, JsonElement value) throws JsonDeserializeException {
-        JsonObject object = value.isJsonObject() ? value.getAsJsonObject() : null;
-        Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
-        NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
-        DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
-        Boolean alive = object != null && object.has("alive") ? manager.decode(Boolean.class, object.get("alive")) : null;
-        Boolean onFire = object != null && object.has("on_fire") ? manager.decode(Boolean.class, object.get("on_fire")) : null;
-        return (entity, context) -> {
-            ResourceLocation key = entity instanceof EntityPlayer ? PLAYER : EntityList.getKey(entity);
-            if (!names.test(key) || alive != null && entity.isEntityAlive() != alive || onFire != null && entity.isBurning() != onFire) return false;
-            if (health != null && (!(entity instanceof EntityLivingBase) || !health.test(((EntityLivingBase) entity).getHealth()))) return false;
-            if (nbt == null) return true;
-            NBTTagCompound actual = new NBTTagCompound();
-            entity.writeToNBT(actual);
-            return NBTUtil.areNBTEquals(nbt, actual, true);
-        };
-    }
-
-    private static NBTTagCompound compoundMatcher(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
-        NBTBase decoded = manager.decode(NBTBase.class, value);
-        if (!(decoded instanceof NBTTagCompound)) throw error(value, "NBT matcher requires a compound");
-        return (NBTTagCompound) decoded;
-    }
-
-    private static ItemMatcher itemLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
-        if ("not".equals(operation)) { ItemMatcher child = manager.decode(ItemMatcher.class, required(object, "term")); return (stack, context) -> !child.test(stack, context); }
-        ItemMatcher[] terms = manager.decode(ItemMatcher[].class, required(object, "terms"));
-        boolean all = "all_of".equals(operation);
-        return (stack, context) -> { for (ItemMatcher term : terms) if (term.test(stack, context) != all) return !all; return all; };
-    }
-
-    private static BlockMatcher blockLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
-        if ("not".equals(operation)) { BlockMatcher child = manager.decode(BlockMatcher.class, required(object, "term")); return (world, position, state) -> !child.test(world, position, state); }
-        BlockMatcher[] terms = manager.decode(BlockMatcher[].class, required(object, "terms"));
-        boolean all = "all_of".equals(operation);
-        return (world, position, state) -> { for (BlockMatcher term : terms) if (term.test(world, position, state) != all) return !all; return all; };
-    }
-
-    private static EntityMatcher entityLogic(DeserializerManager manager, JsonObject object, String operation) throws JsonDeserializeException {
-        if ("not".equals(operation)) { EntityMatcher child = manager.decode(EntityMatcher.class, required(object, "term")); return (entity, context) -> !child.test(entity, context); }
-        EntityMatcher[] terms = manager.decode(EntityMatcher[].class, required(object, "terms"));
-        boolean all = "all_of".equals(operation);
-        return (entity, context) -> { for (EntityMatcher term : terms) if (term.test(entity, context) != all) return !all; return all; };
-    }
-
-    private static Names names(DeserializerManager manager, CompiledTagModule tags, String registry, JsonElement value) throws JsonDeserializeException {
-        Set<ResourceLocation> ids = new HashSet<>();
-        List<ResourceLocation> groups = new ArrayList<>();
-        if (value != null) {
-            String[] entries = manager.decode(String[].class, value);
-            for (String entry : entries) {
-                if (entry.startsWith("#")) groups.add(new ResourceLocation(entry.substring(1)));
-                else {
-                    ResourceLocation key = new ResourceLocation(entry);
-                    boolean known = "item".equals(registry) ? net.minecraftforge.fml.common.registry.ForgeRegistries.ITEMS.containsKey(key)
-                            : "block".equals(registry) ? net.minecraftforge.fml.common.registry.ForgeRegistries.BLOCKS.containsKey(key)
-                            : PLAYER.equals(key) || net.minecraftforge.fml.common.registry.ForgeRegistries.ENTITIES.containsKey(key);
-                    if (!known) throw error(value, "Unknown " + registry + " in matcher: " + key);
-                    ids.add(key);
-                }
-            }
-        }
-        return new Names(registry, tags, ids, groups, value == null);
-    }
-
-    private static final class Names {
-        private final String registry;
-        private final CompiledTagModule tags;
-        private final Set<ResourceLocation> ids;
-        private final ResourceLocation[] groups;
-        private final boolean any;
-        private Names(String registry, CompiledTagModule tags, Set<ResourceLocation> ids, List<ResourceLocation> groups, boolean any) {
-            this.registry = registry; this.tags = tags; this.ids = ids; this.groups = groups.toArray(new ResourceLocation[0]); this.any = any;
-        }
-        private boolean test(ResourceLocation key) {
-            if (any) return true;
-            if (key == null) return false;
-            if (ids.contains(key)) return true;
-            for (ResourceLocation tag : groups) if (tags.contains(registry, tag, key)) return true;
-            return false;
-        }
-    }
-
     private static EnumFacing direction(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
         if (value.isJsonObject() && value.getAsJsonObject().has("value")) {
             return direction(manager, required(value.getAsJsonObject(), "value"));
@@ -499,16 +360,16 @@ public final class NativeTypeDecoders {
         return value.isJsonObject() ? required(value.getAsJsonObject(), "value") : value;
     }
 
-    private static JsonObject object(JsonElement value) throws JsonDeserializeException {
+    static JsonObject object(JsonElement value) throws JsonDeserializeException {
         if (value == null || !value.isJsonObject()) throw error(value, "Expected an object");
         return value.getAsJsonObject();
     }
 
-    private static JsonElement required(JsonObject object, String name) throws JsonDeserializeException {
+    static JsonElement required(JsonObject object, String name) throws JsonDeserializeException {
         JsonElement result = object.get(name);
         if (result == null || result.isJsonNull()) throw error(object, "Missing field " + name);
         return result;
     }
 
-    private static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
+    static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
 }

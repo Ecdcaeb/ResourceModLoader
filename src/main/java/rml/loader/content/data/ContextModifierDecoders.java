@@ -30,6 +30,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static rml.loader.content.data.DecodeSupport.error;
+import static rml.loader.content.data.DecodeSupport.fieldsWithConditions;
+import static rml.loader.content.data.DecodeSupport.required;
+
 /** Composed item transformations; every nested value uses the caller's decoder registry. */
 final class ContextModifierDecoders {
     private ContextModifierDecoders() { }
@@ -64,19 +68,19 @@ final class ContextModifierDecoders {
         String type = new ResourceLocation(object.get("type").getAsString()).getPath();
         switch (type) {
             case "conditional": {
-                fields(object, "condition", "on_true", "on_false");
+                fieldsWithConditions(object, "condition", "on_true", "on_false");
                 DataRules.Test test = manager.decode(DataRules.Test.class, required(object, "condition"));
                 DataRules.Modifier yes = manager.decode(DataRules.Modifier.class, required(object, "on_true"));
                 DataRules.Modifier no = object.has("on_false") ? manager.decode(DataRules.Modifier.class, object.get("on_false")) : null;
                 return (stack, context) -> { DataRules.Modifier selected = test.test(context) ? yes : no; return selected == null ? stack : selected.apply(stack, context); };
             }
             case "weighted": {
-                fields(object, "distribution");
+                fieldsWithConditions(object, "distribution");
                 WeightedList<DataRules.Modifier> distribution = manager.decode(new TypeToken<WeightedList<DataRules.Modifier>>() { }.getType(), required(object, "distribution"));
                 return (stack, context) -> distribution.sample(context.getRandom()).apply(stack, context);
             }
             case "limit_count": {
-                fields(object, "limit");
+                fieldsWithConditions(object, "limit");
                 IntRange limit = manager.decode(IntRange.class, required(object, "limit"));
                 return (stack, context) -> {
                     if (stack.isEmpty()) return stack;
@@ -86,7 +90,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "set_enchantments": {
-                fields(object, "enchantments", "add");
+                fieldsWithConditions(object, "enchantments", "add");
                 Map<ResourceLocation, DataRules.NumberValue> definitions = manager.decode(new TypeToken<Map<ResourceLocation, DataRules.NumberValue>>() { }.getType(), required(object, "enchantments"));
                 Map<Enchantment, DataRules.NumberValue> values = new LinkedHashMap<>();
                 for (Map.Entry<ResourceLocation, DataRules.NumberValue> entry : definitions.entrySet()) {
@@ -112,7 +116,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "furnace_smelt": {
-                fields(object);
+                fieldsWithConditions(object);
                 return (stack, context) -> {
                     if (stack.isEmpty()) return stack;
                     ItemStack smelted = FurnaceRecipes.instance().getSmeltingResult(stack);
@@ -123,7 +127,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "enchant_randomly": {
-                fields(object, "enchantments");
+                fieldsWithConditions(object, "enchantments");
                 List<ResourceLocation> allowed = object.has("enchantments")
                         ? java.util.Arrays.asList(manager.decode(ResourceLocation[].class, object.get("enchantments"))) : null;
                 final List<ResourceLocation> selected = allowed;
@@ -145,7 +149,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "enchant_with_levels": {
-                fields(object, "levels", "treasure");
+                fieldsWithConditions(object, "levels", "treasure");
                 DataRules.NumberValue levels = manager.decode(DataRules.NumberValue.class, required(object, "levels"));
                 boolean treasure = object.has("treasure") && manager.decode(Boolean.class, object.get("treasure"));
                 return (stack, context) -> {
@@ -160,7 +164,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "looting_enchant": {
-                fields(object, "count", "limit");
+                fieldsWithConditions(object, "count", "limit");
                 DataRules.NumberValue count = manager.decode(DataRules.NumberValue.class, required(object, "count"));
                 int limit = object.has("limit") ? manager.decode(Integer.class, object.get("limit")) : 0;
                 if (limit < 0) throw error(object, "Looting limit must not be negative");
@@ -182,7 +186,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "apply_bonus": {
-                fields(object, "enchantment", "formula", "bonus", "probability");
+                fieldsWithConditions(object, "enchantment", "formula", "bonus", "probability");
                 ResourceLocation id = manager.decode(ResourceLocation.class, required(object, "enchantment"));
                 Enchantment enchantment = ForgeRegistries.ENCHANTMENTS.getValue(id);
                 if (enchantment == null) throw error(object, "Unknown enchantment " + id);
@@ -215,12 +219,12 @@ final class ContextModifierDecoders {
                 };
             }
             case "set_name": {
-                fields(object, "name");
+                fieldsWithConditions(object, "name");
                 ITextComponent name = manager.decode(ITextComponent.class, required(object, "name"));
                 return (stack, context) -> { if (stack.isEmpty()) return stack; ItemStack copy = stack.copy(); copy.setStackDisplayName(name.getFormattedText()); return copy; };
             }
             case "set_lore": {
-                fields(object, "lore", "replace");
+                fieldsWithConditions(object, "lore", "replace");
                 ITextComponent[] lines = manager.decode(ITextComponent[].class, required(object, "lore"));
                 String[] text = new String[lines.length];
                 for (int i = 0; i < text.length; i++) text[i] = lines[i].getFormattedText();
@@ -236,7 +240,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "copy_nbt": {
-                fields(object, "source", "path", "target", "storage", "operation");
+                fieldsWithConditions(object, "source", "path", "target", "storage", "operation");
                 String source = manager.decode(String.class, required(object, "source"));
                 if (!("entity".equals(source) || "block_entity".equals(source) || "tool".equals(source) || "inputs".equals(source) || "storage".equals(source))) throw error(object, "Unknown NBT source " + source);
                 if (!"storage".equals(source) && object.has("storage")) throw error(object, "Storage id requires the storage source");
@@ -282,7 +286,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "copy_name": {
-                fields(object, "source");
+                fieldsWithConditions(object, "source");
                 String source = manager.decode(String.class, required(object, "source"));
                 if (!("this".equals(source) || "killer".equals(source) || "killer_player".equals(source) || "block_entity".equals(source))) {
                     throw error(object, "Unknown name source " + source);
@@ -293,8 +297,7 @@ final class ContextModifierDecoders {
                     if ("this".equals(source)) {
                         if (context.getEntity() != null) name = context.getEntity().getDisplayName();
                     } else if ("killer".equals(source) || "killer_player".equals(source)) {
-                        Entity killer = context.getLootContext() != null ? context.getLootContext().getKiller()
-                                : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
+                        Entity killer = DataTargets.killer(context);
                         if ("killer_player".equals(source) && !(killer instanceof net.minecraft.entity.player.EntityPlayer)) killer = null;
                         if (killer != null) name = killer.getDisplayName();
                     } else if (context.getWorld() != null && context.getOrigin() != null) {
@@ -308,7 +311,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "fill_player_head": {
-                fields(object, "entity");
+                fieldsWithConditions(object, "entity");
                 String target = manager.decode(String.class, required(object, "entity"));
                 if (!("this".equals(target) || "killer".equals(target) || "killer_player".equals(target))) {
                     throw error(object, "Unknown player head source " + target);
@@ -318,8 +321,7 @@ final class ContextModifierDecoders {
                     Entity entity;
                     if ("this".equals(target)) entity = context.getEntity();
                     else {
-                        entity = context.getLootContext() != null ? context.getLootContext().getKiller()
-                                : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
+                        entity = DataTargets.killer(context);
                         if ("killer_player".equals(target) && !(entity instanceof net.minecraft.entity.player.EntityPlayer)) entity = null;
                     }
                     if (!(entity instanceof net.minecraft.entity.player.EntityPlayer)) return stack;
@@ -330,7 +332,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "set_contents": {
-                fields(object, "items", "block_entity");
+                fieldsWithConditions(object, "items", "block_entity");
                 ItemStack[] items = manager.decode(ItemStack[].class, required(object, "items"));
                 String blockEntityId = object.has("block_entity") ? manager.decode(String.class, object.get("block_entity")) : null;
                 return (stack, context) -> {
@@ -350,7 +352,7 @@ final class ContextModifierDecoders {
                 };
             }
             case "set_loot_table": {
-                fields(object, "name", "seed");
+                fieldsWithConditions(object, "name", "seed");
                 ResourceLocation table = manager.decode(ResourceLocation.class, required(object, "name"));
                 long seed = object.has("seed") ? manager.decode(Long.class, object.get("seed")) : 0L;
                 return (stack, context) -> {
@@ -365,19 +367,4 @@ final class ContextModifierDecoders {
             default: throw error(object, "Unknown item transformation " + type);
         }
     }
-
-    private static JsonElement required(JsonObject object, String name) throws JsonDeserializeException {
-        JsonElement value = object.get(name);
-        if (value == null || value.isJsonNull()) throw error(object, "Missing modifier field " + name);
-        return value;
-    }
-    private static void fields(JsonObject object, String... allowed) throws JsonDeserializeException {
-        for (Map.Entry<String, JsonElement> field : object.entrySet()) {
-            if ("type".equals(field.getKey()) || "conditions".equals(field.getKey())) continue;
-            boolean found = false;
-            for (String name : allowed) if (name.equals(field.getKey())) { found = true; break; }
-            if (!found) throw error(object, "Unsupported modifier field " + field.getKey());
-        }
-    }
-    private static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
 }

@@ -19,9 +19,12 @@ import rml.deserializer.value.WeightedList;
 import rml.loader.runtime.function.FunctionDataPath;
 import rml.loader.runtime.function.FunctionStorage;
 
-import java.util.Map;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
+
+import static rml.loader.content.data.DecodeSupport.error;
+import static rml.loader.content.data.DecodeSupport.fields;
+import static rml.loader.content.data.DecodeSupport.required;
 
 /** Context-dependent numeric expressions; every child is resolved through the public decoder registry. */
 final class ContextNumberDecoders {
@@ -168,18 +171,4 @@ final class ContextNumberDecoders {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("Numeric expression produced a non-finite result");
         return value;
     }
-    private static JsonElement required(JsonObject object, String field) throws JsonDeserializeException {
-        JsonElement value = object.get(field);
-        if (value == null || value.isJsonNull()) throw error(object, "Missing numeric expression field " + field);
-        return value;
-    }
-    private static void fields(JsonObject object, String... allowed) throws JsonDeserializeException {
-        for (Map.Entry<String, JsonElement> field : object.entrySet()) {
-            if ("type".equals(field.getKey())) continue;
-            boolean present = false;
-            for (String name : allowed) if (name.equals(field.getKey())) { present = true; break; }
-            if (!present) throw error(object, "Unsupported numeric expression field " + field.getKey());
-        }
-    }
-    private static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
 }

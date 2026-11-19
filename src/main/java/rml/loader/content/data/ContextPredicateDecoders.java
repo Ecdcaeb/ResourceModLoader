@@ -3,7 +3,6 @@ package rml.loader.content.data;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.scoreboard.ScoreObjective;
@@ -21,6 +20,11 @@ import rml.loader.deserialize.NativeTypeDecoders;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static rml.loader.content.data.DecodeSupport.error;
+import static rml.loader.content.data.DecodeSupport.fields;
+import static rml.loader.content.data.DecodeSupport.object;
+import static rml.loader.content.data.DecodeSupport.required;
 
 /** Context predicates reusable by loot, enchantments, timelines and user-registered nodes. */
 final class ContextPredicateDecoders {
@@ -92,19 +96,9 @@ final class ContextPredicateDecoders {
                 fields(object, "predicate", "target");
                 NativeTypeDecoders.EntityMatcher matcher = manager.decode(NativeTypeDecoders.EntityMatcher.class, required(object, "predicate"));
                 String target = object.has("target") ? manager.decode(String.class, object.get("target")) : "this";
-                if (!("this".equals(target) || "attacker".equals(target) || "direct_attacker".equals(target) || "killer_player".equals(target))) throw error(object, "Unknown entity context target " + target);
+                if (!("this".equals(target) || "attacker".equals(target) || "direct_attacker".equals(target) || "killer".equals(target) || "killer_player".equals(target))) throw error(object, "Unknown entity context target " + target);
                 return context -> {
-                    Entity entity;
-                    if ("this".equals(target)) entity = context.getEntity();
-                    else if ("killer_player".equals(target)) {
-                        Entity source = context.getLootContext() != null ? context.getLootContext().getKillerPlayer()
-                                : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
-                        entity = source instanceof EntityPlayer ? source : null;
-                    }
-                    else {
-                        DamageSource damage = context.getDamageSource();
-                        entity = damage == null ? null : "direct_attacker".equals(target) ? damage.getImmediateSource() : damage.getTrueSource();
-                    }
+                    Entity entity = DataTargets.entity(context, target);
                     return entity != null && matcher.test(entity, context);
                 };
             }
@@ -151,11 +145,10 @@ final class ContextPredicateDecoders {
                 String holder = manager.decode(String.class, required(object, "holder"));
                 String objective = manager.decode(String.class, required(object, "objective"));
                 DoubleRange range = manager.decode(DoubleRange.class, required(object, "value"));
-                boolean self = "this".equals(holder);
                 return context -> {
-                    if (context.getWorld() == null || self && context.getEntity() == null) return false;
-                    Entity entity = context.getEntity();
-                    String name = !self ? holder : entity instanceof EntityPlayer ? entity.getName() : entity.getCachedUniqueIdString();
+                    if (context.getWorld() == null) return false;
+                    String name = DataTargets.scoreHolder(context, holder);
+                    if (name == null) return false;
                     Scoreboard board = context.getWorld().getScoreboard();
                     ScoreObjective score = board.getObjective(objective);
                     return score != null && board.entityHasObjective(name, score) && range.test(board.getOrCreateScore(name, score).getScorePoints());
@@ -226,7 +219,7 @@ final class ContextPredicateDecoders {
                 Boolean baby = flags == null ? null : optional(manager, flags, "baby");
                 if (flags != null) fields(flags, "on_fire", "sneaking", "sprinting", "baby");
                 return context -> {
-                    Entity entity = targetEntity(context, target);
+                    Entity entity = DataTargets.entity(context, target);
                     if (entity == null || !matcher.test(entity, context)) return false;
                     if (fire == null && sneaking == null && sprinting == null && baby == null) return true;
                     if (!(entity instanceof net.minecraft.entity.EntityLivingBase)) return false;
@@ -248,7 +241,7 @@ final class ContextPredicateDecoders {
                 if (ranges.isEmpty()) throw error(object, "Entity scores must not be empty");
                 return context -> {
                     if (context.getWorld() == null) return false;
-                    String name = scoreHolder(context, holder);
+                    String name = DataTargets.scoreHolder(context, holder);
                     if (name == null) return false;
                     Scoreboard board = context.getWorld().getScoreboard();
                     for (Map.Entry<String, DoubleRange> entry : ranges.entrySet()) {
@@ -302,47 +295,10 @@ final class ContextPredicateDecoders {
         return value;
     }
 
-    private static JsonObject object(JsonElement value) throws JsonDeserializeException {
-        if (value == null || !value.isJsonObject()) throw error(value, "Expected an object");
-        return value.getAsJsonObject();
-    }
-
-    private static String scoreHolder(DataContext context, String holder) {
-        if (!"this".equals(holder)) return holder;
-        Entity entity = context.getEntity();
-        if (entity == null) return null;
-        return entity instanceof EntityPlayer ? entity.getName() : entity.getCachedUniqueIdString();
-    }
-
-    private static Entity targetEntity(DataContext context, String target) {
-        if ("this".equals(target)) return context.getEntity();
-        if ("killer_player".equals(target)) {
-            Entity source = context.getLootContext() != null ? context.getLootContext().getKillerPlayer()
-                    : context.getDamageSource() == null ? null : context.getDamageSource().getTrueSource();
-            return source instanceof EntityPlayer ? source : null;
-        }
-        DamageSource damage = context.getDamageSource();
-        if (damage == null) return null;
-        return "direct_attacker".equals(target) ? damage.getImmediateSource() : damage.getTrueSource();
-    }
     private static DoubleRange range(DeserializerManager manager, JsonObject object, String field) throws JsonDeserializeException {
         return object.has(field) ? manager.decode(DoubleRange.class, object.get(field)) : null;
     }
     private static Boolean optional(DeserializerManager manager, JsonObject object, String field) throws JsonDeserializeException {
         return object.has(field) ? manager.decode(Boolean.class, object.get(field)) : null;
     }
-    private static JsonElement required(JsonObject object, String field) throws JsonDeserializeException {
-        JsonElement value = object.get(field);
-        if (value == null || value.isJsonNull()) throw error(object, "Missing predicate field " + field);
-        return value;
-    }
-    private static void fields(JsonObject object, String... allowed) throws JsonDeserializeException {
-        for (Map.Entry<String, JsonElement> field : object.entrySet()) {
-            if ("type".equals(field.getKey())) continue;
-            boolean present = false;
-            for (String name : allowed) if (name.equals(field.getKey())) { present = true; break; }
-            if (!present) throw error(object, "Unsupported predicate field " + field.getKey());
-        }
-    }
-    private static JsonDeserializeException error(JsonElement value, String message) { return new JsonDeserializeException(value, message); }
 }
