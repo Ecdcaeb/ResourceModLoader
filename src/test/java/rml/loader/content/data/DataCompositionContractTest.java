@@ -71,6 +71,7 @@ public final class DataCompositionContractTest {
         modifierPreservesBookAndInputOwnership(manager, context);
         nativeLootTransformsCompose(manager, context);
         parityPredicatesAndModifiers(manager, context);
+        legacyRuleDecodersStayComposable(tags, context);
         conditionalEffectsShortCircuit(manager, context);
         textChildrenUseSharedManager(manager);
         reject(() -> manager.decode(IntProvider.class, json("{\"type\":\"minecraft:uniform\",\"min_inclusive\":1.5,\"max_inclusive\":2}")));
@@ -215,6 +216,34 @@ public final class DataCompositionContractTest {
                 json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:fortune\"}"));
         check(level.evaluate(context.withTool(pickaxe)) == 3 && level.evaluate(context) == 0, "Tool enchantment levels must decode as numbers");
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:enchantment_level\",\"enchantment\":\"minecraft:absent\"}")));
+    }
+
+    private static void legacyRuleDecodersStayComposable(CompiledTagModule tags, DataContext context) throws Exception {
+        DataRules legacy = new DataRules(new ContentCatalog(null), tags, (id, value) -> { throw new AssertionError("Unexpected function " + id); });
+        check(legacy.number(json("5")).evaluate(context) == 5, "Legacy numbers must keep their constant form");
+        check(legacy.number(json("{\"type\":\"level\"}")).evaluate(context.withLevel(4)) == 4, "Legacy level providers must read the effect level");
+        check(legacy.number(json("{\"type\":\"uniform\",\"min\":2,\"max\":2}")).evaluate(context) == 2, "Legacy uniform providers must keep inclusive bounds");
+        DataRules.Test level = legacy.predicate(json("{\"condition\":\"rml:level\",\"min\":3,\"max\":3}"));
+        check(level.test(context.withLevel(3)) && !level.test(context.withLevel(4)), "Legacy level predicates must respect their range");
+        check(legacy.predicate(json("{\"condition\":\"minecraft:random_chance\",\"chance\":1}")).test(context), "A certain legacy chance must pass");
+        check(legacy.predicate(json("{\"condition\":\"rml:inverted\",\"term\":{\"condition\":\"minecraft:random_chance\",\"chance\":0}}")).test(context),
+                "Legacy predicates must compose through inversion");
+        check(legacy.predicate(json("{\"condition\":\"minecraft:killed_by_player\",\"inverse\":true}")).test(context),
+                "An absent loot context must not count as a player kill");
+        DataRules.Modifier count = legacy.modifier(json("{\"type\":\"minecraft:set_count\",\"count\":3}"));
+        check(count.apply(new ItemStack(Items.APPLE, 1), context).getCount() == 3, "Legacy modifiers must read the function form");
+        DataRules.Modifier sequence = legacy.modifier(json("[{\"function\":\"minecraft:set_count\",\"count\":2},{\"function\":\"minecraft:set_nbt\",\"tag\":\"{demo:1}\"}]"));
+        ItemStack sequenced = sequence.apply(new ItemStack(Items.APPLE), context);
+        check(sequenced.getCount() == 2 && sequenced.getTagCompound().getInteger("demo") == 1, "Legacy modifier arrays must apply in order");
+        DataRules.Modifier components = legacy.modifier(json("{\"function\":\"minecraft:set_components\",\"components\":{\"minecraft:provides_trim_material\":\"minecraft:copper\"}}"));
+        check("minecraft:copper".equals(components.apply(new ItemStack(Items.APPLE), context).getTagCompound().getString("rml_trim_material")),
+                "Legacy trim components must lower to item NBT");
+        DataRules.Effect conditional = legacy.effect(json("{\"type\":\"rml:conditional\",\"condition\":{\"condition\":\"rml:level\",\"min\":0,\"max\":10},\"on_true\":{\"type\":\"rml:heal\",\"amount\":1}}"));
+        check(conditional != null, "Legacy effects must compose conditions and effects");
+        reject(() -> legacy.number(json("{\"type\":\"absent\"}")));
+        reject(() -> legacy.predicate(json("{\"condition\":\"rml:level\",\"ignored\":1}")));
+        reject(() -> legacy.modifier(json("{\"function\":\"minecraft:set_count\",\"count\":1,\"ignored\":1}")));
+        reject(() -> legacy.effect(json("{\"type\":\"rml:heal\",\"amount\":1,\"ignored\":1}")));
     }
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {
