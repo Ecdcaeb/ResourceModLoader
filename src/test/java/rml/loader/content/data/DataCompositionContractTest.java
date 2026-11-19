@@ -297,6 +297,14 @@ public final class DataCompositionContractTest {
 
         DataRules.Modifier metadata = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_data\",\"data\":3}"));
         check(metadata.apply(new ItemStack(Items.APPLE), context).getItemDamage() == 3, "Metadata modifiers must set the item damage value");
+        DataRules.Modifier repair = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_repair_cost\",\"cost\":7}"));
+        check(repair.apply(new ItemStack(Items.APPLE), context).getRepairCost() == 7, "Repair cost modifiers must set the anvil cost");
+        DataRules.Modifier unbreakable = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_unbreakable\"}"));
+        check(unbreakable.apply(new ItemStack(Items.DIAMOND_PICKAXE), context).getTagCompound().getBoolean("Unbreakable"),
+                "Unbreakable modifiers must write the native flag");
+        DataRules.Modifier breakable = manager.decode(DataRules.Modifier.class, json("{\"type\":\"rml:set_unbreakable\",\"value\":false}"));
+        check(!breakable.apply(new ItemStack(Items.DIAMOND_PICKAXE), context).getTagCompound().getBoolean("Unbreakable"),
+                "Unbreakable modifiers must be able to clear the flag");
 
         NativeTypeDecoders.EntityMatcher equipped = manager.decode(NativeTypeDecoders.EntityMatcher.class,
                 json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));

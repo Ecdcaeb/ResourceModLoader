@@ -34,7 +34,7 @@ final class ContextModifierDecoders {
 
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"conditional", "weighted", "limit_count", "set_enchantments", "apply_bonus", "set_name", "set_lore", "copy_nbt",
-                "copy_name", "fill_player_head", "set_contents", "set_loot_table"}) {
+                "copy_name", "fill_player_head", "set_contents", "set_loot_table", "set_repair_cost", "set_unbreakable"}) {
             entry(manager, "rml", name);
         }
         for (String name : new String[]{"furnace_smelt", "enchant_randomly", "enchant_with_levels", "looting_enchant", "set_attributes", "set_data"}) {

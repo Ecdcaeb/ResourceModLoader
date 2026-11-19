@@ -85,6 +85,8 @@ These item modifiers fill missing 1.12 container and name operations:
 - `rml:set_loot_table`: writes `name` and an optional `seed` into `BlockEntityTag`.
 - `rml:set_attributes`: writes a `modifiers` array into `AttributeModifiers`; each entry has `attribute`, `name`, `amount`, `operation` (`addition`, `multiply_base`, `multiply_total`), optional `slot` and `uuid`; a missing UUID is derived from attribute, name and slot.
 - `rml:set_data`: sets the item metadata (`data`) from a numeric provider; values outside `0..32767` fail.
+- `rml:set_repair_cost`: writes `RepairCost` from a numeric provider, affecting anvil cost.
+- `rml:set_unbreakable`: writes or clears `Unbreakable`; omitting `value` means `true`.
 
 ### Registration phases and native consumption
 

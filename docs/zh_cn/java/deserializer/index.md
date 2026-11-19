@@ -121,6 +121,8 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:set_loot_table`：`name` 与可选 `seed` 写入 `BlockEntityTag`。
 - `rml:set_attributes`：`modifiers` 数组写入 `AttributeModifiers`；每项含 `attribute`、`name`、`amount`、`operation`（`addition`、`multiply_base`、`multiply_total`）、可选 `slot` 与 `uuid`，缺省 UUID 由属性、名称与槽位确定。
 - `rml:set_data`：按数值提供者设置物品 meta（`data`），超出 `0..32767` 会报错。
+- `rml:set_repair_cost`：按数值提供者写入 `RepairCost`，影响铁砧消耗。
+- `rml:set_unbreakable`：写入或清除 `Unbreakable`；省略 `value` 时为 `true`。
 
 ### 注册阶段与原生消费
 

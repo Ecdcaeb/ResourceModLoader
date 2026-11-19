@@ -240,6 +240,32 @@ final class NativeItemDecoders {
                     return copy;
                 };
             }
+            case "set_repair_cost": {
+                fieldsWithConditions(object, "cost");
+                final DataRules.NumberValue cost = manager.decode(DataRules.NumberValue.class, required(object, "cost"));
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    double value = cost.evaluate(context);
+                    if (!Double.isFinite(value) || value < 0 || value > Integer.MAX_VALUE) {
+                        throw new IllegalArgumentException("Repair cost must be a nonnegative integer-sized value");
+                    }
+                    ItemStack copy = stack.copy();
+                    copy.setRepairCost((int) Math.floor(value));
+                    return copy;
+                };
+            }
+            case "set_unbreakable": {
+                fieldsWithConditions(object, "value");
+                final boolean value = !object.has("value") || manager.decode(Boolean.class, object.get("value"));
+                return (stack, context) -> {
+                    if (stack.isEmpty()) return stack;
+                    ItemStack copy = stack.copy();
+                    NBTTagCompound tag = copy.hasTagCompound() ? copy.getTagCompound().copy() : new NBTTagCompound();
+                    tag.setBoolean("Unbreakable", value);
+                    copy.setTagCompound(tag);
+                    return copy;
+                };
+            }
             case "set_data": {
                 fieldsWithConditions(object, "data");
                 final DataRules.NumberValue data = manager.decode(DataRules.NumberValue.class, required(object, "data"));
