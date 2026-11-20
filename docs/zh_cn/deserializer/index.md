@@ -67,7 +67,7 @@
 | `ItemStack` | `rml:item_stack`；物品 ID、`[物品, 数量]`，或 `item` / `count` / `data` / `nbt` 对象 |
 | `AxisAlignedBB` | `rml:box`；`min`、`max` 分别嵌套 Vec3d |
 | `UUID` | `rml:uuid`；UUID 字符串，或带 `value` 的显式构造器 |
-| `IBlockState` | `rml:block_state`；方块 ID，或原版 `Name` / `Properties` 对象，未知属性和值会报错 |
+| `IBlockState` | `rml:block_state`；方块 ID、原版 `Name` / `Properties` 对象，或 `"minecraft:stone[variant=granite]"` 字符串 |
 | `WeightedList<T>` | `entries` 数组，每项包含 `data: T` 和正整数 `weight`；元素保留泛型类型 |
 | `ITextComponent` | `minecraft:textcomponent`（原生文本、翻译、样式与 `extra`/`with` 子组件）；`rml:formatted`（`text` 加 `color`、`bold`、`italic`、`underline`、`strikethrough`、`obfuscated`、`insertion`）；`rml:translated`（`key` 与 `args`） |
 | `NBTBase` | `rml:nbt`；支持嵌套复合值、同类型列表及显式 byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array 构造器 |

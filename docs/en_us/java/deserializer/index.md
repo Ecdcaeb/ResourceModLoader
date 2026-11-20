@@ -78,6 +78,7 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:entity_team`: checks the entity's scoreboard team name.
 - `rml:entity_riding`: checks whether the entity is riding, optionally restricting the `vehicle` type.
 - `rml:always` / `rml:never`: constant predicates that always pass or fail, useful for generated content and placeholders.
+- `rml:random`: a random number inside `min`/`max`, truncated to an integer with `integer: true`; equal or reversed bounds are rejected.
 - `rml:entity_health`, `rml:entity_max_health`, `rml:entity_absorption`, `rml:dimension`, `rml:block_hardness`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability`, `rml:item_max_damage`, `rml:item_repair_cost` and `rml:item_max_stack_size`: read context entity health/max health/absorption, dimension, block hardness and light, tool count, metadata, durability, repair cost and max stack size; `fallback` covers a missing world or entity.
 - `rml:player_food`, `rml:player_saturation`, `rml:player_xp_level` and `rml:player_xp_progress`: read player food, saturation and experience; a non-player or missing entity uses `fallback`.
 

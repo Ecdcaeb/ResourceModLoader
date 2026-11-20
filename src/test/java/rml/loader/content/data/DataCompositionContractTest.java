@@ -330,6 +330,12 @@ public final class DataCompositionContractTest {
         DataRules.NumberValue maxStack = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_stack_size\"}"));
         check(repairCost.evaluate(context.withTool(costly)) == 7 && maxStack.evaluate(context.withTool(new ItemStack(Items.APPLE))) == 64,
                 "Item state readers must match the actual stack");
+        DataRules.NumberValue fixed = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":2,\"max\":2}"));
+        DataRules.NumberValue bounded = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":1,\"max\":3,\"integer\":true}"));
+        double sampled = bounded.evaluate(context);
+        check(fixed.evaluate(context) == 2 && sampled >= 1 && sampled < 3 && sampled == Math.floor(sampled),
+                "Random numbers must stay inside their bounds");
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":3,\"max\":1}")));
 
         NativeTypeDecoders.EntityMatcher equipped = manager.decode(NativeTypeDecoders.EntityMatcher.class,
                 json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));

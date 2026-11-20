@@ -67,7 +67,7 @@ These types are registered in the same `DeserializerManager`, so they work in fi
 | `BlockPos` | `rml:block_pos`; an integer coordinate array or `x/y/z` fields |
 | `AxisAlignedBB` | `rml:box`; nested `Vec3d` values in `min` and `max` |
 | `UUID` | `rml:uuid`; a UUID string, or an explicit constructor with `value` |
-| `IBlockState` | `rml:block_state`; a block id, or a vanilla `Name` / `Properties` object; unknown properties and values fail |
+| `IBlockState` | `rml:block_state`; a block id, a vanilla `Name` / `Properties` object, or a `"minecraft:stone[variant=granite]"` string |
 | `WeightedList<T>` | an `entries` array of `data: T` plus a positive `weight`; element types are preserved |
 | `ITextComponent` | `minecraft:textcomponent` (native text, translation, styles and `extra`/`with` children); `rml:formatted` (`text` plus `color`, `bold`, `italic`, `underline`, `strikethrough`, `obfuscated`, `insertion`); `rml:translated` (`key` and `args`) |
 | `NBTBase` | `rml:nbt`; nested compounds, homogeneous lists and explicit byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array constructors |

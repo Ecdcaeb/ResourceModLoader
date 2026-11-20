@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
+                "random", "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
                 "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
@@ -216,6 +216,18 @@ final class ContextNumberDecoders {
             case "item_max_stack_size":
                 fields(object);
                 return context -> context.getTool().isEmpty() ? 0 : context.getTool().getMaxStackSize();
+            case "random": {
+                fields(object, "min", "max", "integer");
+                final double min = object.has("min") ? finite(manager.decode(Double.class, object.get("min"))) : 0;
+                final double max = object.has("max") ? finite(manager.decode(Double.class, object.get("max"))) : 1;
+                final boolean integral = object.has("integer") && manager.decode(Boolean.class, object.get("integer"));
+                if (max < min) throw error(object, "Random bounds are reversed");
+                return context -> {
+                    if (max == min) return min;
+                    double value = min + context.getRandom().nextDouble() * (max - min);
+                    return integral ? Math.floor(value) : value;
+                };
+            }
             case "player_food": {
                 fields(object, "fallback");
                 final double fallback = playerFallback(manager, object);

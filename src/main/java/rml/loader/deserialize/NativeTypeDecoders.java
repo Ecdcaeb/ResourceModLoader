@@ -177,6 +177,22 @@ public final class NativeTypeDecoders {
             JsonObject object = value.getAsJsonObject();
             name = required(object, "Name");
             if (object.has("Properties")) properties = object(object.get("Properties"));
+        } else if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            String text = value.getAsString();
+            int bracket = text.indexOf('[');
+            if (bracket > 0 && text.endsWith("]")) {
+                name = new com.google.gson.JsonPrimitive(text.substring(0, bracket).trim());
+                JsonObject parsed = new JsonObject();
+                String body = text.substring(bracket + 1, text.length() - 1).trim();
+                if (!body.isEmpty()) {
+                    for (String pair : body.split(",")) {
+                        int equals = pair.indexOf('=');
+                        if (equals <= 0) throw error(value, "Invalid block state property: " + pair);
+                        parsed.addProperty(pair.substring(0, equals).trim(), pair.substring(equals + 1).trim());
+                    }
+                }
+                properties = parsed;
+            }
         }
         ResourceLocation key = manager.decode(ResourceLocation.class, name);
         if (!Block.REGISTRY.containsKey(key)) throw error(value, "Unknown block: " + key);

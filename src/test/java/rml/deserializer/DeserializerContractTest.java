@@ -149,6 +149,14 @@ public final class DeserializerContractTest {
         check(pair.getItem() == net.minecraft.init.Items.APPLE && pair.getCount() == 3, "Item shorthand decodes an item and count");
         reject(() -> manager.decode(net.minecraft.item.ItemStack.class, json("{\"type\":\"rml:item_stack\",\"value\":[\"minecraft:apple\",0]}")),
                 "Item shorthand must reject a nonpositive count");
+        net.minecraft.block.state.IBlockState granite = manager.decode(net.minecraft.block.state.IBlockState.class,
+                json("\"minecraft:stone[variant=granite]\""));
+        check(granite.getBlock() == net.minecraft.init.Blocks.STONE && granite.toString().contains("granite"),
+                "Block state strings must accept bracketed properties");
+        reject(() -> manager.decode(net.minecraft.block.state.IBlockState.class, json("\"minecraft:stone[variant=unknown]\"")),
+                "Block state strings must reject unknown property values");
+        reject(() -> manager.decode(net.minecraft.block.state.IBlockState.class, json("\"minecraft:stone[broken]\"")),
+                "Block state strings must reject malformed properties");
         net.minecraft.item.ItemStack defaultStack = manager.decode(net.minecraft.item.ItemStack.class,
                 json("{\"item\":\"minecraft:apple\",\"count\":2}"));
         check(defaultStack.getItem() == net.minecraft.init.Items.APPLE && defaultStack.getCount() == 2,
