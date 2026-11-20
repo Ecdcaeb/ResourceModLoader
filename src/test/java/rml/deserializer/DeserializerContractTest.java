@@ -34,6 +34,7 @@ public final class DeserializerContractTest {
         optionalFieldsDoNotHideInvalidValues(manager);
         geometryAndRangesRejectDataLoss(manager);
         typedNbtPreservesNamesAndNumericKinds(manager);
+        textVariantsCompose(manager);
         System.out.println("DeserializerContractTest passed");
     }
 
@@ -153,6 +154,24 @@ public final class DeserializerContractTest {
         check(defaultStack.getItem() == net.minecraft.init.Items.APPLE && defaultStack.getCount() == 2,
                 "Named item shorthand must not replace the default item decoder");
         reject(() -> manager.decode(IntRange.class, json("{\"min\":7,\"max\":3}")), "Reversed bounds must fail");
+    }
+
+    private static void textVariantsCompose(DeserializerManager manager) throws Exception {
+        net.minecraft.util.text.ITextComponent formatted = manager.decode(net.minecraft.util.text.ITextComponent.class,
+                json("{\"type\":\"rml:formatted\",\"text\":\"Reward\",\"color\":\"red\",\"bold\":true,\"italic\":true}"));
+        check("Reward".equals(formatted.getUnformattedText())
+                        && formatted.getStyle().getColor() == net.minecraft.util.text.TextFormatting.RED
+                        && formatted.getStyle().getBold()
+                        && formatted.getStyle().getItalic(),
+                "Formatted text must keep its content and style");
+        net.minecraft.util.text.ITextComponent translated = manager.decode(net.minecraft.util.text.ITextComponent.class,
+                json("{\"type\":\"rml:translated\",\"key\":\"block.minecraft.stone\",\"args\":[{\"text\":\"1\"}]}"));
+        check(translated instanceof net.minecraft.util.text.TextComponentTranslation
+                        && translated.getUnformattedText().contains("stone"),
+                "Translated text must keep its key");
+        reject(() -> manager.decode(net.minecraft.util.text.ITextComponent.class, json("{\"type\":\"rml:formatted\",\"unknown\":1}")), "Unknown text fields must fail");
+        reject(() -> manager.decode(net.minecraft.util.text.ITextComponent.class, json("{\"type\":\"rml:formatted\",\"color\":\"rainbow\"}")), "Unknown text colors must fail");
+        reject(() -> manager.decode(net.minecraft.util.text.ITextComponent.class, json("{\"type\":\"rml:translated\"}")), "Translations must require a key");
     }
 
     private static void typedNbtPreservesNamesAndNumericKinds(DeserializerManager manager) throws Exception {

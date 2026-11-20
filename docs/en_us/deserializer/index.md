@@ -69,6 +69,7 @@ These types are registered in the same `DeserializerManager`, so they work in fi
 | `UUID` | `rml:uuid`; a UUID string, or an explicit constructor with `value` |
 | `IBlockState` | `rml:block_state`; a block id, or a vanilla `Name` / `Properties` object; unknown properties and values fail |
 | `WeightedList<T>` | an `entries` array of `data: T` plus a positive `weight`; element types are preserved |
+| `ITextComponent` | `minecraft:textcomponent` (native text, translation, styles and `extra`/`with` children); `rml:formatted` (`text` plus `color`, `bold`, `italic`, `underline`, `strikethrough`, `obfuscated`, `insertion`); `rml:translated` (`key` and `args`) |
 | `NBTBase` | `rml:nbt`; nested compounds, homogeneous lists and explicit byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array constructors |
 | `ItemMatcher` | `rml:item_match`; item ids plus `items` / `count` / `damage` / `durability` / `max_damage` / `repair_cost` / `max_stack_size` / `unbreakable` / `nbt` (optional `nbt_exact`) / `enchantments` |
 | `BlockMatcher` | `rml:block_match`; block ids plus `blocks` / `properties` / block entity `nbt` (optional `nbt_exact`) |
