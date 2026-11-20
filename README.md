@@ -49,7 +49,7 @@ Run its isolated contract checks with a Java 8-compatible Gradle environment:
 
 The checks exercise dependency validation, failed activation rollback, generation ownership, repeated replacement/unload, registry rebinding, and directory/archive source parity. The managed function provider exposes `/rml functions status`, `reload [modid]`, and `unload <modid>`; other integrations retain startup semantics.
 
-The Java API has moved to instance services under `ResourceModLoader.runtime()`. See the [migration reference](docs/en_us/java/ResourceModLoader/README.md) and [2.0 plan](docs/zh_cn/2_RML_2.0_Plan.md).
+The Java API has moved to instance services under `ResourceModLoader.runtime()`. See the [migration reference](docs/en_us/java/ResourceModLoader/index.md) and [2.0 plan](docs/zh_cn/2_RML_2.0_Plan.md).
 
 ### Enhanced data-pack source
 
