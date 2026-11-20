@@ -81,8 +81,15 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:time`: matches the time of day (`0..24000`) against `min`/`max`.
 - `rml:gamerule`: matches a game rule state; `expected` selects the wanted value (default `true`).
 - `rml:random`: a random number inside `min`/`max`, truncated to an integer with `integer: true`; equal or reversed bounds are rejected.
+- `rml:wrap`: wraps `value` into `min..max` (for example `11` wraps to `1` inside `0..10`).
 - `rml:lerp`: linear interpolation between `from` and `to` by `t`.
 - `rml:remap`: maps `value` linearly from `from_min..from_max` to `to_min..to_max`.
+- `rml:inverse_lerp`: the relative position of `value` inside `min..max` (`0..1`).
+- `rml:sum` / `rml:product` / `rml:min_of` / `rml:max_of`: sum, product, minimum and maximum over an `inputs` list.
+- `rml:sign`: returns `-1`, `0` or `1`.
+- `rml:round_to`: rounds `value` to a multiple of `step` (which must be positive).
+- `rml:hypot`: the euclidean length of `x`, `y` and an optional `z`.
+- `rml:tan`, `rml:exp`, `rml:log`: single-value math functions; `log` requires a positive input.
 - `rml:gamerule` / `rml:time`: read a world game rule and the time of day (`0..24000`); a missing world uses `fallback`.
 - `rml:entity_health`, `rml:entity_max_health`, `rml:entity_absorption`, `rml:dimension`, `rml:block_hardness`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability`, `rml:item_max_damage`, `rml:item_repair_cost` and `rml:item_max_stack_size`: read context entity health/max health/absorption, dimension, block hardness and light, tool count, metadata, durability, repair cost and max stack size; `fallback` covers a missing world or entity.
 - `rml:player_food`, `rml:player_saturation`, `rml:player_xp_level` and `rml:player_xp_progress`: read player food, saturation and experience; a non-player or missing entity uses `fallback`.
@@ -99,6 +106,7 @@ These item modifiers fill missing 1.12 container and name operations:
 - `rml:set_unbreakable`: writes or clears `Unbreakable`; omitting `value` means `true`.
 - `rml:identity`: returns the stack unchanged, optionally gated by `conditions`, for placeholders or weighted branches.
 - `rml:noop`: performs no effect, for effect-tree placeholders.
+- `rml:repeat`: applies `effect` `count` times (`0..1024`), to repeat the same effect.
 
 ### Registration phases and native consumption
 

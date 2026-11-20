@@ -341,11 +341,40 @@ public final class DataCompositionContractTest {
         check(repairCost.evaluate(context.withTool(costly)) == 7 && maxStack.evaluate(context.withTool(new ItemStack(Items.APPLE))) == 64,
                 "Item state readers must match the actual stack");
         DataRules.NumberValue fixed = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":2,\"max\":2}"));
+        DataRules.NumberValue wrapped = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:wrap\",\"value\":11,\"min\":0,\"max\":10}"));
+        DataRules.NumberValue negative = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:wrap\",\"value\":-1,\"min\":0,\"max\":10}"));
+        check(fixed.evaluate(context) == 2 && wrapped.evaluate(context) == 1 && negative.evaluate(context) == 9,
+                "Wrapped numbers must stay inside their range");
         DataRules.NumberValue bounded = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":1,\"max\":3,\"integer\":true}"));
         double sampled = bounded.evaluate(context);
         check(fixed.evaluate(context) == 2 && sampled >= 1 && sampled < 3 && sampled == Math.floor(sampled),
                 "Random numbers must stay inside their bounds");
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":3,\"max\":1}")));
+        DataRules.NumberValue sum = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:sum\",\"inputs\":[1,2,3]}"));
+        DataRules.NumberValue product = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:product\",\"inputs\":[2,3,4]}"));
+        DataRules.NumberValue smallest = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:min_of\",\"inputs\":[4,2,9]}"));
+        DataRules.NumberValue largest = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:max_of\",\"inputs\":[4,2,9]}"));
+        check(sum.evaluate(context) == 6 && product.evaluate(context) == 24 && smallest.evaluate(context) == 2 && largest.evaluate(context) == 9,
+                "List aggregates must combine every input");
+        DataRules.NumberValue sign = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:sign\",\"value\":-3}"));
+        DataRules.NumberValue rounded = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:round_to\",\"value\":7,\"step\":5}"));
+        DataRules.NumberValue inverse = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:inverse_lerp\",\"value\":5,\"min\":0,\"max\":10}"));
+        DataRules.NumberValue distance = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:hypot\",\"x\":3,\"y\":4}"));
+        check(sign.evaluate(context) == -1 && rounded.evaluate(context) == 5 && inverse.evaluate(context) == 0.5 && distance.evaluate(context) == 5,
+                "Sign, rounding, interpolation and distance helpers must keep their arithmetic");
+        DataRules.NumberValue tangent = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:tan\",\"input\":0}"));
+        DataRules.NumberValue exponential = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:exp\",\"input\":0}"));
+        DataRules.NumberValue logarithm = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:log\",\"input\":1}"));
+        check(tangent.evaluate(context) == 0 && exponential.evaluate(context) == 1 && logarithm.evaluate(context) == 0,
+                "Trigonometric and exponential helpers must keep their values");
+        boolean logarithmRejected = false;
+        try {
+            manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:log\",\"input\":0}")).evaluate(context);
+        } catch (IllegalArgumentException failure) {
+            logarithmRejected = true;
+        }
+        check(logarithmRejected, "Logarithms must reject nonpositive values");
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:round_to\",\"value\":1,\"step\":0}")));
         DataRules.NumberValue lerp = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:lerp\",\"from\":0,\"to\":10,\"t\":0.5}"));
         DataRules.NumberValue remap = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:remap\",\"value\":5,\"from_min\":0,\"from_max\":10,\"to_min\":0,\"to_max\":100}"));
         check(lerp.evaluate(context) == 5 && remap.evaluate(context) == 50, "Interpolation and remapping must map their inputs");
@@ -427,6 +456,9 @@ public final class DataCompositionContractTest {
 
     private static void conditionalEffectsShortCircuit(DeserializerManager manager, DataContext context) throws Exception {
         int[] total = {0};
+        final int[] repeats = {0};
+        manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "count"), DataRules.Effect.class,
+                value -> (data, target) -> repeats[0]++));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "accumulate"), DataRules.Effect.class,
                 value -> (data, target) -> total[0] += data.getLevel()));
         manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("contract", "unreachable"), DataRules.Effect.class,
@@ -436,6 +468,9 @@ public final class DataCompositionContractTest {
                 + "{\"type\":\"rml:weighted\",\"distribution\":[{\"data\":{\"type\":\"contract:accumulate\"}}]}]}"));
         effect.apply(context, null);
         check(total[0] == 6, "Sequence and weighted consumers must execute custom child effects exactly once");
+        DataRules.Effect repeat = manager.decode(DataRules.Effect.class, json("{\"type\":\"rml:repeat\",\"count\":3,\"effect\":{\"type\":\"contract:count\"}}"));
+        repeat.apply(context, null);
+        check(repeats[0] == 3, "Repeat effects must apply their child the requested number of times");
     }
 
     private static void textChildrenUseSharedManager(DeserializerManager manager) throws Exception {

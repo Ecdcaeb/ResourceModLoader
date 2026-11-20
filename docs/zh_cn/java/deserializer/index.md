@@ -117,8 +117,15 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:time`：按 `min`/`max` 判断日内时间（`0..24000`）。
 - `rml:gamerule`：判断游戏规则状态，`expected` 指定期望值（默认 `true`）。
 - `rml:random`：`min`/`max` 区间内的随机数，`integer: true` 时取整；上下界相等或倒置会被拒绝。
+- `rml:wrap`：把 `value` 环绕到 `min..max` 区间内（例如 `11` 环绕到 `0..10` 得到 `1`）。
 - `rml:lerp`：按 `t` 在 `from` 与 `to` 之间线性插值。
 - `rml:remap`：把 `value` 从 `from_min..from_max` 线性映射到 `to_min..to_max`。
+- `rml:inverse_lerp`：求 `value` 在 `min..max` 中的相对位置（`0..1`）。
+- `rml:sum` / `rml:product` / `rml:min_of` / `rml:max_of`：对 `inputs` 列表求和、求积、取最小与最大。
+- `rml:sign`：返回 `-1`、`0` 或 `1`。
+- `rml:round_to`：把 `value` 四舍五入到 `step` 的倍数（`step` 必须为正）。
+- `rml:hypot`：按 `x`、`y` 与可选 `z` 计算欧氏长度。
+- `rml:tan`、`rml:exp`、`rml:log`：单值数学函数；`log` 要求输入为正。
 - `rml:gamerule` / `rml:time`：读取世界游戏规则与日内时间（`0..24000`），缺少世界时用 `fallback`。
 - `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`、`rml:item_repair_cost`、`rml:item_max_stack_size`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、耐久、修复成本与最大堆叠；缺失世界或实体时可用 `fallback`。
 - `rml:player_food`、`rml:player_saturation`、`rml:player_xp_level`、`rml:player_xp_progress`：读取玩家饥饿、饱和度与经验；非玩家实体或缺失实体时用 `fallback`。
@@ -135,6 +142,7 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:set_unbreakable`：写入或清除 `Unbreakable`；省略 `value` 时为 `true`。
 - `rml:identity`：原样返回物品，可带 `conditions`，用于占位或权重分支。
 - `rml:noop`：不执行任何效果，用于效果树占位。
+- `rml:repeat`：按 `count` 重复执行 `effect`（`0..1024`），用于把同一效果施加多次。
 
 ### 注册阶段与原生消费
 

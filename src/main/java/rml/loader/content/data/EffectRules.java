@@ -22,6 +22,25 @@ final class EffectRules {
         switch (type) {
             case "rml:noop":
                 return (context, target) -> { };
+            case "rml:repeat": {
+                if (decoders == null) throw DataRules.invalid("Repeat effects require the shared decoder registry");
+                final DataRules.NumberValue count;
+                final DataRules.Effect child;
+                try {
+                    count = decoders.decode(DataRules.NumberValue.class, DataRules.required(object, "count"));
+                    child = decoders.decode(DataRules.Effect.class, DataRules.required(object, "effect"));
+                } catch (JsonDeserializeException failure) {
+                    throw new IllegalArgumentException("Cannot decode repeat effect", failure);
+                }
+                return (context, target) -> {
+                    double value = count.evaluate(context);
+                    if (!Double.isFinite(value) || value < 0 || value > 1024) {
+                        throw new IllegalArgumentException("Repeat count must be within 0..1024");
+                    }
+                    int times = (int) Math.floor(value);
+                    for (int index = 0; index < times; index++) child.apply(context, target);
+                };
+            }
             case "rml:sequence": {
                 JsonArray definitions = DataRules.required(object, "effects").getAsJsonArray();
                 DataRules.Effect[] sequence = new DataRules.Effect[definitions.size()];

@@ -34,7 +34,8 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "random", "lerp", "remap", "gamerule", "time", "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
+                "random", "wrap", "lerp", "remap", "gamerule", "time", "sum", "product", "min_of", "max_of", "sign", "round_to", "inverse_lerp", "hypot", "tan", "exp", "log",
+                "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
                 "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
@@ -228,6 +229,83 @@ final class ContextNumberDecoders {
                     return integral ? Math.floor(value) : value;
                 };
             }
+            case "wrap": {
+                fields(object, "value", "min", "max");
+                final DataRules.NumberValue value = manager.decode(DataRules.NumberValue.class, required(object, "value"));
+                final double min = finite(manager.decode(Double.class, required(object, "min")));
+                final double max = finite(manager.decode(Double.class, required(object, "max")));
+                if (max <= min) throw error(object, "Wrap range must be positive");
+                return context -> {
+                    double current = value.evaluate(context);
+                    double span = max - min;
+                    double offset = (current - min) % span;
+                    if (offset < 0) offset += span;
+                    return min + offset;
+                };
+            }
+            case "sum": case "product": case "min_of": case "max_of": {
+                fields(object, "inputs");
+                DataRules.NumberValue[] values = manager.decode(DataRules.NumberValue[].class, required(object, "inputs"));
+                if (values.length == 0) throw error(object, "Aggregates require at least one input");
+                final String aggregate = type;
+                return context -> {
+                    double result = "sum".equals(aggregate) ? 0 : "product".equals(aggregate) ? 1 : Double.NaN;
+                    boolean first = true;
+                    for (DataRules.NumberValue value : values) {
+                        double current = value.evaluate(context);
+                        if ("sum".equals(aggregate)) result += current;
+                        else if ("product".equals(aggregate)) result *= current;
+                        else if (first) { result = current; first = false; }
+                        else result = "min_of".equals(aggregate) ? Math.min(result, current) : Math.max(result, current);
+                    }
+                    return finite(result);
+                };
+            }
+            case "sign": {
+                fields(object, "value");
+                final DataRules.NumberValue value = manager.decode(DataRules.NumberValue.class, required(object, "value"));
+                return context -> {
+                    double current = value.evaluate(context);
+                    return current > 0 ? 1 : current < 0 ? -1 : 0;
+                };
+            }
+            case "round_to": {
+                fields(object, "value", "step");
+                final DataRules.NumberValue value = manager.decode(DataRules.NumberValue.class, required(object, "value"));
+                final double step = finite(manager.decode(Double.class, required(object, "step")));
+                if (step <= 0) throw error(object, "Round step must be positive");
+                return context -> Math.floor(value.evaluate(context) / step + 0.5) * step;
+            }
+            case "inverse_lerp": {
+                fields(object, "value", "min", "max");
+                final DataRules.NumberValue value = manager.decode(DataRules.NumberValue.class, required(object, "value"));
+                final double min = finite(manager.decode(Double.class, required(object, "min")));
+                final double max = finite(manager.decode(Double.class, required(object, "max")));
+                return context -> {
+                    double current = value.evaluate(context);
+                    return max == min ? 0 : (current - min) / (max - min);
+                };
+            }
+            case "hypot": {
+                fields(object, "x", "y", "z");
+                final DataRules.NumberValue x = manager.decode(DataRules.NumberValue.class, required(object, "x"));
+                final DataRules.NumberValue y = manager.decode(DataRules.NumberValue.class, required(object, "y"));
+                final DataRules.NumberValue z = object.has("z") ? manager.decode(DataRules.NumberValue.class, object.get("z")) : null;
+                return context -> {
+                    double first = x.evaluate(context), second = y.evaluate(context);
+                    double third = z == null ? 0 : z.evaluate(context);
+                    return Math.sqrt(first * first + second * second + third * third);
+                };
+            }
+            case "tan":
+                return unary(manager, object, Math::tan);
+            case "exp":
+                return unary(manager, object, Math::exp);
+            case "log":
+                return unary(manager, object, value -> {
+                    if (value <= 0) throw new IllegalArgumentException("Logarithm requires a positive value");
+                    return Math.log(value);
+                });
             case "lerp": {
                 fields(object, "from", "to", "t");
                 final double from = finite(manager.decode(Double.class, required(object, "from")));
