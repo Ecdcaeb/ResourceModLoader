@@ -326,6 +326,16 @@ public final class DataCompositionContractTest {
         NativeTypeDecoders.ItemMatcher exact = manager.decode(NativeTypeDecoders.ItemMatcher.class,
                 json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"nbt\":{\"demo\":1},\"nbt_exact\":true}"));
         check(subset.test(tagged, context) && !exact.test(tagged, context), "nbt_exact must reject additional tags");
+        ItemStack leveled = new ItemStack(Items.APPLE);
+        NBTTagCompound leveledTag = new NBTTagCompound();
+        leveledTag.setInteger("level", 5);
+        leveledTag.setString("name", "reward");
+        leveled.setTagCompound(leveledTag);
+        NativeTypeDecoders.ItemMatcher path = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"nbt_path\":{\"level\":5,\"name\":\"reward\"}}"));
+        NativeTypeDecoders.ItemMatcher wrongPath = manager.decode(NativeTypeDecoders.ItemMatcher.class,
+                json("{\"type\":\"rml:item_match\",\"items\":[\"minecraft:apple\"],\"nbt_path\":{\"level\":6}}"));
+        check(path.test(leveled, context) && !wrongPath.test(leveled, context), "Item matchers must read NBT paths");
         DataRules.NumberValue repairCost = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_repair_cost\"}"));
         DataRules.NumberValue maxStack = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:item_max_stack_size\"}"));
         check(repairCost.evaluate(context.withTool(costly)) == 7 && maxStack.evaluate(context.withTool(new ItemStack(Items.APPLE))) == 64,

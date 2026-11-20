@@ -14,6 +14,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTBase;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTUtil;
+import net.minecraft.nbt.JsonToNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.common.registry.ForgeRegistries;
@@ -23,6 +24,7 @@ import rml.deserializer.JsonDeserializeException;
 import rml.deserializer.value.DoubleRange;
 import rml.deserializer.value.IntRange;
 import rml.loader.content.CompiledTagModule;
+import rml.loader.runtime.function.FunctionDataPath;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,6 +71,7 @@ final class MatcherDecoders {
         Boolean unbreakable = object != null && object.has("unbreakable") ? manager.decode(Boolean.class, object.get("unbreakable")) : null;
         Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
+        final Map<String, PathExpectation> paths = nbtPaths(manager, object == null ? null : object.get("nbt_path"));
         final Map<Enchantment, DoubleRange> enchantments = new java.util.LinkedHashMap<>();
         if (object != null && object.has("enchantments")) {
             JsonObject entries = NativeTypeDecoders.object(object.get("enchantments"));
@@ -87,7 +90,71 @@ final class MatcherDecoders {
                 && (maxStackSize == null || maxStackSize.test(stack.getMaxStackSize()))
                 && (unbreakable == null || isUnbreakable(stack) == unbreakable)
                 && (nbt == null || nbtMatches(nbt, stack.getTagCompound(), nbtExact))
+                && nbtPathsMatch(paths, stack.getTagCompound())
                 && enchantmentsMatch(enchantments, stack);
+    }
+
+    private static final class PathExpectation {
+        private final FunctionDataPath.Compiled path;
+        private final JsonElement expected;
+
+        private PathExpectation(FunctionDataPath.Compiled path, JsonElement expected) {
+            this.path = path;
+            this.expected = expected;
+        }
+    }
+
+    private static Map<String, PathExpectation> nbtPaths(DeserializerManager manager, JsonElement value) throws JsonDeserializeException {
+        Map<String, PathExpectation> paths = new java.util.LinkedHashMap<>();
+        if (value == null) return paths;
+        JsonObject entries = NativeTypeDecoders.object(value);
+        for (Map.Entry<String, JsonElement> entry : entries.entrySet()) {
+            FunctionDataPath.Compiled compiled;
+            try { compiled = FunctionDataPath.compile(entry.getKey()); }
+            catch (RuntimeException failure) { throw NativeTypeDecoders.error(value, "Invalid NBT path: " + entry.getKey()); }
+            paths.put(entry.getKey(), new PathExpectation(compiled, entry.getValue()));
+        }
+        return paths;
+    }
+
+    private static boolean nbtPathsMatch(Map<String, PathExpectation> paths, NBTTagCompound root) {
+        for (PathExpectation expectation : paths.values()) {
+            NBTBase actual = root == null ? null : expectation.path.get(root);
+            if (!matchesValue(actual, expectation.expected)) return false;
+        }
+        return true;
+    }
+
+    private static boolean matchesValue(NBTBase actual, JsonElement expected) {
+        if (actual == null || expected == null) return false;
+        if (!expected.isJsonPrimitive()) {
+            try {
+                NBTTagCompound expectedTag = JsonToNBT.getTagFromJson(expected.toString());
+                return NBTUtil.areNBTEquals(expectedTag, actual, false);
+            } catch (Exception failure) {
+                return false;
+            }
+        }
+        if (expected.getAsJsonPrimitive().isString()) {
+            return actual instanceof net.minecraft.nbt.NBTTagString
+                    && ((net.minecraft.nbt.NBTTagString) actual).getString().equals(expected.getAsString());
+        }
+        if (expected.getAsJsonPrimitive().isBoolean()) {
+            return actual instanceof net.minecraft.nbt.NBTTagByte
+                    && (((net.minecraft.nbt.NBTTagByte) actual).getByte() != 0) == expected.getAsBoolean();
+        }
+        if (expected.getAsJsonPrimitive().isNumber()) {
+            double value;
+            if (actual instanceof net.minecraft.nbt.NBTTagByte) value = ((net.minecraft.nbt.NBTTagByte) actual).getByte();
+            else if (actual instanceof net.minecraft.nbt.NBTTagShort) value = ((net.minecraft.nbt.NBTTagShort) actual).getShort();
+            else if (actual instanceof net.minecraft.nbt.NBTTagInt) value = ((net.minecraft.nbt.NBTTagInt) actual).getInt();
+            else if (actual instanceof net.minecraft.nbt.NBTTagLong) value = ((net.minecraft.nbt.NBTTagLong) actual).getLong();
+            else if (actual instanceof net.minecraft.nbt.NBTTagFloat) value = ((net.minecraft.nbt.NBTTagFloat) actual).getFloat();
+            else if (actual instanceof net.minecraft.nbt.NBTTagDouble) value = ((net.minecraft.nbt.NBTTagDouble) actual).getDouble();
+            else return false;
+            return value == expected.getAsDouble();
+        }
+        return false;
     }
 
     private static boolean nbtMatches(NBTTagCompound expected, NBTTagCompound actual, Boolean exact) {
@@ -120,6 +187,7 @@ final class MatcherDecoders {
         }
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
+        final Map<String, PathExpectation> paths = nbtPaths(manager, object == null ? null : object.get("nbt_path"));
         return (world, position, state) -> {
             if (!names.test(state.getBlock().getRegistryName())) return false;
             net.minecraft.block.state.BlockStateContainer defaults = state.getBlock().getBlockState();
@@ -127,11 +195,11 @@ final class MatcherDecoders {
                 IProperty<?> property = defaults.getProperty(propertyNames[index]);
                 if (property == null || !propertyValue(state, property).equals(propertyValues[index])) return false;
             }
-            if (nbt == null) return true;
+            if (nbt == null && paths.isEmpty()) return true;
             TileEntity tile = world.getTileEntity(position);
             if (tile == null) return false;
             NBTTagCompound actual = tile.writeToNBT(new NBTTagCompound());
-            return nbtMatches(nbt, actual, nbtExact);
+            return (nbt == null || nbtMatches(nbt, actual, nbtExact)) && nbtPathsMatch(paths, actual);
         };
     }
 
@@ -147,6 +215,7 @@ final class MatcherDecoders {
         Names names = names(manager, tags, "entity_type", object == null ? value : object.get("entity_types"));
         NBTTagCompound nbt = object != null && object.has("nbt") ? compoundMatcher(manager, object.get("nbt")) : null;
         Boolean nbtExact = object != null && object.has("nbt_exact") ? manager.decode(Boolean.class, object.get("nbt_exact")) : null;
+        final Map<String, PathExpectation> paths = nbtPaths(manager, object == null ? null : object.get("nbt_path"));
         DoubleRange health = object != null && object.has("health") ? manager.decode(DoubleRange.class, object.get("health")) : null;
         DoubleRange maxHealth = object != null && object.has("max_health") ? manager.decode(DoubleRange.class, object.get("max_health")) : null;
         DoubleRange absorption = object != null && object.has("absorption") ? manager.decode(DoubleRange.class, object.get("absorption")) : null;
@@ -173,10 +242,10 @@ final class MatcherDecoders {
                     if (!entry.getValue().test(equipmentStack(living, entry.getKey()), context)) return false;
                 }
             }
-            if (nbt == null) return true;
+            if (nbt == null && paths.isEmpty()) return true;
             NBTTagCompound actual = new NBTTagCompound();
             entity.writeToNBT(actual);
-            return nbtMatches(nbt, actual, nbtExact);
+            return (nbt == null || nbtMatches(nbt, actual, nbtExact)) && nbtPathsMatch(paths, actual);
         };
     }
 

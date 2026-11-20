@@ -71,9 +71,9 @@
 | `WeightedList<T>` | `entries` 数组，每项包含 `data: T` 和正整数 `weight`；元素保留泛型类型 |
 | `ITextComponent` | `minecraft:textcomponent`（原生文本、翻译、样式与 `extra`/`with` 子组件）；`rml:formatted`（`text` 加 `color`、`bold`、`italic`、`underline`、`strikethrough`、`obfuscated`、`insertion`）；`rml:translated`（`key` 与 `args`） |
 | `NBTBase` | `rml:nbt`；支持嵌套复合值、同类型列表及显式 byte/short/int/long/float/double/string/compound/list/byte_array/int_array/long_array 构造器 |
-| `ItemMatcher` | `rml:item_match`；物品 ID、`items` / `count` / `damage` / `durability` / `max_damage` / `repair_cost` / `max_stack_size` / `unbreakable` / `nbt`（可选 `nbt_exact`）/ `enchantments` |
-| `BlockMatcher` | `rml:block_match`；方块 ID、`blocks` / `properties` / 方块实体 `nbt`（可选 `nbt_exact`） |
-| `EntityMatcher` | `rml:entity_match`；实体 ID、`entity_types` / `health` / `max_health` / `absorption` / `alive` / `on_fire` / `nbt`（可选 `nbt_exact`）/ `equipment`（`mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`） |
+| `ItemMatcher` | `rml:item_match`；物品 ID、`items` / `count` / `damage` / `durability` / `max_damage` / `repair_cost` / `max_stack_size` / `unbreakable` / `nbt`（可选 `nbt_exact`）/ `nbt_path`（路径→期望值）/ `enchantments` |
+| `BlockMatcher` | `rml:block_match`；方块 ID、`blocks` / `properties` / 方块实体 `nbt`（可选 `nbt_exact`）/ `nbt_path` |
+| `EntityMatcher` | `rml:entity_match`；实体 ID、`entity_types` / `health` / `max_health` / `absorption` / `alive` / `on_fire` / `nbt`（可选 `nbt_exact`）/ `nbt_path` / `equipment`（`mainhand`、`offhand`、`head`、`chest`、`legs`、`feet`） |
 
 范围、权重类型位于 `rml.deserializer.value`；匹配器接口位于 `NativeTypeDecoders`。三种匹配器均可递归使用 `rml:all_of`、`rml:any_of` 和 `rml:not`；ID 列表中的 `#namespace:tag` 查询相应注册表的活动标签。
 
