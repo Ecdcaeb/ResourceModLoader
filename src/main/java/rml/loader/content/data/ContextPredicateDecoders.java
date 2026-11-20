@@ -33,7 +33,7 @@ final class ContextPredicateDecoders {
     static void register(DeserializerManager manager) {
         for (String name : new String[]{"value_check", "compare", "time_check", "weather_check", "light_check", "match_tool",
                 "match_entity", "match_block", "distance", "damage_source", "score_check", "survives_explosion", "table_bonus",
-                "enchantment_level", "enchantments", "held_item", "entity_team", "entity_riding", "always", "never", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
+                "enchantment_level", "enchantments", "held_item", "entity_team", "entity_riding", "always", "never", "time", "gamerule", "entity_properties", "entity_scores", "block_state_property", "location_check"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.Test.class,
                     json -> decode(manager, json.getAsJsonObject())));
         }
@@ -246,6 +246,29 @@ final class ContextPredicateDecoders {
             case "never":
                 fields(object);
                 return context -> false;
+            case "time": {
+                fields(object, "min", "max");
+                final double min = object.has("min") ? manager.decode(Double.class, object.get("min")) : 0;
+                final double max = object.has("max") ? manager.decode(Double.class, object.get("max")) : 24000;
+                return context -> {
+                    if (context.getWorld() == null) return false;
+                    double time = context.getWorld().getWorldTime() % 24000;
+                    return time >= min && time <= max;
+                };
+            }
+            case "gamerule": {
+                fields(object, "rule", "expected");
+                final String name = manager.decode(String.class, required(object, "rule"));
+                final boolean expected = !object.has("expected") || manager.decode(Boolean.class, object.get("expected"));
+                return context -> {
+                    if (context.getWorld() == null) return false;
+                    net.minecraft.world.GameRules gameRules = context.getWorld().getGameRules();
+                    if (!gameRules.hasRule(name)) return false;
+                    String value = gameRules.getString(name);
+                    boolean enabled = !"false".equalsIgnoreCase(value);
+                    return enabled == expected;
+                };
+            }
             case "entity_team": {
                 fields(object, "team");
                 final String team = manager.decode(String.class, required(object, "team"));

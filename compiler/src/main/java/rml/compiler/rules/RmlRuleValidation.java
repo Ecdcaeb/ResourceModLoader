@@ -212,6 +212,13 @@ final class RmlRuleValidation {
             case "rml:always": case "rml:never":
                 fields(input, source, PREDICATE_BASE);
                 return;
+            case "rml:time":
+                fields(input, source, merge(PREDICATE_BASE, "min", "max"));
+                return;
+            case "rml:gamerule":
+                fields(input, source, merge(PREDICATE_BASE, "rule", "expected"));
+                RuleJson.string(required(input, source, "rule"), source, "rule");
+                return;
             case "rml:entity_team":
                 fields(input, source, merge(PREDICATE_BASE, "team"));
                 RuleJson.string(required(input, source, "team"), source, "team");

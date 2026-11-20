@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "random", "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
+                "random", "lerp", "remap", "gamerule", "time", "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
                 "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
                     json -> decode(manager, rules, json.getAsJsonObject())));
@@ -227,6 +227,46 @@ final class ContextNumberDecoders {
                     double value = min + context.getRandom().nextDouble() * (max - min);
                     return integral ? Math.floor(value) : value;
                 };
+            }
+            case "lerp": {
+                fields(object, "from", "to", "t");
+                final double from = finite(manager.decode(Double.class, required(object, "from")));
+                final double to = finite(manager.decode(Double.class, required(object, "to")));
+                final DataRules.NumberValue t = manager.decode(DataRules.NumberValue.class, required(object, "t"));
+                return context -> from + (to - from) * t.evaluate(context);
+            }
+            case "remap": {
+                fields(object, "value", "from_min", "from_max", "to_min", "to_max");
+                final DataRules.NumberValue value = manager.decode(DataRules.NumberValue.class, required(object, "value"));
+                final double fromMin = finite(manager.decode(Double.class, required(object, "from_min")));
+                final double fromMax = finite(manager.decode(Double.class, required(object, "from_max")));
+                final double toMin = finite(manager.decode(Double.class, required(object, "to_min")));
+                final double toMax = finite(manager.decode(Double.class, required(object, "to_max")));
+                if (fromMax == fromMin) throw error(object, "Remap source range must not be empty");
+                return context -> {
+                    double ratio = (value.evaluate(context) - fromMin) / (fromMax - fromMin);
+                    return toMin + ratio * (toMax - toMin);
+                };
+            }
+            case "gamerule": {
+                fields(object, "rule", "fallback");
+                final String name = manager.decode(String.class, required(object, "rule"));
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                return context -> {
+                    if (context.getWorld() == null) return fallback;
+                    net.minecraft.world.GameRules gameRules = context.getWorld().getGameRules();
+                    if (!gameRules.hasRule(name)) return fallback;
+                    String value = gameRules.getString(name);
+                    if ("true".equalsIgnoreCase(value)) return 1;
+                    if ("false".equalsIgnoreCase(value)) return 0;
+                    try { return Double.parseDouble(value); }
+                    catch (NumberFormatException failure) { return fallback; }
+                };
+            }
+            case "time": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                return context -> context.getWorld() == null ? fallback : context.getWorld().getWorldTime() % 24000;
             }
             case "player_food": {
                 fields(object, "fallback");

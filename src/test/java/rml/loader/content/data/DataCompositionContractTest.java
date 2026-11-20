@@ -336,6 +336,15 @@ public final class DataCompositionContractTest {
         check(fixed.evaluate(context) == 2 && sampled >= 1 && sampled < 3 && sampled == Math.floor(sampled),
                 "Random numbers must stay inside their bounds");
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:random\",\"min\":3,\"max\":1}")));
+        DataRules.NumberValue lerp = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:lerp\",\"from\":0,\"to\":10,\"t\":0.5}"));
+        DataRules.NumberValue remap = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:remap\",\"value\":5,\"from_min\":0,\"from_max\":10,\"to_min\":0,\"to_max\":100}"));
+        check(lerp.evaluate(context) == 5 && remap.evaluate(context) == 50, "Interpolation and remapping must map their inputs");
+        DataRules.NumberValue rule = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:gamerule\",\"rule\":\"doDaylightCycle\",\"fallback\":1}"));
+        DataRules.NumberValue clock = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:time\",\"fallback\":6}"));
+        check(rule.evaluate(context) == 1 && clock.evaluate(context) == 6, "World readers must use their fallbacks without a world");
+        DataRules.Test daytime = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:time\",\"min\":0,\"max\":1000}"));
+        DataRules.Test ruleTest = manager.decode(DataRules.Test.class, json("{\"type\":\"rml:gamerule\",\"rule\":\"doFireTick\"}"));
+        check(!daytime.test(context) && !ruleTest.test(context), "World state checks require a server world");
 
         NativeTypeDecoders.EntityMatcher equipped = manager.decode(NativeTypeDecoders.EntityMatcher.class,
                 json("{\"type\":\"rml:entity_match\",\"entity_types\":[\"minecraft:zombie\"],\"equipment\":{\"mainhand\":{\"items\":[\"minecraft:diamond_sword\"]}}}"));
