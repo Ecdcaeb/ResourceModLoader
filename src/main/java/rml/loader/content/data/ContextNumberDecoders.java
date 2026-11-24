@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "random", "wrap", "lerp", "remap", "gamerule", "time", "sum", "product", "min_of", "max_of", "sign", "round_to", "inverse_lerp", "hypot", "tan", "exp", "log",
+                "random", "wrap", "lerp", "remap", "gamerule", "time", "sum", "product", "min_of", "max_of", "sign", "round_to", "inverse_lerp", "hypot", "tan", "exp", "log", "atan2", "log10", "fract", "step", "smoothstep", "pingpong", "quantize", "degrees", "radians", "position_x", "position_y", "position_z", "entity_x", "entity_y", "entity_z", "distance",
                 "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
                 "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
@@ -59,7 +59,7 @@ final class ContextNumberDecoders {
                     return finite(average ? result / values.length : result);
                 };
             }
-            case "sub": case "div": case "mod": case "floor_div": case "floor_mod": case "pow": {
+            case "sub": case "div": case "mod": case "floor_div": case "floor_mod": case "pow": case "atan2": {
                 fields(object, "left", "right");
                 DataRules.NumberValue left = number(manager, object, "left");
                 DataRules.NumberValue right = number(manager, object, "right");
@@ -67,6 +67,7 @@ final class ContextNumberDecoders {
                 switch (type) {
                     case "sub": operator = (a, b) -> a - b; break;
                     case "pow": operator = Math::pow; break;
+                    case "atan2": operator = Math::atan2; break;
                     case "div": operator = (a, b) -> a / b; break;
                     case "mod": operator = (a, b) -> a % b; break;
                     case "floor_div": operator = (a, b) -> Math.floor(a / b); break;
@@ -306,6 +307,75 @@ final class ContextNumberDecoders {
                     if (value <= 0) throw new IllegalArgumentException("Logarithm requires a positive value");
                     return Math.log(value);
                 });
+            case "log10":
+                return unary(manager, object, value -> {
+                    if (value <= 0) throw new IllegalArgumentException("Logarithm requires a positive value");
+                    return Math.log10(value);
+                });
+            case "fract": return unary(manager, object, value -> value - Math.floor(value));
+            case "degrees": return unary(manager, object, Math::toDegrees);
+            case "radians": return unary(manager, object, Math::toRadians);
+            case "step": {
+                fields(object, "value", "edge");
+                final DataRules.NumberValue value = number(manager, object, "value");
+                final DataRules.NumberValue edge = number(manager, object, "edge");
+                return context -> value.evaluate(context) < edge.evaluate(context) ? 0 : 1;
+            }
+            case "smoothstep": {
+                fields(object, "value", "from", "to");
+                final DataRules.NumberValue value = number(manager, object, "value");
+                final double from = finite(manager.decode(Double.class, required(object, "from")));
+                final double to = finite(manager.decode(Double.class, required(object, "to")));
+                if (from == to) throw error(object, "Smoothstep range must not be empty");
+                return context -> {
+                    double ratio = Math.max(0, Math.min(1, (value.evaluate(context) - from) / (to - from)));
+                    return ratio * ratio * (3 - 2 * ratio);
+                };
+            }
+            case "pingpong": {
+                fields(object, "value", "length");
+                final DataRules.NumberValue value = number(manager, object, "value");
+                final double length = finite(manager.decode(Double.class, required(object, "length")));
+                if (length <= 0) throw error(object, "Ping-pong length must be positive");
+                return context -> {
+                    double wrapped = value.evaluate(context) % (2 * length);
+                    if (wrapped < 0) wrapped += 2 * length;
+                    return wrapped <= length ? wrapped : 2 * length - wrapped;
+                };
+            }
+            case "quantize": {
+                fields(object, "value", "step");
+                final DataRules.NumberValue value = number(manager, object, "value");
+                final double step = finite(manager.decode(Double.class, required(object, "step")));
+                if (step <= 0) throw error(object, "Quantize step must be positive");
+                return context -> Math.floor(value.evaluate(context) / step) * step;
+            }
+            case "position_x": case "position_y": case "position_z": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                final int axis = type.endsWith("_x") ? 0 : type.endsWith("_y") ? 1 : 2;
+                return context -> {
+                    net.minecraft.util.math.BlockPos origin = context.getOrigin();
+                    if (origin == null) return fallback;
+                    return axis == 0 ? origin.getX() : axis == 1 ? origin.getY() : origin.getZ();
+                };
+            }
+            case "entity_x": case "entity_y": case "entity_z": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                final int axis = type.endsWith("_x") ? 0 : type.endsWith("_y") ? 1 : 2;
+                return context -> {
+                    net.minecraft.entity.Entity entity = context.getEntity();
+                    if (entity == null) return fallback;
+                    return axis == 0 ? entity.posX : axis == 1 ? entity.posY : entity.posZ;
+                };
+            }
+            case "distance": {
+                fields(object, "fallback");
+                final double fallback = object.has("fallback") ? finite(manager.decode(Double.class, object.get("fallback"))) : 0;
+                return context -> context.getEntity() == null || context.getOrigin() == null ? fallback
+                        : Math.sqrt(context.getEntity().getDistanceSq(context.getOrigin()));
+            }
             case "lerp": {
                 fields(object, "from", "to", "t");
                 final double from = finite(manager.decode(Double.class, required(object, "from")));

@@ -375,6 +375,32 @@ public final class DataCompositionContractTest {
         }
         check(logarithmRejected, "Logarithms must reject nonpositive values");
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:round_to\",\"value\":1,\"step\":0}")));
+        DataRules.NumberValue atan = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:atan2\",\"left\":0,\"right\":1}"));
+        DataRules.NumberValue log10 = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:log10\",\"input\":100}"));
+        DataRules.NumberValue fraction = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:fract\",\"input\":2.75}"));
+        DataRules.NumberValue belowEdge = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:step\",\"value\":3,\"edge\":5}"));
+        DataRules.NumberValue atEdge = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:step\",\"value\":5,\"edge\":5}"));
+        DataRules.NumberValue smooth = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:smoothstep\",\"value\":0.5,\"from\":0,\"to\":1}"));
+        DataRules.NumberValue pingpong = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:pingpong\",\"value\":7,\"length\":4}"));
+        DataRules.NumberValue quantized = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:quantize\",\"value\":7,\"step\":5}"));
+        DataRules.NumberValue radians = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:radians\",\"input\":180}"));
+        check(atan.evaluate(context) == 0 && log10.evaluate(context) == 2 && fraction.evaluate(context) == 0.75
+                        && belowEdge.evaluate(context) == 0 && atEdge.evaluate(context) == 1 && smooth.evaluate(context) == 0.5
+                        && pingpong.evaluate(context) == 1 && quantized.evaluate(context) == 5
+                        && Math.abs(radians.evaluate(context) - Math.PI) < 1e-9,
+                "Stepped, smooth and quantized helpers must keep their arithmetic");
+        DataContext located = new DataContext(null, null, new net.minecraft.util.math.BlockPos(3, 4, 5), new Random(17), 3);
+        DataRules.NumberValue positioned = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:sum\",\"inputs\":["
+                + "{\"type\":\"rml:position_x\"},{\"type\":\"rml:position_y\"},{\"type\":\"rml:position_z\"}]}"));
+        DataRules.NumberValue fallback = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:position_x\",\"fallback\":9}"));
+        DataRules.NumberValue entityFallback = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:entity_y\",\"fallback\":7}"));
+        DataRules.NumberValue distanceFallback = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:distance\",\"fallback\":2}"));
+        check(positioned.evaluate(located) == 12 && fallback.evaluate(located) == 3 && fallback.evaluate(context) == 9
+                        && entityFallback.evaluate(context) == 7 && distanceFallback.evaluate(context) == 2,
+                "Position and entity readers must use the context or their fallback");
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:smoothstep\",\"value\":1,\"from\":2,\"to\":2}")));
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:pingpong\",\"value\":1,\"length\":0}")));
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:quantize\",\"value\":1,\"step\":0}")));
         DataRules.NumberValue lerp = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:lerp\",\"from\":0,\"to\":10,\"t\":0.5}"));
         DataRules.NumberValue remap = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:remap\",\"value\":5,\"from_min\":0,\"from_max\":10,\"to_min\":0,\"to_max\":100}"));
         check(lerp.evaluate(context) == 5 && remap.evaluate(context) == 50, "Interpolation and remapping must map their inputs");
