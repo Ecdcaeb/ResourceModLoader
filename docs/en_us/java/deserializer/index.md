@@ -97,6 +97,9 @@ Additional composed conditions fill gaps in the 1.12 field surface:
 - `rml:pingpong`: a triangle wave with half-period `length`.
 - `rml:quantize`: rounds down to a multiple of `step` (which must be positive).
 - `rml:position_x` / `position_y` / `position_z`, `rml:entity_x` / `entity_y` / `entity_z`, `rml:distance`: read the context origin, the entity position, or the distance between them; a missing context uses `fallback`.
+- `rml:bit_and`, `rml:bit_or`, `rml:bit_xor`, `rml:shift_left`, `rml:shift_right`: 64-bit integer bit operations on `left`/`right` (truncated to integers first).
+- `rml:noise`: smooth value noise over `x`/`y`/optional `z`, `scale` (default 1) and `seed`, producing a reproducible value in `-1..1`.
+- `rml:hash`: mixes `inputs` and an optional `seed` into a deterministic `0..1` hash for stateless pseudo-random choices.
 - `rml:gamerule` / `rml:time`: read a world game rule and the time of day (`0..24000`); a missing world uses `fallback`.
 - `rml:entity_health`, `rml:entity_max_health`, `rml:entity_absorption`, `rml:dimension`, `rml:block_hardness`, `rml:block_light`, `rml:item_count`, `rml:item_damage`, `rml:item_durability`, `rml:item_max_damage`, `rml:item_repair_cost` and `rml:item_max_stack_size`: read context entity health/max health/absorption, dimension, block hardness and light, tool count, metadata, durability, repair cost and max stack size; `fallback` covers a missing world or entity.
 - `rml:player_food`, `rml:player_saturation`, `rml:player_xp_level` and `rml:player_xp_progress`: read player food, saturation and experience; a non-player or missing entity uses `fallback`.

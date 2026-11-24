@@ -133,6 +133,9 @@ manager.named(Vec3d.class, new ResourceLocation("demo", "offset"))
 - `rml:pingpong`：以 `length` 为半周期的三角波。
 - `rml:quantize`：向下取整到 `step` 的倍数（`step` 必须为正）。
 - `rml:position_x` / `position_y` / `position_z`、`rml:entity_x` / `entity_y` / `entity_z`、`rml:distance`：读取上下文原点坐标、实体坐标或两者距离；缺失时用 `fallback`。
+- `rml:bit_and`、`rml:bit_or`、`rml:bit_xor`、`rml:shift_left`、`rml:shift_right`：按 `left`/`right` 做 64 位整数位运算（先截断为整数）。
+- `rml:noise`：按 `x`/`y`/可选 `z`、`scale`（默认 1）和 `seed` 计算平滑值噪声，输出 `-1..1` 且可复现。
+- `rml:hash`：把 `inputs` 与可选 `seed` 混合成 `0..1` 的确定性哈希，用于无状态伪随机选择。
 - `rml:gamerule` / `rml:time`：读取世界游戏规则与日内时间（`0..24000`），缺少世界时用 `fallback`。
 - `rml:entity_health`、`rml:entity_max_health`、`rml:entity_absorption`、`rml:dimension`、`rml:block_hardness`、`rml:block_light`、`rml:item_count`、`rml:item_damage`、`rml:item_durability`、`rml:item_max_damage`、`rml:item_repair_cost`、`rml:item_max_stack_size`：读取上下文实体生命/最大生命/伤害吸收、维度、方块硬度与光照、工具数量、meta、耐久、修复成本与最大堆叠；缺失世界或实体时可用 `fallback`。
 - `rml:player_food`、`rml:player_saturation`、`rml:player_xp_level`、`rml:player_xp_progress`：读取玩家饥饿、饱和度与经验；非玩家实体或缺失实体时用 `fallback`。

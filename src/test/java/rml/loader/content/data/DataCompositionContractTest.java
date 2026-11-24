@@ -401,6 +401,35 @@ public final class DataCompositionContractTest {
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:smoothstep\",\"value\":1,\"from\":2,\"to\":2}")));
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:pingpong\",\"value\":1,\"length\":0}")));
         reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:quantize\",\"value\":1,\"step\":0}")));
+        DataRules.NumberValue bitAnd = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:bit_and\",\"left\":6,\"right\":3}"));
+        DataRules.NumberValue bitOr = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:bit_or\",\"left\":4,\"right\":1}"));
+        DataRules.NumberValue bitXor = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:bit_xor\",\"left\":7,\"right\":3}"));
+        DataRules.NumberValue shiftedLeft = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:shift_left\",\"left\":1,\"right\":4}"));
+        DataRules.NumberValue shiftedRight = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:shift_right\",\"left\":16,\"right\":2}"));
+        check(bitAnd.evaluate(context) == 2 && bitOr.evaluate(context) == 5 && bitXor.evaluate(context) == 4
+                        && shiftedLeft.evaluate(context) == 16 && shiftedRight.evaluate(context) == 4,
+                "Bitwise operators must keep their integer results");
+        String noiseDefinition = "{\"type\":\"rml:noise\",\"x\":0.25,\"y\":0.5,\"z\":0.75,\"scale\":2,\"seed\":7}";
+        DataRules.NumberValue noise = manager.decode(DataRules.NumberValue.class, json(noiseDefinition));
+        DataRules.NumberValue sameNoise = manager.decode(DataRules.NumberValue.class, json(noiseDefinition));
+        DataRules.NumberValue otherNoise = manager.decode(DataRules.NumberValue.class, json(
+                "{\"type\":\"rml:noise\",\"x\":0.25,\"y\":0.5,\"z\":0.75,\"scale\":2,\"seed\":8}"));
+        DataRules.NumberValue flatNoise = manager.decode(DataRules.NumberValue.class, json(
+                "{\"type\":\"rml:noise\",\"x\":0.25,\"y\":0.5,\"scale\":2,\"seed\":7}"));
+        DataRules.NumberValue zeroDepthNoise = manager.decode(DataRules.NumberValue.class, json(
+                "{\"type\":\"rml:noise\",\"x\":0.25,\"y\":0.5,\"z\":0,\"scale\":2,\"seed\":7}"));
+        double sampledNoise = noise.evaluate(context);
+        check(sampledNoise == sameNoise.evaluate(context) && Math.abs(sampledNoise) <= 1
+                        && flatNoise.evaluate(context) == zeroDepthNoise.evaluate(context)
+                        && otherNoise.evaluate(context) != sampledNoise,
+                "Noise must be deterministic, seeded and bounded");
+        DataRules.NumberValue hash = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:hash\",\"inputs\":[1,2,3],\"seed\":5}"));
+        DataRules.NumberValue sameHash = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:hash\",\"inputs\":[1,2,3],\"seed\":5}"));
+        DataRules.NumberValue otherHash = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:hash\",\"inputs\":[1,2,4],\"seed\":5}"));
+        double hashed = hash.evaluate(context);
+        check(hashed == sameHash.evaluate(context) && hashed >= 0 && hashed < 1 && otherHash.evaluate(context) != hashed,
+                "Hashes must be deterministic and normalized");
+        reject(() -> manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:noise\",\"x\":0,\"y\":0,\"scale\":0}")));
         DataRules.NumberValue lerp = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:lerp\",\"from\":0,\"to\":10,\"t\":0.5}"));
         DataRules.NumberValue remap = manager.decode(DataRules.NumberValue.class, json("{\"type\":\"rml:remap\",\"value\":5,\"from_min\":0,\"from_max\":10,\"to_min\":0,\"to_max\":100}"));
         check(lerp.evaluate(context) == 5 && remap.evaluate(context) == 50, "Interpolation and remapping must map their inputs");

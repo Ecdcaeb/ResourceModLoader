@@ -34,7 +34,7 @@ final class ContextNumberDecoders {
         for (String name : new String[]{"add", "mul", "min", "max", "avg", "sub", "div", "mod", "pow",
                 "floor_div", "floor_mod", "abs", "negate", "sqrt", "sin", "cos", "floor", "ceil", "round", "truncate",
                 "clamp", "conditional", "weighted", "number_dispatcher", "sample_int", "sample_float", "level_based", "storage", "input",
-                "random", "wrap", "lerp", "remap", "gamerule", "time", "sum", "product", "min_of", "max_of", "sign", "round_to", "inverse_lerp", "hypot", "tan", "exp", "log", "atan2", "log10", "fract", "step", "smoothstep", "pingpong", "quantize", "degrees", "radians", "position_x", "position_y", "position_z", "entity_x", "entity_y", "entity_z", "distance",
+                "random", "wrap", "lerp", "remap", "gamerule", "time", "sum", "product", "min_of", "max_of", "sign", "round_to", "inverse_lerp", "hypot", "tan", "exp", "log", "atan2", "log10", "fract", "step", "smoothstep", "pingpong", "quantize", "degrees", "radians", "position_x", "position_y", "position_z", "entity_x", "entity_y", "entity_z", "distance", "bit_and", "bit_or", "bit_xor", "shift_left", "shift_right", "noise", "hash",
                 "enchantment_level", "entity_health", "entity_max_health", "entity_absorption", "dimension", "block_hardness", "block_light", "item_count", "item_damage", "item_durability", "item_max_damage", "item_repair_cost", "item_max_stack_size",
                 "player_food", "player_saturation", "player_xp_level", "player_xp_progress"}) {
             manager.addEntry(new AbstractDeserializer<>(new ResourceLocation("rml", name), DataRules.NumberValue.class,
@@ -376,6 +376,45 @@ final class ContextNumberDecoders {
                 return context -> context.getEntity() == null || context.getOrigin() == null ? fallback
                         : Math.sqrt(context.getEntity().getDistanceSq(context.getOrigin()));
             }
+            case "bit_and": case "bit_or": case "bit_xor": case "shift_left": case "shift_right": {
+                fields(object, "left", "right");
+                final DataRules.NumberValue left = number(manager, object, "left");
+                final DataRules.NumberValue right = number(manager, object, "right");
+                final String operation = type;
+                return context -> {
+                    long a = (long) left.evaluate(context), b = (long) right.evaluate(context);
+                    switch (operation) {
+                        case "bit_and": return finite(a & b);
+                        case "bit_or": return finite(a | b);
+                        case "bit_xor": return finite(a ^ b);
+                        case "shift_left": return finite(a << b);
+                        default: return finite(a >> b);
+                    }
+                };
+            }
+            case "noise": {
+                fields(object, "x", "y", "z", "scale", "seed");
+                final DataRules.NumberValue x = number(manager, object, "x");
+                final DataRules.NumberValue y = number(manager, object, "y");
+                final DataRules.NumberValue z = object.has("z") ? number(manager, object, "z") : null;
+                final double scale = object.has("scale") ? finite(manager.decode(Double.class, object.get("scale"))) : 1;
+                final long seed = object.has("seed") ? manager.decode(Long.class, object.get("seed")) : 0;
+                if (scale == 0) throw error(object, "Noise scale must not be zero");
+                return context -> valueNoise(seed,
+                        x.evaluate(context) / scale,
+                        y.evaluate(context) / scale,
+                        (z == null ? 0 : z.evaluate(context)) / scale);
+            }
+            case "hash": {
+                fields(object, "inputs", "seed");
+                final DataRules.NumberValue[] values = manager.decode(DataRules.NumberValue[].class, required(object, "inputs"));
+                final long seed = object.has("seed") ? manager.decode(Long.class, object.get("seed")) : 0;
+                return context -> {
+                    long hash = seed;
+                    for (DataRules.NumberValue value : values) hash = mix(hash, Double.doubleToLongBits(value.evaluate(context)));
+                    return (hash >>> 11) * 0x1.0p-53;
+                };
+            }
             case "lerp": {
                 fields(object, "from", "to", "t");
                 final double from = finite(manager.decode(Double.class, required(object, "from")));
@@ -466,5 +505,34 @@ final class ContextNumberDecoders {
     private static double finite(double value) {
         if (!Double.isFinite(value)) throw new IllegalArgumentException("Numeric expression produced a non-finite result");
         return value;
+    }
+
+    private static double valueNoise(long seed, double x, double y, double z) {
+        long ix = (long) Math.floor(x), iy = (long) Math.floor(y), iz = (long) Math.floor(z);
+        double fx = x - ix, fy = y - iy, fz = z - iz;
+        double u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz);
+        double near = lerp(lerp(lattice(seed, ix, iy, iz), lattice(seed, ix + 1, iy, iz), u),
+                lerp(lattice(seed, ix, iy + 1, iz), lattice(seed, ix + 1, iy + 1, iz), u), v);
+        double far = lerp(lerp(lattice(seed, ix, iy, iz + 1), lattice(seed, ix + 1, iy, iz + 1), u),
+                lerp(lattice(seed, ix, iy + 1, iz + 1), lattice(seed, ix + 1, iy + 1, iz + 1), u), v);
+        return lerp(near, far, w);
+    }
+
+    private static double lattice(long seed, long x, long y, long z) {
+        long hash = mix(mix(mix(seed, x), y), z);
+        return (hash >>> 11) * 0x1.0p-53 * 2 - 1;
+    }
+
+    private static long mix(long hash, long value) {
+        long mixed = hash + 0x9E3779B97F4A7C15L * value;
+        mixed ^= mixed >>> 30;
+        mixed *= 0xBF58476D1CE4E5B9L;
+        mixed ^= mixed >>> 27;
+        mixed *= 0x94D049BB133111EBL;
+        return mixed ^ (mixed >>> 31);
+    }
+
+    private static double lerp(double from, double to, double ratio) {
+        return from + (to - from) * ratio;
     }
 }
