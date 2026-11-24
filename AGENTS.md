@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-ResourceModLoader (RML) is a Minecraft Forge **1.12.2** mod that turns datapacks into executable content. It ships three cooperating pieces:
+ResourceModLoader (RML) is a Minecraft Forge **1.12.2** coremod that turns datapacks into executable content. It ships three cooperating pieces:
 
 - **Mod (`src/main/java`, `runtime/`)** — loads compiled packs at runtime, registers native content (items, blocks, enchantments, worldgen, dialogs, clocks/tests), and hosts an agent service.
 - **Compiler (`compiler/`)** — standalone Java 8 tool that turns a datapack source into an installable RML pack (`rml-compiler.jar`).
@@ -14,7 +14,7 @@ Docs are a MkDocs Material site (`docs/`, `mkdocs.yml`).
 
 1. **Author** a datapack: `pack.mcmeta` (with an `rml` block: id, version, minecraft, optional `constants`) plus `data/<namespace>/<type>/...`.
 2. **Compile**: `rml.compiler.Main` (`compile` / `check` / `capabilities`) → `ProjectReader` indexes the source → `RmlCompiler` resolves tags, lowers functions and rules, and emits typed definitions with a source map.
-3. **Install**: the ZIP/JAR carries `rml.info` whose `modules` list declares `rml:content`. Forge discovery (`RMLModDiscover`) registers the pack; `ContentCatalog` reads `rml:content` envelopes `{"format":1,"type":...,"id":...,"value":...}`.
+3. **Install**: the ZIP/JAR carries `rml.info` whose `modules` list declares `rml:content`. RML is a coremod with no `@Mod`: `RMLFMLLoadingPlugin$Container` is the Forge mod container, and `RMLTransformer` (ASM) injects `RMLModDiscover`'s packs into `Loader.identifyDuplicates`. `ContentCatalog` then reads `rml:content` envelopes `{"format":1,"type":...,"id":...,"value":...}`.
 4. **Activate**: `LoaderRuntime` wires providers — startup types (recipes, items, dimensions, worldgen) during Forge lifecycle; runtime types (functions, predicates, item modifiers, loot, structures) through `ContentProviders`. `FunctionModule` owns check/apply/deactivate with **candidate + revision guards**; contributions are owned by a `ResourceScope` (`scope.own(...)`) so a failed candidate leaves the previous generation untouched (`OwnedRegistry`, `ContentRuntime`).
 5. **Agent**: `AgentSupervisor` spawns `python -m rml_agent serve`; FastAPI streams run events over SSE; Python calls the game's `/invoke` / `/cancel` endpoints; Java executes game work on the server thread and keeps file/archive IO off it.
 
@@ -22,20 +22,23 @@ Data types are decoded by one registry: `rml.deserializer.DeserializerManager` d
 
 ## Key Directories
 
-| Path | Purpose |
-| --- | --- |
-| `src/main/java/rml/deserializer/` | Decoder framework (`DeserializerManager`, `DeserializerBuilder`, `Argument`, generic entries) |
-| `src/main/java/rml/loader/deserialize/` | Native value decoders (`NativeTypeDecoders`, `MatcherDecoders`, `NbtDecoders`, `TextDecoders`, `NumericValueDecoders`) |
-| `src/main/java/rml/loader/content/` | Compiled content: `data` (`DataRules`, `RuleCatalog`, `RuleFields`), `gameplay`, `worldgen`, `presentation`, `time`, plus `ContentCatalog`/`ContentProviders` |
-| `src/main/java/rml/loader/runtime/` | Loader runtime: `LoaderRuntime`, `FunctionModule`, `RMLContentCommands` |
-| `src/main/java/rml/loader/agent/` | Java side of the agent: `AgentSupervisor`, `AgentBridge`, preview process supervision |
-| `runtime/` | Dependency-free shared runtime module (`:runtime`) reused by the mod and the compiler |
-| `compiler/` | Standalone compiler project (`:compiler`) with its own contract tests |
-| `agent/src/rml_agent/` | Python service: `service.py`, `engine.py`, `bridge.py`, `workspace.py`, `preview.py` |
-| `agent/tests/` | pytest suite for the agent |
-| `src/main/resources/META-INF/rml/` | `modules.json` (module type registry) and `deserializer/<class>.json` (lazy decoder discovery) |
-| `dev/datapack-example/` | Reference datapack (functions, predicates, modifiers, loot, damage types, clocks, timelines, world tests) |
-| `docs/zh_cn/`, `docs/en_us/` | Bilingual documentation sources |
+|Path|Purpose|
+|---|---|
+|`src/main/java/rml/deserializer/`|Decoder framework (`DeserializerManager`, `DeserializerBuilder`, `Argument`, generic entries)|
+|`src/main/java/rml/loader/deserialize/`|Native value decoders (`NativeTypeDecoders`, `MatcherDecoders`, `NbtDecoders`, `TextDecoders`, `NumericValueDecoders`)|
+|`src/main/java/rml/loader/content/`|Compiled content: `data` (`DataRules`, `RuleCatalog`, `RuleFields`), `gameplay`, `worldgen`, `presentation`, `time`, plus `ContentCatalog`/`ContentProviders`|
+|`src/main/java/rml/loader/runtime/`|Loader runtime: `LoaderRuntime`, `FunctionModule`, `RMLContentCommands`|
+|`src/main/java/rml/loader/agent/`|Java side of the agent: `AgentSupervisor`, `AgentBridge`, preview process supervision|
+|`src/main/java/rml/loader/core/`|Launch layer: `RMLFMLLoadingPlugin` (+ inner `Container`), `RMLTransformer` ASM hooks, `RMLModDiscover`|
+|`src/main/java/rml/loader/api/`|Public contracts: annotations, events, module types, config elements, function/villager APIs|
+|`src/main/java/rml/layer/`|Optional mod compat (CraftTweaker, GroovyScript, KubeJS, Just Enough Dimensions, Cleanroom)|
+|`runtime/src/main/java/rml/runtime/`, `rml/io/`|Dependency-free transactional kernel (`ContentRuntime`, `ResourceScope`, `OwnedRegistry`, `PackSource`)|
+|`compiler/`|Standalone compiler project (`:compiler`) with its own contract tests|
+|`agent/src/rml_agent/`|Python service: `service.py`, `engine.py`, `bridge.py`, `workspace.py`, `preview.py`|
+|`agent/tests/`|pytest suite for the agent|
+|`src/main/resources/META-INF/rml/`|`modules.json` (module type registry) and `deserializer/<class>.json` (lazy decoder discovery)|
+|`dev/datapack-example/`|Reference datapack (functions, predicates, modifiers, loot, damage types, clocks, timelines, world tests)|
+|`docs/zh_cn/`, `docs/en_us/`|Bilingual documentation sources|
 
 ## Development Commands
 
@@ -96,7 +99,8 @@ python -m pytest agent/tests
 
 ## Runtime/Tooling Preferences
 
-- **JDK 8 only** (`temurin-8-amd64-windows.2` locally); the mod targets Java 8. Gradle 4.9 via the wrapper (Tencent mirror) — do not bump it.
+- **JDK 8 only** (`temurin-8-amd64-windows.2` locally); the mod targets Java 8. Gradle 4.9 via the wrapper (Tencent mirror) — ForgeGradle 2.3.4 and the old Gradle APIs in `build.gradle` fail on Gradle 5+, so do not bump it.
+- `libs/KubeJS-forge-1.12.2-1.1.0.63.jar` is committed and required for compilation; do not delete it.
 - Prefer `--offline` Gradle invocations once caches are warm; the daemon is disabled by `gradle.properties`.
 - Python: 3.11+, pinned `google-adk[db]==2.14.1` and `litellm==1.102.1`; keep a virtualenv outside the repo (`.venv-docs/`, `.venv/` are ignored).
 - Docs: MkDocs Material 9.7.0 pinned; **no Ruby/Jekyll** in the toolchain anymore.
@@ -106,6 +110,7 @@ python -m pytest agent/tests
 ## Testing & QA
 
 - Java "contract tests" are plain `main()` programs with local helpers (`check`, `equal`, `reject`), launched by Gradle `JavaExec` tasks wired into `check`. Run one: `./gradlew.bat --offline dataCompositionContractTest`.
+- A new contract test is a `public final` class next to the package it exercises, private constructor, `main()` that prints `"<Name> passed"`; register its `JavaExec` task and add it to `check.dependsOn`. Root `check` does not include subproject checks — run `-p runtime check` and `-p compiler check` explicitly.
 - Root tasks: `deserializerContractTest`, `compiledLootContractTest`, `functionDataPathContractTest`, `functionNbtContractTest`, `damageDefinitionContractTest`, `timeWorldDataContractTest`, `dataCompositionContractTest`, `nativeEnchantmentContractTest`, `gameplayCompositionContractTest`, `worldgenCapabilityContractTest`, `presentationSubmissionContractTest`, `presentationRegistryPhaseContractTest`, `timeCompositionContractTest`, `agentBridgeJournalContractTest`, `agentBridgeArchivesContractTest`, `previewProcessContractTest`, `detachedCompiledPackContractTest`, `detachedImportContractTest`.
 - Compiler tasks: `:compiler:sourceContractTest`, `:compiler:languageContractTest`, `:compiler:ruleContractTest`, `:compiler:compilerContractTest`.
 - Python: `python -m pytest agent/tests`; set `RML_TEST_COMPILER` to `compiler/build/libs/rml-compiler.jar` to enable the workspace-compiler integration case.
